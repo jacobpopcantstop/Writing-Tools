@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Courius Screenwriter</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⌨️</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect x=%225%22 y=%2230%22 width=%2290%22 height=%2265%22 rx=%225%22 fill=%22%231a2f23%22/><rect x=%225%22 y=%2210%22 width=%2290%22 height=%2225%22 fill=%22%231a2f23%22/><rect x=%225%22 y=%2210%22 width=%2218%22 height=%2225%22 fill=%22%23c5a059%22 transform=%22skewX(-15)%22/><rect x=%2228%22 y=%2210%22 width=%2218%22 height=%2225%22 fill=%22%23c5a059%22 transform=%22skewX(-15)%22/><rect x=%2251%22 y=%2210%22 width=%2218%22 height=%2225%22 fill=%22%23c5a059%22 transform=%22skewX(-15)%22/><rect x=%2274%22 y=%2210%22 width=%2218%22 height=%2225%22 fill=%22%23c5a059%22 transform=%22skewX(-15)%22/><line x1=%2215%22 y1=%2250%22 x2=%2285%22 y2=%2250%22 stroke=%22%23c5a059%22 stroke-width=%223%22/><line x1=%2215%22 y1=%2265%22 x2=%2270%22 y2=%2265%22 stroke=%22%23c5a059%22 stroke-width=%222%22/><line x1=%2215%22 y1=%2280%22 x2=%2255%22 y2=%2280%22 stroke=%22%23c5a059%22 stroke-width=%222%22/></svg>">
     <style>
         :root {
             /* Chessboard Theme - Cream & Dark Green */
@@ -765,44 +765,75 @@
     function importFDX(input) {
         const file = input.files[0];
         if (!file) return;
-        
+
         const reader = new FileReader();
         reader.onload = function(e) {
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(e.target.result, "text/xml");
-            
+
             EDITOR.innerHTML = ''; // Clear existing
-            
-            // Handle Content
+
+            // Handle Title Page FIRST (must be prepended before content)
+            const titlePage = xmlDoc.getElementsByTagName('TitlePage')[0];
+            if (titlePage) {
+                const tp = document.createElement('div');
+                tp.className = 'title-page-container';
+                tp.contentEditable = "false";
+
+                // Extract title page fields
+                const titleEl = titlePage.getElementsByTagName('Title')[0];
+                const authorEl = titlePage.getElementsByTagName('Author')[0];
+                const contactEl = titlePage.getElementsByTagName('Contact')[0];
+
+                const titleText = titleEl ? titleEl.textContent : 'TITLE';
+                const authorText = authorEl ? authorEl.textContent : 'Author Name';
+                const contactText = contactEl ? contactEl.textContent : 'Contact Info';
+
+                tp.innerHTML = `
+                    <div class="tp-title" contenteditable="true" data-placeholder="TITLE">${escapeHtml(titleText)}</div>
+                    <div class="tp-by">by</div>
+                    <div class="tp-author" contenteditable="true" data-placeholder="Author Name">${escapeHtml(authorText)}</div>
+                    <div class="tp-contact" contenteditable="true" data-placeholder="Contact Info">${escapeHtml(contactText)}</div>
+                `;
+                EDITOR.appendChild(tp);
+            }
+
+            // Handle Content paragraphs
             const paragraphs = xmlDoc.getElementsByTagName('Paragraph');
             for (let i = 0; i < paragraphs.length; i++) {
                 const fdxType = (paragraphs[i].getAttribute('Type') || '').trim();
                 let type = 'action';
-                
+
                 // Map FDX types to Courius types
                 if (fdxType === 'Scene Heading') type = 'scene-heading';
                 else if (fdxType === 'Character') type = 'character';
                 else if (fdxType === 'Dialogue') type = 'dialogue';
                 else if (fdxType === 'Parenthetical') type = 'parenthetical';
                 else if (fdxType === 'Transition') type = 'transition';
-                
+
                 let text = '';
                 const textNode = paragraphs[i].getElementsByTagName('Text')[0];
                 if (textNode) text = textNode.textContent;
-                
+
                 const div = document.createElement('div');
                 setBlockType(div, type);
                 div.innerText = text || '\n'; // Preserve empty lines
                 EDITOR.appendChild(div);
             }
-            
+
             // Ensure something is there
             if (EDITOR.children.length === 0) createLine('scene-heading');
-            
+
             triggerSave();
             updateSuggestions();
         };
         reader.readAsText(file);
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     // --- FDX Export ---

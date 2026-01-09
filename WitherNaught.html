@@ -4,37 +4,40 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WitherNaught</title>
-    
+
+    <!-- Bioluminescent Mushroom Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%230d0f0a%22/><ellipse cx=%2250%22 cy=%2240%22 rx=%2230%22 ry=%2222%22 fill=%22%23166534%22/><rect x=%2242%22 y=%2255%22 width=%2216%22 height=%2230%22 rx=%224%22 fill=%22%231a1a1a%22/><circle cx=%2240%22 cy=%2235%22 r=%225%22 fill=%22%23a3e635%22 opacity=%220.8%22/><circle cx=%2255%22 cy=%2230%22 r=%223%22 fill=%22%23a3e635%22 opacity=%220.6%22/><circle cx=%2260%22 cy=%2242%22 r=%224%22 fill=%22%23a3e635%22 opacity=%220.7%22/></svg>">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;1,400&family=Montserrat:wght@300;500&display=swap');
-        
-        body { 
-            font-family: 'Cormorant Garamond', serif; 
-            background-color: #f0fdf4;
-            color: #1e293b;
-            transition: background-color 3s ease, color 1s ease;
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;1,400&family=Montserrat:wght@300;500;700&display=swap');
+
+        body {
+            font-family: 'Cormorant Garamond', serif;
+            background-color: #0d0f0a;
+            color: #e7e5e4;
+            transition: background-color 1s ease, color 0.5s ease;
             overflow: hidden;
             margin: 0;
         }
-        
+
         .sans-font { font-family: 'Montserrat', sans-serif; }
 
         /* LAYERS */
         .layer { position: fixed; inset: 0; pointer-events: none; }
-        #static-canvas { z-index: 5; opacity: 0.8; transition: opacity 1s; }
+        #static-canvas { z-index: 5; opacity: 0.9; transition: opacity 1s; }
         #weather-canvas { z-index: 10; }
-        
+
         /* UI TRANSITIONS */
         .ui-element { transition: opacity 0.5s ease, transform 0.5s ease; }
         .focus-mode .ui-element { opacity: 0.1; pointer-events: none; }
         .focus-mode .ui-element:hover { opacity: 1; pointer-events: auto; }
 
-        /* FROST OVERLAY */
+        /* FROST/DECAY OVERLAY */
         .frost-vignette {
             background: radial-gradient(circle, transparent 40%, rgba(255, 255, 255, 0.8) 80%, rgba(200, 230, 255, 1) 100%);
             z-index: 20;
@@ -42,21 +45,21 @@
             transition: opacity 0.5s;
         }
 
-        /* Dark Mode Frost Adjustment */
+        /* Dark Mode Decay - Purple/Green toxic fog */
         .dark-mode .frost-vignette {
-            background: radial-gradient(circle, transparent 40%, rgba(150, 180, 200, 0.3) 80%, rgba(100, 130, 160, 0.6) 100%);
+            background: radial-gradient(circle, transparent 30%, rgba(88, 28, 135, 0.4) 70%, rgba(20, 83, 45, 0.7) 100%);
             mix-blend-mode: normal;
         }
 
         /* TEXT EDITOR */
-        textarea { caret-color: #0ea5e9; }
+        textarea { caret-color: #a3e635; }
         textarea::placeholder { color: rgba(100, 116, 139, 0.4); font-style: italic; }
-        .dark-mode textarea::placeholder { color: rgba(168, 162, 158, 0.3); }
+        .dark-mode textarea::placeholder { color: rgba(163, 230, 53, 0.25); }
         textarea:focus { outline: none; }
         textarea::-webkit-scrollbar { width: 4px; }
         textarea::-webkit-scrollbar-track { background: transparent; }
         textarea::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
-        .dark-mode textarea::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); }
+        .dark-mode textarea::-webkit-scrollbar-thumb { background: rgba(163, 230, 53, 0.2); }
 
         /* ANIMATIONS */
         @keyframes sunburst-pulse {
@@ -64,21 +67,72 @@
             50% { transform: scale(1.1); opacity: 1; }
             100% { transform: scale(0.9); opacity: 0.5; }
         }
-        .sun-active { animation: sunburst-pulse 2s infinite; color: #f59e0b; filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.5)); }
-        
+        .sun-active { animation: sunburst-pulse 2s infinite; }
+        .dark-mode .sun-active { color: #a3e635; filter: drop-shadow(0 0 12px rgba(163, 230, 53, 0.8)); }
+
         .modal-enter { animation: float-up 0.5s ease-out forwards; }
         @keyframes float-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* DARK MODE UTILS */
+        /* PROGRESS BAR ANIMATION */
+        .progress-bar {
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .progress-glow {
+            box-shadow: 0 0 20px currentColor, 0 0 40px currentColor;
+        }
+
+        /* SCORE POPUP */
+        @keyframes score-pop {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-40px) scale(1.5); opacity: 0; }
+        }
+        .score-popup { animation: score-pop 0.8s ease-out forwards; }
+
+        /* COMBO INDICATOR */
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 5px currentColor; }
+            50% { box-shadow: 0 0 25px currentColor, 0 0 50px currentColor; }
+        }
+        .combo-glow { animation: pulse-glow 0.5s ease-in-out infinite; }
+
+        /* LEVEL UP FLASH */
+        @keyframes level-up {
+            0% { opacity: 0; transform: scale(0.8); }
+            20% { opacity: 1; transform: scale(1.1); }
+            100% { opacity: 0; transform: scale(1); }
+        }
+        .level-up-flash { animation: level-up 2s ease-out forwards; }
+
+        /* GLASS PANELS */
         .glass-panel {
             background: rgba(255, 255, 255, 0.4);
             backdrop-filter: blur(12px);
             border-bottom: 1px solid rgba(255,255,255,0.2);
         }
         .dark-mode .glass-panel {
-            background: rgba(20, 18, 15, 0.6);
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            background: rgba(10, 15, 10, 0.8);
+            border-bottom: 1px solid rgba(163, 230, 53, 0.1);
             color: #e7e5e4;
+        }
+
+        /* GAME STATS BAR */
+        .stat-card {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(163, 230, 53, 0.2);
+            border-radius: 8px;
+            padding: 8px 16px;
+        }
+        .stat-value {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            font-size: 1.5rem;
+            line-height: 1;
+        }
+        .stat-label {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            opacity: 0.6;
         }
     </style>
 </head>
@@ -91,30 +145,34 @@
         // --- ICONS ---
         const Icon = ({ name, className }) => {
             const icons = {
+                Mushroom: <g><ellipse cx="12" cy="8" rx="8" ry="6"/><path d="M8 14v6c0 1 1 2 4 2s4-1 4-2v-6"/><circle cx="9" cy="6" r="1.5" fill="currentColor" opacity="0.3"/><circle cx="14" cy="5" r="1" fill="currentColor" opacity="0.3"/><circle cx="11" cy="9" r="1" fill="currentColor" opacity="0.3"/></g>,
+                Spore: <g><circle cx="12" cy="12" r="3"/><path d="M12 2v4"/><path d="M12 18v4"/><path d="M4.93 4.93l2.83 2.83"/><path d="M16.24 16.24l2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="M4.93 19.07l2.83-2.83"/><path d="M16.24 7.76l2.83-2.83"/></g>,
                 Leaf: <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.77 10-10 10Z M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>,
                 Sun: <g><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></g>,
                 Cloud: <g><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M16 14v6"/><path d="M8 14v6"/><path d="M12 16v6"/></g>,
+                Skull: <g><circle cx="12" cy="10" r="7"/><circle cx="9" cy="9" r="1.5"/><circle cx="15" cy="9" r="1.5"/><path d="M9 17v5"/><path d="M12 17v5"/><path d="M15 17v5"/></g>,
                 Save: <g><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></g>,
                 Upload: <g><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></g>,
                 SoundOn: <g><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></g>,
                 SoundOff: <g><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></g>,
                 Eye: <g><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></g>,
-                Moon: <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+                Moon: <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />,
+                Zap: <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
             };
             return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{icons[name]}</svg>;
         };
 
         // --- PROGRESSION DATA ---
-        // darkColor keys: Night vibes (Deep Browns, Dark Greens, Night Sky Teals)
+        // Light mode: Garden theme | Dark mode: Fungal/Mycorrhizal network theme
         const ZONES = [
-            { w: 0, title: "Barren Soil", color: "#f5f5f4", darkColor: "#1c1917" }, // Stone-900
-            { w: 100, title: "First Sprout", color: "#f0fdf4", darkColor: "#0f2310" }, // Deep Forest
-            { w: 500, title: "Meadow", color: "#ecfdf5", darkColor: "#064e3b" }, // Emerald-900
-            { w: 1500, title: "Young Grove", color: "#f0f9ff", darkColor: "#1e1b4b" }, // Indigo-950 (Night Sky)
-            { w: 3000, title: "Deep Forest", color: "#ecfccb", darkColor: "#14532d" }, // Green-900
-            { w: 6000, title: "Cherry Blossom", color: "#fff1f2", darkColor: "#3f1521" }, // Deep Rose
-            { w: 10000, title: "Golden Canopy", color: "#fefce8", darkColor: "#422006" }, // Yellow-950 (Brown)
-            { w: 25000, title: "WitherNaught", color: "#f0fdfa", darkColor: "#042f2e" } // Teal-900
+            { w: 0, title: "Barren Soil", darkTitle: "Dead Earth", color: "#f5f5f4", darkColor: "#0d0f0a" },
+            { w: 100, title: "First Sprout", darkTitle: "Mycelium Stirs", color: "#f0fdf4", darkColor: "#0f1a0a" },
+            { w: 500, title: "Meadow", darkTitle: "Spore Cloud", color: "#ecfdf5", darkColor: "#141f14" },
+            { w: 1500, title: "Young Grove", darkTitle: "Fungal Network", color: "#f0f9ff", darkColor: "#1a1f1a" },
+            { w: 3000, title: "Deep Forest", darkTitle: "Bioluminescent Cave", color: "#ecfccb", darkColor: "#0f2318" },
+            { w: 6000, title: "Cherry Blossom", darkTitle: "Toxic Bloom", color: "#fff1f2", darkColor: "#1f0f1a" },
+            { w: 10000, title: "Golden Canopy", darkTitle: "Cordyceps Ascent", color: "#fefce8", darkColor: "#1a1a0f" },
+            { w: 25000, title: "WitherNaught", darkTitle: "The Rot Throne", color: "#f0fdfa", darkColor: "#0a1412" }
         ];
 
         // --- AUDIO ENGINE V3 ---
@@ -272,42 +330,85 @@
             const weatherCanvas = useRef(null);
             const animationRef = useRef(null);
 
-            // Deterministic Random for consistent tree growth
+            // Deterministic Random for consistent growth
             const seededRandom = (seed) => {
                 let x = Math.sin(seed) * 10000;
                 return x - Math.floor(x);
             };
 
+            // Draw mushroom for dark mode
+            const drawMushroom = (ctx, x, y, size, seed) => {
+                ctx.save();
+
+                // Mushroom colors - bioluminescent greens, toxic purples
+                const hues = [120, 280, 160, 300]; // Green, purple, cyan-green, magenta
+                const hue = hues[Math.floor(seededRandom(seed) * hues.length)];
+                const glow = `hsla(${hue}, 70%, 50%, 0.3)`;
+                const capColor = `hsl(${hue}, 60%, ${25 + seededRandom(seed+1) * 15}%)`;
+                const stemColor = `hsl(${hue}, 20%, 20%)`;
+                const spotColor = `hsla(${hue}, 80%, 60%, 0.6)`;
+
+                // Glow effect
+                ctx.shadowColor = glow;
+                ctx.shadowBlur = 20;
+
+                // Stem
+                const stemWidth = size * 0.2;
+                const stemHeight = size * 0.6;
+                ctx.fillStyle = stemColor;
+                ctx.beginPath();
+                ctx.moveTo(x - stemWidth/2, y);
+                ctx.quadraticCurveTo(x - stemWidth/3, y - stemHeight/2, x - stemWidth/4, y - stemHeight);
+                ctx.lineTo(x + stemWidth/4, y - stemHeight);
+                ctx.quadraticCurveTo(x + stemWidth/3, y - stemHeight/2, x + stemWidth/2, y);
+                ctx.fill();
+
+                // Cap
+                const capWidth = size * (0.8 + seededRandom(seed+2) * 0.4);
+                const capHeight = size * 0.4;
+                ctx.fillStyle = capColor;
+                ctx.beginPath();
+                ctx.ellipse(x, y - stemHeight, capWidth/2, capHeight/2, 0, Math.PI, 0);
+                ctx.fill();
+
+                // Bioluminescent spots
+                ctx.shadowBlur = 10;
+                ctx.fillStyle = spotColor;
+                const numSpots = 3 + Math.floor(seededRandom(seed+3) * 4);
+                for(let i = 0; i < numSpots; i++) {
+                    const spotX = x + (seededRandom(seed+i*10) - 0.5) * capWidth * 0.6;
+                    const spotY = y - stemHeight - capHeight * 0.1 - seededRandom(seed+i*11) * capHeight * 0.3;
+                    const spotR = 2 + seededRandom(seed+i*12) * 4;
+                    ctx.beginPath();
+                    ctx.arc(spotX, spotY, spotR, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                ctx.restore();
+            };
+
             const drawTree = (ctx, x, y, len, angle, width, seed) => {
                 ctx.beginPath();
                 ctx.save();
-                
-                // Dark Mode: Lighter bark for contrast against dark background
-                // Light Mode: Dark bark
+
                 ctx.strokeStyle = darkMode ? '#a8a29e' : '#4a3b32';
                 ctx.fillStyle = darkMode ? '#a8a29e' : '#4a3b32';
-                
+
                 ctx.lineWidth = width;
                 ctx.lineCap = 'round';
                 ctx.translate(x, y);
                 ctx.rotate(angle * Math.PI / 180);
                 ctx.moveTo(0, 0);
-                
-                // Curve the branch slightly
+
                 const curve = (seededRandom(seed) - 0.5) * 20;
                 ctx.quadraticCurveTo(0, -len/2, curve, -len);
                 ctx.stroke();
 
                 if (len < 10) {
-                    // Leaf/Flower
                     ctx.beginPath();
-                    // Color shifts based on seed
-                    const hue = seededRandom(seed+1) > 0.5 ? 340 : 120; 
+                    const hue = seededRandom(seed+1) > 0.5 ? 340 : 120;
                     const sat = 50 + seededRandom(seed+2) * 50;
-                    
-                    // Dark Mode: Leaves glow slightly (lighter lightness)
                     const lightness = darkMode ? '80%' : '70%';
-                    
                     ctx.fillStyle = `hsl(${hue}, ${sat}%, ${lightness})`;
                     ctx.arc(curve, -len, 3 + seededRandom(seed+3) * 3, 0, Math.PI * 2);
                     ctx.fill();
@@ -317,7 +418,6 @@
 
                 ctx.restore();
 
-                // Recursion
                 const nextX = x - len * Math.sin(angle * Math.PI / 180) + (curve * Math.cos(angle * Math.PI / 180));
                 const nextY = y - len * Math.cos(angle * Math.PI / 180) + (curve * Math.sin(angle * Math.PI / 180));
 
@@ -330,52 +430,82 @@
                 }
             };
 
-            // Redraw Static Garden (Only when words change significantly or mode toggles)
+            // Mycelium network for dark mode background
+            const drawMycelium = (ctx, width, height, density) => {
+                ctx.strokeStyle = 'rgba(163, 230, 53, 0.1)';
+                ctx.lineWidth = 1;
+
+                const numLines = Math.min(density, 200);
+                for (let i = 0; i < numLines; i++) {
+                    const startX = seededRandom(i * 100) * width;
+                    const startY = height - seededRandom(i * 101) * 150;
+
+                    ctx.beginPath();
+                    ctx.moveTo(startX, startY);
+
+                    let x = startX, y = startY;
+                    const segments = 3 + Math.floor(seededRandom(i * 102) * 5);
+                    for (let j = 0; j < segments; j++) {
+                        x += (seededRandom(i * 103 + j) - 0.5) * 60;
+                        y -= seededRandom(i * 104 + j) * 30;
+                        ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+                }
+            };
+
+            // Redraw Static Garden/Fungal Forest
             useEffect(() => {
                 const cvs = staticCanvas.current;
                 const ctx = cvs.getContext('2d');
                 cvs.width = window.innerWidth;
-                cvs.height = window.innerHeight * 0.7; // Bottom 70%
-                
+                cvs.height = window.innerHeight * 0.7;
+
                 ctx.clearRect(0, 0, cvs.width, cvs.height);
 
                 // Ground Gradient
                 const grad = ctx.createLinearGradient(0, cvs.height, 0, cvs.height - 100);
                 if (darkMode) {
-                    grad.addColorStop(0, '#0c0a09'); // Dark loam (Stone 950)
-                    grad.addColorStop(1, 'rgba(0,0,0,0)');
+                    grad.addColorStop(0, '#0a0d08');
+                    grad.addColorStop(1, 'rgba(10,13,8,0)');
                 } else {
-                    grad.addColorStop(0, '#dcfce7'); // Light green
+                    grad.addColorStop(0, '#dcfce7');
                     grad.addColorStop(1, 'rgba(255,255,255,0)');
                 }
-                
+
                 ctx.fillStyle = grad;
                 ctx.fillRect(0, cvs.height - 100, cvs.width, 100);
 
-                // Grass
-                const numGrass = Math.min(totalWords / 10, 500);
-                for(let i=0; i<numGrass; i++) {
-                    const x = seededRandom(i) * cvs.width;
-                    const h = 5 + seededRandom(i+1) * 15;
-                    ctx.beginPath();
-                    // Dark Mode: Darker, muted green grass
-                    const grassColor = darkMode 
-                        ? `rgba(60, 80, 60, ${0.2 + seededRandom(i+2)*0.3})`
-                        : `rgba(100, 160, 100, ${0.3 + seededRandom(i+2)*0.4})`;
-                    
-                    ctx.strokeStyle = grassColor;
-                    ctx.moveTo(x, cvs.height);
-                    ctx.lineTo(x + (seededRandom(i+3)-0.5)*10, cvs.height - h);
-                    ctx.stroke();
-                }
+                if (darkMode) {
+                    // Draw mycelium network
+                    drawMycelium(ctx, cvs.width, cvs.height, totalWords / 5);
 
-                // Trees
-                const numTrees = Math.min(Math.floor(totalWords / 800), 8);
-                for(let i=0; i<numTrees; i++) {
-                    const x = (cvs.width / (numTrees + 1)) * (i + 1);
-                    const size = 60 + seededRandom(i*55) * 40;
-                    // Only draw if we have enough words for this specific tree
-                    drawTree(ctx, x, cvs.height, size, 0, size/8, i * 999);
+                    // Draw mushrooms instead of trees
+                    const numMushrooms = Math.min(Math.floor(totalWords / 200), 20);
+                    for(let i = 0; i < numMushrooms; i++) {
+                        const x = seededRandom(i * 77) * cvs.width;
+                        const size = 30 + seededRandom(i * 78) * 50 + (totalWords / 500);
+                        drawMushroom(ctx, x, cvs.height, Math.min(size, 120), i * 999);
+                    }
+                } else {
+                    // Light mode: Original grass and trees
+                    const numGrass = Math.min(totalWords / 10, 500);
+                    for(let i = 0; i < numGrass; i++) {
+                        const x = seededRandom(i) * cvs.width;
+                        const h = 5 + seededRandom(i+1) * 15;
+                        ctx.beginPath();
+                        ctx.strokeStyle = `rgba(100, 160, 100, ${0.3 + seededRandom(i+2)*0.4})`;
+                        ctx.moveTo(x, cvs.height);
+                        ctx.lineTo(x + (seededRandom(i+3)-0.5)*10, cvs.height - h);
+                        ctx.stroke();
+                    }
+
+                    const numTrees = Math.min(Math.floor(totalWords / 800), 8);
+                    for(let i = 0; i < numTrees; i++) {
+                        const x = (cvs.width / (numTrees + 1)) * (i + 1);
+                        const size = 60 + seededRandom(i*55) * 40;
+                        drawTree(ctx, x, cvs.height, size, 0, size/8, i * 999);
+                    }
                 }
 
             }, [totalWords, darkMode]);
@@ -396,28 +526,28 @@
                 const loop = () => {
                     ctx.clearRect(0, 0, cvs.width, cvs.height);
                     
-                    // Add Particles
-                    // If frost > 50, snow. Else, pollen/petals if words > 1000.
-                    // Dark mode: Add fireflies if low frost?
+                    // Add Particles - Spores in dark mode, snow/pollen in light
                     if (particles.length < 100) {
                         if (frost > 50) {
+                            // Decay/toxic particles in dark mode, snow in light
                             particles.push({
                                 x: Math.random() * cvs.width,
                                 y: -10,
                                 vx: (Math.random() - 0.5) * 2,
                                 vy: 1 + Math.random() * 2,
                                 size: 2 + Math.random() * 3,
-                                type: 'snow'
+                                type: darkMode ? 'toxic' : 'snow'
                             });
-                        } else if (totalWords > 500) {
-                            // Pollen/Fireflies
+                        } else if (totalWords > 300) {
+                            // Spores in dark mode, pollen in light
                             particles.push({
                                 x: Math.random() * cvs.width,
                                 y: cvs.height + 10,
-                                vx: (Math.random() - 0.5) * 1,
-                                vy: -(0.5 + Math.random()),
-                                size: 1 + Math.random() * 2,
-                                type: darkMode ? 'firefly' : 'pollen'
+                                vx: (Math.random() - 0.5) * 1.5,
+                                vy: -(0.3 + Math.random() * 0.5),
+                                size: 1 + Math.random() * 3,
+                                type: darkMode ? 'spore' : 'pollen',
+                                hue: darkMode ? (Math.random() > 0.5 ? 120 : 280) : 0
                             });
                         }
                     }
@@ -426,22 +556,32 @@
                     particles.forEach((p, i) => {
                         p.x += p.vx;
                         p.y += p.vy;
-                        
+
                         if (p.type === 'snow') {
                             ctx.fillStyle = `rgba(255, 255, 255, ${0.8 * (frost/100)})`;
                             ctx.beginPath();
                             ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
                             ctx.fill();
                             if (p.y > cvs.height) particles.splice(i, 1);
-                        } else if (p.type === 'firefly') {
-                            // Glowing yellow dot
-                            ctx.fillStyle = `rgba(253, 224, 71, ${0.4 + Math.random()*0.4})`;
+                        } else if (p.type === 'toxic') {
+                            // Green/purple toxic mist
+                            ctx.fillStyle = `hsla(${Math.random() > 0.5 ? 120 : 280}, 70%, 50%, ${0.3 * (frost/100)})`;
                             ctx.beginPath();
                             ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
                             ctx.fill();
+                            if (p.y > cvs.height) particles.splice(i, 1);
+                        } else if (p.type === 'spore') {
+                            // Glowing spores - green or purple
+                            ctx.shadowColor = `hsla(${p.hue}, 80%, 60%, 0.8)`;
+                            ctx.shadowBlur = 8;
+                            ctx.fillStyle = `hsla(${p.hue}, 70%, 50%, ${0.5 + Math.random()*0.3})`;
+                            ctx.beginPath();
+                            ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+                            ctx.fill();
+                            ctx.shadowBlur = 0;
                             if (p.y < -10) particles.splice(i, 1);
                         } else {
-                            // Pollen/Petal
+                            // Pollen/Petal for light mode
                             ctx.fillStyle = `rgba(255, 200, 200, 0.6)`;
                             ctx.beginPath();
                             ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
@@ -472,19 +612,34 @@
         const App = () => {
             const [gameState, setGameState] = useState('MENU'); // MENU, PLAYING, FROZEN
             const [text, setText] = useState("");
-            const [stats, setStats] = useState({ totalWords: 0, sunlight: 0 });
+            const [stats, setStats] = useState({ totalWords: 0, sunlight: 0, sessionWords: 0, combo: 0, maxCombo: 0 });
             const [frost, setFrost] = useState(0);
             const [isSunburst, setIsSunburst] = useState(false);
-            const [settings, setSettings] = useState({ muted: false, focusMode: false, darkMode: false });
-            
+            const [settings, setSettings] = useState({ muted: false, focusMode: false, darkMode: true }); // Dark mode default
+            const [wpm, setWpm] = useState(0);
+            const [levelUpFlash, setLevelUpFlash] = useState(false);
+            const [prevZoneIndex, setPrevZoneIndex] = useState(0);
+
             const audioRef = useRef(new AudioEngine());
             const loopRef = useRef();
             const lastTypeTime = useRef(0);
+            const sessionStartTime = useRef(Date.now());
+            const comboTimeout = useRef(null);
 
             // Calculate current zone
             const zoneIndex = ZONES.findLastIndex(z => stats.totalWords >= z.w);
             const currentZone = ZONES[zoneIndex] || ZONES[0];
             const nextZone = ZONES[zoneIndex + 1];
+            const zoneTitle = settings.darkMode ? (currentZone.darkTitle || currentZone.title) : currentZone.title;
+
+            // Level up detection
+            useEffect(() => {
+                if (zoneIndex > prevZoneIndex && gameState === 'PLAYING') {
+                    setLevelUpFlash(true);
+                    setTimeout(() => setLevelUpFlash(false), 2000);
+                }
+                setPrevZoneIndex(zoneIndex);
+            }, [zoneIndex, gameState]);
 
             // Initial Load
             useEffect(() => {
@@ -552,27 +707,44 @@
             // Handlers
             const handleType = (e) => {
                 if (gameState === 'FROZEN') return;
-                
+
                 const val = e.target.value;
                 const added = val.length - text.length;
                 setText(val);
                 lastTypeTime.current = Date.now();
 
                 if (added > 0) {
-                    // Reduce Frost
-                    setFrost(f => Math.max(0, f - 0.5));
-                    
+                    // Reduce Frost based on combo
+                    const frostReduction = 0.5 + (stats.combo * 0.1);
+                    setFrost(f => Math.max(0, f - frostReduction));
+
+                    // Reset combo timeout
+                    clearTimeout(comboTimeout.current);
+                    comboTimeout.current = setTimeout(() => {
+                        setStats(s => ({ ...s, combo: 0 }));
+                    }, 2000); // Combo breaks after 2 seconds of no typing
+
                     // Audio
                     if (Math.random() > 0.7) audioRef.current.playTypeSound();
 
-                    // Word Count
+                    // Word Count & Combo
                     if (val[val.length-1].match(/[\s\n]/)) {
                         setStats(s => {
                             const newTotal = s.totalWords + 1;
-                            // Earn Sunlight every 50 words
-                            const newSun = (newTotal % 50 === 0) ? Math.min(s.sunlight + 1, 3) : s.sunlight;
-                            return { totalWords: newTotal, sunlight: newSun };
+                            const newSession = s.sessionWords + 1;
+                            const newCombo = s.combo + 1;
+                            const newMaxCombo = Math.max(s.maxCombo, newCombo);
+                            // Earn Sunlight every 50 words (boosted by combo)
+                            const sunThreshold = newCombo > 10 ? 30 : 50;
+                            const newSun = (newTotal % sunThreshold === 0) ? Math.min(s.sunlight + 1, 3) : s.sunlight;
+                            return { totalWords: newTotal, sunlight: newSun, sessionWords: newSession, combo: newCombo, maxCombo: newMaxCombo };
                         });
+
+                        // Update WPM
+                        const elapsedMinutes = (Date.now() - sessionStartTime.current) / 60000;
+                        if (elapsedMinutes > 0.1) {
+                            setWpm(Math.round(stats.sessionWords / elapsedMinutes));
+                        }
                     }
                 }
             };
@@ -617,6 +789,9 @@
                 audioRef.current.init();
                 setGameState('PLAYING');
                 setFrost(0);
+                setStats(s => ({ ...s, sessionWords: 0, combo: 0 }));
+                sessionStartTime.current = Date.now();
+                setWpm(0);
             };
 
             const toggleDarkMode = () => {
@@ -626,45 +801,77 @@
             // Render
             const bgColor = settings.darkMode ? currentZone.darkColor : currentZone.color;
             const textColor = settings.darkMode ? 'text-stone-300' : 'text-slate-800';
+            const accentColor = settings.darkMode ? 'text-lime-400' : 'text-emerald-600';
 
             return (
                 <div style={{ backgroundColor: bgColor }} className={`relative h-screen w-full flex flex-col overflow-hidden ${settings.focusMode && gameState === 'PLAYING' ? 'focus-mode' : ''} ${settings.darkMode ? 'dark-mode' : ''}`}>
-                    
+
                     <GardenRenderer totalWords={stats.totalWords} frost={frost} darkMode={settings.darkMode} />
-                    
-                    {/* Sunburst Flash */}
-                    <div className={`layer bg-amber-200 transition-opacity duration-1000 mix-blend-overlay ${isSunburst ? 'opacity-50' : 'opacity-0'}`}></div>
-                    
-                    {/* Frost Vignette */}
+
+                    {/* Sunburst/Spore Burst Flash */}
+                    <div className={`layer transition-opacity duration-1000 mix-blend-overlay ${isSunburst ? 'opacity-60' : 'opacity-0'}`}
+                         style={{ background: settings.darkMode ? 'radial-gradient(circle, rgba(163,230,53,0.5) 0%, transparent 70%)' : 'rgba(251, 191, 36, 0.5)' }}></div>
+
+                    {/* Frost/Decay Vignette */}
                     <div className="layer frost-vignette" style={{ opacity: Math.max(0, (frost - 20) / 80) }}></div>
+
+                    {/* Level Up Flash */}
+                    {levelUpFlash && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none level-up-flash">
+                            <div className={`text-6xl font-black ${accentColor} tracking-wider`}>
+                                {zoneTitle.toUpperCase()}
+                            </div>
+                        </div>
+                    )}
 
                     {/* HEADER UI */}
                     <header className={`ui-element relative z-30 p-4 flex justify-between items-center glass-panel`}>
                         <div className={`flex items-center gap-4 ${settings.darkMode ? 'text-stone-300' : 'text-slate-700'}`}>
-                            <div className={`p-2 rounded-full ${settings.darkMode ? 'bg-stone-800 text-emerald-400' : 'bg-emerald-100 text-emerald-600'}`}>
-                                <Icon name="Leaf" className="w-6 h-6"/>
+                            <div className={`p-2 rounded-full ${settings.darkMode ? 'bg-lime-900/50 text-lime-400' : 'bg-emerald-100 text-emerald-600'}`}>
+                                <Icon name={settings.darkMode ? "Mushroom" : "Leaf"} className="w-6 h-6"/>
                             </div>
                             <div>
-                                <h1 className="text-xl font-bold leading-none">{currentZone.title}</h1>
+                                <h1 className="text-xl font-bold leading-none">{zoneTitle}</h1>
                                 <div className="text-xs opacity-60 font-sans tracking-widest mt-1">
-                                    {nextZone ? `${stats.totalWords} / ${nextZone.w} WORDS` : "MAX BLOOM"}
+                                    {nextZone ? `${stats.totalWords.toLocaleString()} / ${nextZone.w.toLocaleString()} WORDS` : "ASCENDED"}
                                 </div>
                             </div>
                         </div>
 
-                        <div className="flex gap-2" title="Shift+Enter to Use Sunlight">
+                        {/* Gamification Stats */}
+                        {gameState === 'PLAYING' && (
+                            <div className="flex gap-3">
+                                {/* Combo Counter */}
+                                {stats.combo > 2 && (
+                                    <div className={`stat-card ${stats.combo > 10 ? 'combo-glow' : ''}`} style={{ color: settings.darkMode ? '#a3e635' : '#16a34a' }}>
+                                        <div className="stat-value">{stats.combo}x</div>
+                                        <div className="stat-label">Combo</div>
+                                    </div>
+                                )}
+                                {/* WPM */}
+                                {wpm > 0 && (
+                                    <div className="stat-card" style={{ color: settings.darkMode ? '#a3e635' : '#16a34a' }}>
+                                        <div className="stat-value">{wpm}</div>
+                                        <div className="stat-label">WPM</div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Power-ups */}
+                        <div className="flex gap-2" title="Shift+Enter to Use Spore Burst">
                             {[0,1,2].map(i => (
                                 <div key={i} className={`transition-all duration-500 ${i < stats.sunlight ? 'sun-active' : 'opacity-30'}`}>
-                                    <Icon name="Sun" className={`w-6 h-6 ${settings.darkMode ? 'text-stone-400' : 'text-slate-300'}`}/>
+                                    <Icon name={settings.darkMode ? "Spore" : "Sun"} className={`w-6 h-6 ${settings.darkMode ? 'text-lime-400' : 'text-amber-400'}`}/>
                                 </div>
                             ))}
                         </div>
 
                         <div className="flex gap-3">
-                            <button onClick={toggleDarkMode} className={`p-2 rounded hover:bg-white/10 ${settings.darkMode ? 'text-yellow-200' : 'text-slate-500'}`} title="Theme">
+                            <button onClick={toggleDarkMode} className={`p-2 rounded hover:bg-white/10 ${settings.darkMode ? 'text-lime-400' : 'text-slate-500'}`} title="Theme">
                                 {settings.darkMode ? <Icon name="Sun" className="w-5 h-5"/> : <Icon name="Moon" className="w-5 h-5"/>}
                             </button>
-                            <button onClick={() => setSettings(s => ({...s, focusMode: !s.focusMode}))} className={`p-2 rounded hover:bg-white/10 ${settings.focusMode ? 'text-blue-500' : (settings.darkMode ? 'text-stone-400' : 'text-slate-500')}`} title="Focus Mode">
+                            <button onClick={() => setSettings(s => ({...s, focusMode: !s.focusMode}))} className={`p-2 rounded hover:bg-white/10 ${settings.focusMode ? (settings.darkMode ? 'text-lime-400' : 'text-blue-500') : (settings.darkMode ? 'text-stone-400' : 'text-slate-500')}`} title="Focus Mode">
                                 <Icon name="Eye" className="w-5 h-5"/>
                             </button>
                             <button onClick={() => setSettings(s => ({...s, muted: !s.muted}))} className={`p-2 rounded hover:bg-white/10 ${settings.darkMode ? 'text-stone-400' : 'text-slate-500'}`} title="Mute Audio">
@@ -673,12 +880,24 @@
                         </div>
                     </header>
 
-                    {/* FROST BAR */}
-                    <div className="ui-element relative z-30 w-full h-1 bg-slate-200/20">
-                        <div 
-                            className={`h-full transition-all duration-200 ${isSunburst ? 'bg-amber-400' : 'bg-sky-400'}`} 
-                            style={{ width: `${100 - frost}%` }}
+                    {/* PROGRESS BAR - Animated */}
+                    <div className="ui-element relative z-30 w-full h-2 bg-black/30">
+                        <div
+                            className={`h-full progress-bar ${isSunburst ? 'progress-glow' : ''}`}
+                            style={{
+                                width: `${100 - frost}%`,
+                                background: settings.darkMode
+                                    ? `linear-gradient(90deg, #166534 0%, #a3e635 ${100-frost}%)`
+                                    : `linear-gradient(90deg, #0ea5e9 0%, #22d3ee ${100-frost}%)`,
+                                boxShadow: isSunburst ? (settings.darkMode ? '0 0 20px #a3e635' : '0 0 20px #fbbf24') : 'none'
+                            }}
                         />
+                        {/* Progress markers */}
+                        <div className="absolute inset-0 flex justify-between px-1 pointer-events-none">
+                            {[25, 50, 75].map(mark => (
+                                <div key={mark} className="w-px h-full bg-white/10" style={{ marginLeft: `${mark}%` }}/>
+                            ))}
+                        </div>
                     </div>
 
                     {/* MAIN EDITOR */}
@@ -698,40 +917,66 @@
 
                     {/* MENUS */}
                     {gameState === 'MENU' && (
-                        <div className={`fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm modal-enter ${settings.darkMode ? 'bg-black/80 text-stone-200' : 'bg-white/90 text-slate-800'}`}>
+                        <div className={`fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md modal-enter ${settings.darkMode ? 'bg-black/90 text-stone-200' : 'bg-white/90 text-slate-800'}`}>
                             <div className="max-w-md w-full p-8 text-center">
-                                <h1 className={`text-6xl font-serif mb-2 ${settings.darkMode ? 'text-emerald-500' : 'text-emerald-800'}`}>WitherNaught</h1>
-                                <p className="opacity-60 sans-font text-sm tracking-widest mb-8">CULTIVATE YOUR MIND</p>
-                                
-                                <button onClick={startGame} className={`w-full py-4 rounded-lg transition shadow-lg text-lg font-serif mb-4 ${settings.darkMode ? 'bg-emerald-900 hover:bg-emerald-800 text-emerald-100' : 'bg-emerald-900 hover:bg-emerald-800 text-white'}`}>
-                                    Enter Garden
+                                <div className={`w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center ${settings.darkMode ? 'bg-lime-900/50' : 'bg-emerald-100'}`}>
+                                    <Icon name={settings.darkMode ? "Mushroom" : "Leaf"} className={`w-10 h-10 ${settings.darkMode ? 'text-lime-400' : 'text-emerald-600'}`}/>
+                                </div>
+                                <h1 className={`text-5xl font-serif mb-2 ${settings.darkMode ? 'text-lime-400' : 'text-emerald-800'}`}>WitherNaught</h1>
+                                <p className={`opacity-60 sans-font text-sm tracking-widest mb-8 ${settings.darkMode ? 'text-lime-200' : ''}`}>
+                                    {settings.darkMode ? 'FEED THE MYCELIUM' : 'CULTIVATE YOUR MIND'}
+                                </p>
+
+                                {stats.totalWords > 0 && (
+                                    <div className={`mb-6 p-4 rounded-lg ${settings.darkMode ? 'bg-lime-900/20 border border-lime-900/50' : 'bg-emerald-50'}`}>
+                                        <div className={`text-3xl font-black ${settings.darkMode ? 'text-lime-400' : 'text-emerald-600'}`}>{stats.totalWords.toLocaleString()}</div>
+                                        <div className="text-xs opacity-60 uppercase tracking-widest">Total Words Written</div>
+                                    </div>
+                                )}
+
+                                <button onClick={startGame} className={`w-full py-4 rounded-lg transition shadow-lg text-lg font-serif mb-4 ${settings.darkMode ? 'bg-lime-900 hover:bg-lime-800 text-lime-100 border border-lime-700' : 'bg-emerald-900 hover:bg-emerald-800 text-white'}`}>
+                                    {settings.darkMode ? 'Enter the Fungal Network' : 'Enter Garden'}
                                 </button>
-                                
+
                                 <label className="flex items-center justify-center gap-2 opacity-60 text-sm cursor-pointer hover:opacity-100 transition">
                                     <Icon name="Upload" className="w-4 h-4"/> Load Save File
                                     <input type="file" onChange={handleImport} className="hidden" accept=".json"/>
                                 </label>
 
-                                <button onClick={toggleDarkMode} className="mt-8 text-xs opacity-40 hover:opacity-80 uppercase tracking-widest">
-                                    {settings.darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                                <button onClick={toggleDarkMode} className={`mt-8 text-xs opacity-40 hover:opacity-80 uppercase tracking-widest ${settings.darkMode ? 'text-lime-300' : ''}`}>
+                                    {settings.darkMode ? "Switch to Garden Mode" : "Switch to Fungal Mode"}
                                 </button>
                             </div>
                         </div>
                     )}
 
                     {gameState === 'FROZEN' && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/90 backdrop-blur-md text-white modal-enter">
-                            <div className="max-w-md w-full p-8 text-center border border-slate-700 rounded-xl bg-slate-800/50">
-                                <Icon name="Cloud" className="w-16 h-16 mx-auto mb-4 text-sky-200"/>
-                                <h2 className="text-4xl font-serif mb-2">Winter Has Come</h2>
-                                <p className="text-slate-400 text-sm mb-8">The frost claimed your words.</p>
-                                
+                        <div className={`fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md text-white modal-enter ${settings.darkMode ? 'bg-purple-950/90' : 'bg-slate-900/90'}`}>
+                            <div className={`max-w-md w-full p-8 text-center border rounded-xl ${settings.darkMode ? 'border-purple-800 bg-purple-950/50' : 'border-slate-700 bg-slate-800/50'}`}>
+                                <Icon name={settings.darkMode ? "Skull" : "Cloud"} className={`w-16 h-16 mx-auto mb-4 ${settings.darkMode ? 'text-purple-400' : 'text-sky-200'}`}/>
+                                <h2 className="text-4xl font-serif mb-2">{settings.darkMode ? 'The Rot Claims All' : 'Winter Has Come'}</h2>
+                                <p className={`text-sm mb-4 ${settings.darkMode ? 'text-purple-300' : 'text-slate-400'}`}>
+                                    {settings.darkMode ? 'The decay consumed your words.' : 'The frost claimed your words.'}
+                                </p>
+
+                                {/* Session Stats */}
+                                <div className="flex justify-center gap-8 mb-8">
+                                    <div>
+                                        <div className={`text-2xl font-black ${settings.darkMode ? 'text-lime-400' : 'text-sky-300'}`}>{stats.sessionWords}</div>
+                                        <div className="text-xs opacity-60">Words This Session</div>
+                                    </div>
+                                    <div>
+                                        <div className={`text-2xl font-black ${settings.darkMode ? 'text-lime-400' : 'text-sky-300'}`}>{stats.maxCombo}x</div>
+                                        <div className="text-xs opacity-60">Best Combo</div>
+                                    </div>
+                                </div>
+
                                 <div className="flex gap-4">
-                                    <button onClick={exportSave} className="flex-1 py-3 bg-slate-700 hover:bg-slate-600 rounded flex items-center justify-center gap-2">
+                                    <button onClick={exportSave} className={`flex-1 py-3 rounded flex items-center justify-center gap-2 ${settings.darkMode ? 'bg-purple-800 hover:bg-purple-700' : 'bg-slate-700 hover:bg-slate-600'}`}>
                                         <Icon name="Save" className="w-4 h-4"/> Save
                                     </button>
-                                    <button onClick={() => setGameState('MENU')} className="flex-1 py-3 bg-sky-600 hover:bg-sky-500 rounded">
-                                        Menu
+                                    <button onClick={() => setGameState('MENU')} className={`flex-1 py-3 rounded ${settings.darkMode ? 'bg-lime-700 hover:bg-lime-600' : 'bg-sky-600 hover:bg-sky-500'}`}>
+                                        Try Again
                                     </button>
                                 </div>
                             </div>

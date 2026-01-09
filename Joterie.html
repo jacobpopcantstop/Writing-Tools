@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Joterie | Think Fast</title>
     
-    <!-- Refined Favicon (Forest Green Tile with Ivory Bolt) -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2225%22 fill=%22%23163312%22/><path d=%22M54 15L24 55h28l-4 30 30-40H50l4-30z%22 fill=%22%23E2C990%22 stroke=%22%23E2C990%22 stroke-width=%224%22 stroke-linejoin=%22round%22/></svg>">
+    <!-- Refined Favicon (Sepia Brown Tile with Parchment Bolt) -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2225%22 fill=%22%233D2B1F%22/><path d=%22M54 15L24 55h28l-4 30 30-40H50l4-30z%22 fill=%22%23F5E6C8%22 stroke=%22%23F5E6C8%22 stroke-width=%224%22 stroke-linejoin=%22round%22/></svg>">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,23 +15,27 @@
     <script src="https://unpkg.com/lucide@0.263.1"></script>
     <style>
         :root {
-            /* Deeper, yellower cream (Vintage Ivory) */
-            --bg-color: #E2C990; 
-            /* Richer forest green */
-            --text-color: #163312;
-            /* Increased opacity for better visibility on resting states */
-            --accent-opacity: rgba(22, 51, 18, 0.25);
-            /* Saturated Sage Green for placeholders */
-            --input-placeholder: #5c7a52; 
-            --card-bg: rgba(255, 255, 255, 0.15);
+            /* Warm Parchment Yellow */
+            --bg-color: #F5E6C8;
+            --bg-secondary: #EDD9B0;
+            /* Rich Sepia Brown for text */
+            --text-color: #3D2B1F;
+            /* Warm amber tones for accents */
+            --accent-opacity: rgba(61, 43, 31, 0.2);
+            /* Muted brown for placeholders */
+            --input-placeholder: #8B7355;
+            --card-bg: rgba(237, 217, 176, 0.6);
+            --card-border: rgba(61, 43, 31, 0.15);
         }
 
         .dark {
-            --bg-color: #1a1a1a; 
-            --text-color: #f4f4f4; 
+            --bg-color: #1a1a1a;
+            --bg-secondary: #242424;
+            --text-color: #f4f4f4;
             --accent-opacity: rgba(244, 244, 244, 0.15);
             --input-placeholder: rgba(244, 244, 244, 0.4);
             --card-bg: rgba(255, 255, 255, 0.05);
+            --card-border: rgba(255, 255, 255, 0.1);
         }
 
         body {
@@ -221,7 +225,7 @@
                         Back
                     </button>
                 </div>
-                <div id="history-list" class="flex-1 grid gap-4 overflow-y-auto pr-2 custom-scrollbar z-50 content-start">
+                <div id="history-list" class="flex-1 flex flex-col gap-6 overflow-y-auto pr-2 pb-8 custom-scrollbar z-50">
                     <!-- History injected here -->
                 </div>
             </section>
@@ -469,29 +473,31 @@
         function renderHistory() {
             elements.historyList.innerHTML = '';
             if (state.archives.length === 0) {
-                elements.historyList.innerHTML = '<div class="text-center opacity-30 mt-10 font-serif-italic">No archives found.</div>';
+                elements.historyList.innerHTML = '<div class="text-center opacity-30 mt-20 font-serif-italic text-lg">No archives found.</div>';
                 return;
             }
             state.archives.forEach(entry => {
                 const el = document.createElement('div');
-                el.className = 'bg-white/5 p-6 rounded-2xl border border-transparent hover:border-current/10 transition-colors';
+                el.className = 'p-8 rounded-2xl transition-all duration-200 shrink-0';
+                el.style.cssText = 'background: var(--card-bg); border: 1px solid var(--card-border);';
                 el.innerHTML = `
-                    <div class="flex justify-between items-start mb-4">
+                    <div class="flex justify-between items-start mb-6">
                         <div>
-                            <div class="text-[10px] font-black tracking-[0.2em] opacity-40 uppercase mb-1">${entry.date}</div>
-                            <div class="font-serif-italic text-2xl">${entry.prompt}</div>
+                            <div class="text-[10px] font-black tracking-[0.2em] opacity-50 uppercase mb-2">${entry.date}</div>
+                            <div class="font-serif-italic text-2xl md:text-3xl">${entry.prompt}</div>
                         </div>
-                        <div class="text-right opacity-40">
-                            <div class="text-[10px] font-black tracking-[0.2em]">${entry.cards.length} JOTS</div>
+                        <div class="text-right opacity-50">
+                            <div class="text-[10px] font-black tracking-[0.2em] mb-1">${entry.cards.length} JOTS</div>
                             <div class="text-[10px] font-black tracking-[0.2em]">${entry.ipm} IPM</div>
                         </div>
                     </div>
-                    <div class="space-y-2 opacity-60 text-sm font-serif-italic pl-2 border-l-2 border-current/10">
-                        ${entry.cards.slice(0, 3).map(c => `<div class="truncate">${c}</div>`).join('')}
-                        ${entry.cards.length > 3 ? `<div class="text-[10px] opacity-50">+${entry.cards.length - 3} more</div>` : ''}
+                    <div class="space-y-3 opacity-70 text-base font-serif-italic pl-4 border-l-2" style="border-color: var(--card-border);">
+                        ${entry.cards.slice(0, 3).map(c => `<div class="truncate leading-relaxed">${c}</div>`).join('')}
+                        ${entry.cards.length > 3 ? `<div class="text-[10px] font-black tracking-[0.2em] opacity-50 pt-2">+${entry.cards.length - 3} more</div>` : ''}
                     </div>
                 `;
-                // Click to re-load into summary/export view could be added here
+                el.onmouseenter = () => el.style.transform = 'translateY(-2px)';
+                el.onmouseleave = () => el.style.transform = 'translateY(0)';
                 elements.historyList.appendChild(el);
             });
         }
