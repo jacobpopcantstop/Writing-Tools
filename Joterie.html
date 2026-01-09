@@ -119,9 +119,10 @@
             
             <div class="flex items-center gap-6">
                 <div id="sprint-status" class="hidden flex items-center gap-4">
-                    <div id="timer-pill" class="px-4 py-1.5 rounded-full border border-theme bg-white/5 backdrop-blur-md flex items-center gap-2 timer-idle">
-                        <i id="timer-icon" data-lucide="clock" class="w-3.5 h-3.5"></i>
-                        <span id="timer-display" class="font-mono font-bold">1:00</span>
+                    <div id="timer-pill" class="relative px-4 py-1.5 rounded-full border border-theme bg-white/5 backdrop-blur-md flex items-center gap-2 timer-idle overflow-hidden">
+                        <div id="timer-progress" class="absolute left-0 top-0 h-full bg-current opacity-10 transition-all duration-1000" style="width: 100%"></div>
+                        <i id="timer-icon" data-lucide="clock" class="w-3.5 h-3.5 relative z-10"></i>
+                        <span id="timer-display" class="font-mono font-bold relative z-10">1:00</span>
                     </div>
                 </div>
                 <button id="history-btn" class="p-2 opacity-40 hover:opacity-100 transition-opacity">
@@ -284,28 +285,68 @@
             historyBackBtn: document.getElementById('history-back-btn')
         };
 
-        // Theme Logic (Suite-wide sync)
-        function toggleTheme() {
-            state.isDarkMode = !state.isDarkMode;
-            if (state.isDarkMode) {
+        // Theme Logic (Suite-wide sync with auto mode)
+        // themeMode: 'light', 'dark', or 'auto'
+        let themeMode = localStorage.getItem('writingtools_theme_mode') || 'auto';
+
+        function applyTheme(isDark) {
+            state.isDarkMode = isDark;
+            if (isDark) {
                 elements.html.classList.add('dark');
-                elements.themeIcon.setAttribute('data-lucide', 'sun');
             } else {
                 elements.html.classList.remove('dark');
-                elements.themeIcon.setAttribute('data-lucide', 'moon');
             }
-            localStorage.setItem('writingtools_theme', state.isDarkMode ? 'dark' : 'light');
+            updateThemeIcon();
             lucide.createIcons();
         }
 
-        // Load suite-wide theme on init
-        (function initTheme() {
-            const suiteTheme = localStorage.getItem('writingtools_theme');
-            if (suiteTheme === 'dark') {
-                state.isDarkMode = true;
-                elements.html.classList.add('dark');
+        function updateThemeIcon() {
+            // Icon shows: sun (when dark), moon (when light), or monitor (when auto)
+            if (themeMode === 'auto') {
+                elements.themeIcon.setAttribute('data-lucide', 'monitor');
+            } else if (state.isDarkMode) {
                 elements.themeIcon.setAttribute('data-lucide', 'sun');
+            } else {
+                elements.themeIcon.setAttribute('data-lucide', 'moon');
             }
+        }
+
+        function toggleTheme() {
+            // Cycle: auto -> light -> dark -> auto
+            if (themeMode === 'auto') {
+                themeMode = 'light';
+                applyTheme(false);
+            } else if (themeMode === 'light') {
+                themeMode = 'dark';
+                applyTheme(true);
+            } else {
+                themeMode = 'auto';
+                applyTheme(window.matchMedia('(prefers-color-scheme: dark)').matches);
+            }
+            localStorage.setItem('writingtools_theme_mode', themeMode);
+            localStorage.setItem('writingtools_theme', state.isDarkMode ? 'dark' : 'light');
+        }
+
+        // Load theme on init with auto detection
+        (function initTheme() {
+            const savedMode = localStorage.getItem('writingtools_theme_mode');
+            if (savedMode) {
+                themeMode = savedMode;
+            }
+
+            if (themeMode === 'auto') {
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                applyTheme(prefersDark);
+            } else {
+                applyTheme(themeMode === 'dark');
+            }
+
+            // Listen for system theme changes when in auto mode
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                if (themeMode === 'auto') {
+                    applyTheme(e.matches);
+                }
+            });
         })();
 
         // Timer Logic
@@ -318,13 +359,25 @@
 
         function startTimer() {
             stopTimer();
+            const timerProgress = document.getElementById('timer-progress');
             state.timerInterval = setInterval(() => {
                 if (state.configTime === 0) {
                     state.elapsedTime++;
                     elements.timerDisplay.innerText = formatTime(state.elapsedTime);
+                    // For open mode, show a pulsing full bar
+                    timerProgress.style.width = '100%';
                 } else {
                     state.timeLeft--;
                     elements.timerDisplay.innerText = formatTime(state.timeLeft);
+                    // Update progress bar width
+                    const progressPercent = (state.timeLeft / state.configTime) * 100;
+                    timerProgress.style.width = progressPercent + '%';
+                    // Change color as time runs low
+                    if (progressPercent < 20) {
+                        timerProgress.style.opacity = '0.3';
+                    } else if (progressPercent < 50) {
+                        timerProgress.style.opacity = '0.2';
+                    }
                     if (state.timeLeft <= 0) {
                         finishSession();
                     }
