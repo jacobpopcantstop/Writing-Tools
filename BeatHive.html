@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BeatHive - Story Structure Architect</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5' fill='%234361ee'/><text y='.65em' x='50' text-anchor='middle' font-size='40' fill='white' dy='25'>B</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5' fill='%234361ee'/><text x='50' y='50' text-anchor='middle' dominant-baseline='central' font-size='42' font-weight='bold' fill='white'>B</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -14,8 +14,8 @@
         
         :root {
             --bg-dark: #09090b;
-            --bg-light: #e6e0d4;
-            --panel-light: #faedcd;
+            --bg-light: #E8DFD0;
+            --panel-light: #E0D4C0;
             --text-light: #432818;
             --sidebar-width: 320px;
         }
@@ -53,9 +53,9 @@
             border-color: rgba(255, 255, 255, 0.05);
         }
         
-        .light-theme .sidebar-panel { 
-            border-color: rgba(60, 40, 20, 0.08); 
-            background: rgba(239, 234, 221, 0.95);
+        .light-theme .sidebar-panel {
+            border-color: rgba(60, 40, 20, 0.08);
+            background: rgba(224, 212, 192, 0.95);
         }
         .dark-theme .sidebar-panel { 
             border-color: rgba(255, 255, 255, 0.08); 
@@ -230,7 +230,7 @@
             { id: 'setup', label: 'Normal World', color: { dark: '#1e3a8a', light: '#4361ee' }, stroke: { dark: '#3b82f6', light: '#2563eb' } },
             { id: 'inciting', label: 'First Weird Thing', color: { dark: '#581c87', light: '#7209b7' }, stroke: { dark: '#a855f7', light: '#9333ea' } },
             { id: 'heightening', label: 'Heightening', color: { dark: '#14532d', light: '#bbf7d0' }, stroke: { dark: '#22c55e', light: '#16a34a' } },
-            { id: 'blowoff', label: 'Blow-off', color: { dark: '#7f1d1d', light: '#fca5a5' }, stroke: { dark: '#ef4444', light: '#dc2626' } },
+            { id: 'blowoff', label: 'Ending', color: { dark: '#7f1d1d', light: '#fca5a5' }, stroke: { dark: '#ef4444', light: '#dc2626' } },
             { id: 'note', label: 'Context / Note', color: { dark: '#1e293b', light: '#6c757d' }, stroke: { dark: '#475569', light: '#9ca3af' } },
         ];
 
@@ -284,13 +284,13 @@
                     />
                     
                     {data?.tags?.length > 0 && !isFarZoom && (
-                        <g transform={`translate(${x - HEX_WIDTH / 2 + 25}, ${y - HEX_SIZE + 40})`}>
+                        <g transform={`translate(${x + HEX_WIDTH / 2 - 20}, ${y - HEX_SIZE + 35})`}>
                             {data.tags.map((tagId, idx) => {
                                 const s = STICKERS.find(st => st.id === tagId);
                                 return s ? (
-                                    <g key={tagId} transform={`translate(${idx * 28}, 0)`}>
-                                        <circle r="12" fill={theme === 'dark' ? '#000' : '#faedcd'} className="shadow-sm" />
-                                        <Icon name={s.icon} size={16} style={{ color: s.color }} x="-8" y="-8" />
+                                    <g key={tagId} transform={`translate(${-idx * 18}, 0)`}>
+                                        <rect x="-8" y="-8" width="16" height="16" rx="4" fill={theme === 'dark' ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.85)'} />
+                                        <Icon name={s.icon} size={12} style={{ color: s.color }} x="-6" y="-6" />
                                     </g>
                                 ) : null;
                             })}
