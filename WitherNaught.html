@@ -95,6 +95,33 @@
         }
         .combo-glow { animation: pulse-glow 0.5s ease-in-out infinite; }
 
+        /* URGENCY EFFECTS */
+        @keyframes urgent-pulse {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+        @keyframes screen-shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-2px); }
+            75% { transform: translateX(2px); }
+        }
+        .urgency-warning {
+            animation: urgent-pulse 1.5s ease-in-out infinite;
+        }
+        .urgency-critical {
+            animation: urgent-pulse 0.5s ease-in-out infinite;
+        }
+        .urgency-shake {
+            animation: screen-shake 0.1s linear infinite;
+        }
+        .urgency-overlay {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 15;
+            transition: opacity 0.3s;
+        }
+
         /* LEVEL UP FLASH */
         @keyframes level-up {
             0% { opacity: 0; transform: scale(0.8); }
@@ -163,16 +190,16 @@
         };
 
         // --- PROGRESSION DATA ---
-        // Light mode: Garden theme | Dark mode: Fungal/Mycorrhizal network theme
+        // Light mode: Soft warm garden theme | Dark mode: Fungal/Mycorrhizal network theme
         const ZONES = [
-            { w: 0, title: "Barren Soil", darkTitle: "Dead Earth", color: "#f5f5f4", darkColor: "#0d0f0a" },
-            { w: 100, title: "First Sprout", darkTitle: "Mycelium Stirs", color: "#f0fdf4", darkColor: "#0f1a0a" },
-            { w: 500, title: "Meadow", darkTitle: "Spore Cloud", color: "#ecfdf5", darkColor: "#141f14" },
-            { w: 1500, title: "Young Grove", darkTitle: "Fungal Network", color: "#f0f9ff", darkColor: "#1a1f1a" },
-            { w: 3000, title: "Deep Forest", darkTitle: "Bioluminescent Cave", color: "#ecfccb", darkColor: "#0f2318" },
-            { w: 6000, title: "Cherry Blossom", darkTitle: "Toxic Bloom", color: "#fff1f2", darkColor: "#1f0f1a" },
-            { w: 10000, title: "Golden Canopy", darkTitle: "Cordyceps Ascent", color: "#fefce8", darkColor: "#1a1a0f" },
-            { w: 25000, title: "WitherNaught", darkTitle: "The Rot Throne", color: "#f0fdfa", darkColor: "#0a1412" }
+            { w: 0, title: "Barren Soil", darkTitle: "Dead Earth", color: "#F5EDE0", darkColor: "#0d0f0a" },
+            { w: 100, title: "First Sprout", darkTitle: "Mycelium Stirs", color: "#E8F0E0", darkColor: "#0f1a0a" },
+            { w: 500, title: "Meadow", darkTitle: "Spore Cloud", color: "#E0EBE0", darkColor: "#141f14" },
+            { w: 1500, title: "Young Grove", darkTitle: "Fungal Network", color: "#DDE8E0", darkColor: "#1a1f1a" },
+            { w: 3000, title: "Deep Forest", darkTitle: "Bioluminescent Cave", color: "#D8E5D0", darkColor: "#0f2318" },
+            { w: 6000, title: "Cherry Blossom", darkTitle: "Toxic Bloom", color: "#EDE0E0", darkColor: "#1f0f1a" },
+            { w: 10000, title: "Golden Canopy", darkTitle: "Cordyceps Ascent", color: "#EDE8D0", darkColor: "#1a1a0f" },
+            { w: 25000, title: "WitherNaught", darkTitle: "The Rot Throne", color: "#E0EAE5", darkColor: "#0a1412" }
         ];
 
         // --- AUDIO ENGINE V3 ---
@@ -476,37 +503,42 @@
                 ctx.fillStyle = grad;
                 ctx.fillRect(0, cvs.height - 100, cvs.width, 100);
 
-                if (darkMode) {
-                    // Draw mycelium network
-                    drawMycelium(ctx, cvs.width, cvs.height, totalWords / 5);
+                // Set lower opacity for less intrusive visuals
+                ctx.globalAlpha = 0.5;
 
-                    // Draw mushrooms instead of trees
-                    const numMushrooms = Math.min(Math.floor(totalWords / 200), 20);
+                if (darkMode) {
+                    // Draw subtle mycelium network
+                    drawMycelium(ctx, cvs.width, cvs.height, totalWords / 8);
+
+                    // Draw fewer, smaller mushrooms
+                    const numMushrooms = Math.min(Math.floor(totalWords / 400), 10);
                     for(let i = 0; i < numMushrooms; i++) {
                         const x = seededRandom(i * 77) * cvs.width;
-                        const size = 30 + seededRandom(i * 78) * 50 + (totalWords / 500);
-                        drawMushroom(ctx, x, cvs.height, Math.min(size, 120), i * 999);
+                        const size = 20 + seededRandom(i * 78) * 30 + (totalWords / 1000);
+                        drawMushroom(ctx, x, cvs.height, Math.min(size, 60), i * 999);
                     }
                 } else {
-                    // Light mode: Original grass and trees
-                    const numGrass = Math.min(totalWords / 10, 500);
+                    // Light mode: Subtle grass and smaller trees
+                    const numGrass = Math.min(totalWords / 15, 300);
                     for(let i = 0; i < numGrass; i++) {
                         const x = seededRandom(i) * cvs.width;
-                        const h = 5 + seededRandom(i+1) * 15;
+                        const h = 3 + seededRandom(i+1) * 10;
                         ctx.beginPath();
-                        ctx.strokeStyle = `rgba(100, 160, 100, ${0.3 + seededRandom(i+2)*0.4})`;
+                        ctx.strokeStyle = `rgba(100, 140, 100, ${0.2 + seededRandom(i+2)*0.2})`;
                         ctx.moveTo(x, cvs.height);
-                        ctx.lineTo(x + (seededRandom(i+3)-0.5)*10, cvs.height - h);
+                        ctx.lineTo(x + (seededRandom(i+3)-0.5)*6, cvs.height - h);
                         ctx.stroke();
                     }
 
-                    const numTrees = Math.min(Math.floor(totalWords / 800), 8);
+                    const numTrees = Math.min(Math.floor(totalWords / 1200), 5);
                     for(let i = 0; i < numTrees; i++) {
                         const x = (cvs.width / (numTrees + 1)) * (i + 1);
-                        const size = 60 + seededRandom(i*55) * 40;
-                        drawTree(ctx, x, cvs.height, size, 0, size/8, i * 999);
+                        const size = 40 + seededRandom(i*55) * 25;
+                        drawTree(ctx, x, cvs.height, size, 0, size/10, i * 999);
                     }
                 }
+
+                ctx.globalAlpha = 1.0;
 
             }, [totalWords, darkMode]);
 
@@ -677,15 +709,21 @@
 
                 const now = Date.now();
                 const timeSinceType = now - lastTypeTime.current;
-                
-                // Frost Mechanics
+
+                // Frost Mechanics - More aggressive pressure
                 if (isSunburst) {
-                    setFrost(f => Math.max(0, f - 2.0));
+                    setFrost(f => Math.max(0, f - 2.5));
                 } else {
-                    // Frost grows slower at start, speeds up if you haven't typed in 2 seconds
-                    const baseRate = 0.05 + (stats.totalWords > 2000 ? 0.05 : 0);
-                    const inactivityMult = timeSinceType > 2000 ? 1.5 : 0.5;
-                    
+                    // Base rate increases with total words (you're expected to type faster)
+                    const baseRate = 0.08 + (stats.totalWords > 1000 ? 0.04 : 0) + (stats.totalWords > 5000 ? 0.04 : 0);
+
+                    // Inactivity multiplier scales up aggressively
+                    let inactivityMult = 0.4;
+                    if (timeSinceType > 1000) inactivityMult = 1.0;
+                    if (timeSinceType > 2000) inactivityMult = 2.0;
+                    if (timeSinceType > 3000) inactivityMult = 3.5;
+                    if (timeSinceType > 4000) inactivityMult = 5.0;
+
                     setFrost(f => {
                         const next = f + (baseRate * inactivityMult);
                         if (next >= 100) {
@@ -695,7 +733,7 @@
                         return next;
                     });
                 }
-                
+
                 loopRef.current = requestAnimationFrame(tick);
             }, [gameState, isSunburst, stats.totalWords]);
 
@@ -703,6 +741,9 @@
                 if (gameState === 'PLAYING') loopRef.current = requestAnimationFrame(tick);
                 return () => cancelAnimationFrame(loopRef.current);
             }, [tick, gameState]);
+
+            // Track current word being typed
+            const currentWordRef = useRef('');
 
             // Handlers
             const handleType = (e) => {
@@ -714,36 +755,45 @@
                 lastTypeTime.current = Date.now();
 
                 if (added > 0) {
-                    // Reduce Frost based on combo
-                    const frostReduction = 0.5 + (stats.combo * 0.1);
+                    const lastChar = val[val.length - 1];
+
+                    // Reduce Frost based on combo (but only for actual typing)
+                    const frostReduction = 0.4 + (stats.combo * 0.08);
                     setFrost(f => Math.max(0, f - frostReduction));
 
                     // Reset combo timeout
                     clearTimeout(comboTimeout.current);
                     comboTimeout.current = setTimeout(() => {
                         setStats(s => ({ ...s, combo: 0 }));
-                    }, 2000); // Combo breaks after 2 seconds of no typing
+                    }, 1500); // Combo breaks faster
 
                     // Audio
                     if (Math.random() > 0.7) audioRef.current.playTypeSound();
 
-                    // Word Count & Combo
-                    if (val[val.length-1].match(/[\s\n]/)) {
-                        setStats(s => {
-                            const newTotal = s.totalWords + 1;
-                            const newSession = s.sessionWords + 1;
-                            const newCombo = s.combo + 1;
-                            const newMaxCombo = Math.max(s.maxCombo, newCombo);
-                            // Earn Sunlight every 50 words (boosted by combo)
-                            const sunThreshold = newCombo > 10 ? 30 : 50;
-                            const newSun = (newTotal % sunThreshold === 0) ? Math.min(s.sunlight + 1, 3) : s.sunlight;
-                            return { totalWords: newTotal, sunlight: newSun, sessionWords: newSession, combo: newCombo, maxCombo: newMaxCombo };
-                        });
+                    // Word validation - only count words with 2+ letters
+                    if (lastChar.match(/[\s\n]/)) {
+                        // Extract the word that was just completed
+                        const words = val.trim().split(/\s+/);
+                        const lastWord = words[words.length - 1] || '';
 
-                        // Update WPM
-                        const elapsedMinutes = (Date.now() - sessionStartTime.current) / 60000;
-                        if (elapsedMinutes > 0.1) {
-                            setWpm(Math.round(stats.sessionWords / elapsedMinutes));
+                        // Only count if it's a real word (2+ alphabetic characters)
+                        if (lastWord.length >= 2 && /[a-zA-Z]{2,}/.test(lastWord)) {
+                            setStats(s => {
+                                const newTotal = s.totalWords + 1;
+                                const newSession = s.sessionWords + 1;
+                                const newCombo = s.combo + 1;
+                                const newMaxCombo = Math.max(s.maxCombo, newCombo);
+                                // Earn Sunlight every 50 words (boosted by combo)
+                                const sunThreshold = newCombo > 10 ? 30 : 50;
+                                const newSun = (newTotal % sunThreshold === 0) ? Math.min(s.sunlight + 1, 3) : s.sunlight;
+                                return { totalWords: newTotal, sunlight: newSun, sessionWords: newSession, combo: newCombo, maxCombo: newMaxCombo };
+                            });
+
+                            // Update WPM
+                            const elapsedMinutes = (Date.now() - sessionStartTime.current) / 60000;
+                            if (elapsedMinutes > 0.1) {
+                                setWpm(Math.round(stats.sessionWords / elapsedMinutes));
+                            }
                         }
                     }
                 }
@@ -814,6 +864,25 @@
 
                     {/* Frost/Decay Vignette */}
                     <div className="layer frost-vignette" style={{ opacity: Math.max(0, (frost - 20) / 80) }}></div>
+
+                    {/* Urgency Overlay - pulsing red border when time is running out */}
+                    {frost > 50 && gameState === 'PLAYING' && (
+                        <div
+                            className={`urgency-overlay ${frost > 80 ? 'urgency-critical' : 'urgency-warning'}`}
+                            style={{
+                                boxShadow: `inset 0 0 ${frost > 80 ? '100px' : '60px'} ${frost > 80 ? '40px' : '20px'} ${settings.darkMode ? 'rgba(139, 0, 0, 0.6)' : 'rgba(220, 38, 38, 0.4)'}`,
+                            }}
+                        />
+                    )}
+
+                    {/* "TYPE NOW" urgency indicator */}
+                    {frost > 70 && gameState === 'PLAYING' && (
+                        <div className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-40 pointer-events-none ${frost > 85 ? 'urgency-critical' : 'urgency-warning'}`}>
+                            <div className={`text-4xl md:text-6xl font-black tracking-wider ${settings.darkMode ? 'text-red-500' : 'text-red-600'}`} style={{ textShadow: '0 0 30px currentColor' }}>
+                                {frost > 85 ? 'TYPE NOW!' : 'KEEP TYPING'}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Level Up Flash */}
                     {levelUpFlash && (
