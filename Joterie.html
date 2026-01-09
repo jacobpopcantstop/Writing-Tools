@@ -280,7 +280,7 @@
             historyBackBtn: document.getElementById('history-back-btn')
         };
 
-        // Theme Logic
+        // Theme Logic (Suite-wide sync)
         function toggleTheme() {
             state.isDarkMode = !state.isDarkMode;
             if (state.isDarkMode) {
@@ -290,8 +290,19 @@
                 elements.html.classList.remove('dark');
                 elements.themeIcon.setAttribute('data-lucide', 'moon');
             }
+            localStorage.setItem('writingtools_theme', state.isDarkMode ? 'dark' : 'light');
             lucide.createIcons();
         }
+
+        // Load suite-wide theme on init
+        (function initTheme() {
+            const suiteTheme = localStorage.getItem('writingtools_theme');
+            if (suiteTheme === 'dark') {
+                state.isDarkMode = true;
+                elements.html.classList.add('dark');
+                elements.themeIcon.setAttribute('data-lucide', 'sun');
+            }
+        })();
 
         // Timer Logic
         function stopTimer() {

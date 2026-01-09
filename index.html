@@ -348,6 +348,38 @@
             opacity: 0.4;
         }
 
+        /* Stats Dashboard */
+        .stats-bar {
+            max-width: 1000px;
+            margin: 0 auto 3rem;
+            padding: 0 2rem;
+        }
+        .stats-content {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            flex-wrap: wrap;
+            padding: 1.5rem 2rem;
+            background: var(--bg-card);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--wt-accent);
+            display: block;
+        }
+        .stat-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+        }
+
         /* Footer */
         footer {
             padding: 3rem 2rem;
@@ -391,6 +423,24 @@
             <h1>Your complete <em>writer's</em> toolkit</h1>
             <p>Six specialized tools for every stage of the creative process. Brainstorm, structure, draft, and format your work in one cohesive suite.</p>
         </section>
+
+        <!-- Stats Dashboard -->
+        <div class="stats-bar" id="stats-bar" style="display: none;">
+            <div class="stats-content">
+                <div class="stat-item">
+                    <span class="stat-value" id="stat-words">0</span>
+                    <span class="stat-label">Total Words</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="stat-projects">0</span>
+                    <span class="stat-label">Active Projects</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="stat-streak">0</span>
+                    <span class="stat-label">Day Streak</span>
+                </div>
+            </div>
+        </div>
 
         <section class="tools-section" aria-label="Available Tools">
             <div class="tools-grid">
@@ -558,7 +608,100 @@
                 icon.setAttribute('data-lucide', saved === 'dark' ? 'sun' : 'moon');
                 lucide.createIcons();
             }
+
+            // Calculate stats from all tools
+            calculateStats();
         });
+
+        function calculateStats() {
+            let totalWords = 0;
+            let projects = 0;
+
+            // Wribbon words
+            const wribbonText = localStorage.getItem('writingtools_wribbon_text') || '';
+            const wribbonWords = wribbonText.match(/\S+/g);
+            if (wribbonWords && wribbonWords.length > 0) {
+                totalWords += wribbonWords.length;
+                projects++;
+            }
+
+            // WitherNaught words
+            try {
+                const wnSave = JSON.parse(localStorage.getItem('withernaught_save') || '{}');
+                if (wnSave.stats && wnSave.stats.totalWords) {
+                    totalWords += wnSave.stats.totalWords;
+                    projects++;
+                }
+            } catch(e) {}
+
+            // Joterie archived sessions
+            try {
+                const jArchives = JSON.parse(localStorage.getItem('writingtools_joterie_archives') || '[]');
+                if (jArchives.length > 0) {
+                    jArchives.forEach(session => {
+                        if (session.kept) {
+                            session.kept.forEach(jot => {
+                                const words = jot.match(/\S+/g);
+                                if (words) totalWords += words.length;
+                            });
+                        }
+                    });
+                    projects += jArchives.length;
+                }
+            } catch(e) {}
+
+            // BeatHive sketches
+            try {
+                const bhSketches = JSON.parse(localStorage.getItem('writingtools_beathive_sketches') || '[]');
+                if (bhSketches.length > 0) {
+                    bhSketches.forEach(sketch => {
+                        if (sketch.cells) {
+                            sketch.cells.forEach(cell => {
+                                if (cell.content) {
+                                    const words = cell.content.match(/\S+/g);
+                                    if (words) totalWords += words.length;
+                                }
+                            });
+                        }
+                    });
+                    projects += bhSketches.length;
+                }
+            } catch(e) {}
+
+            // Courius words
+            const couriusHtml = localStorage.getItem('writingtools_courius_storage') || '';
+            const couriusText = couriusHtml.replace(/<[^>]*>/g, ' ');
+            const couriusWords = couriusText.match(/\S+/g);
+            if (couriusWords && couriusWords.length > 0) {
+                totalWords += couriusWords.length;
+                projects++;
+            }
+
+            // Calculate streak (simplified - based on when data was last updated)
+            let streak = 0;
+            const lastVisit = localStorage.getItem('writingtools_last_visit');
+            const today = new Date().toDateString();
+            if (lastVisit === today) {
+                streak = parseInt(localStorage.getItem('writingtools_streak') || '1');
+            } else {
+                const yesterday = new Date(Date.now() - 86400000).toDateString();
+                if (lastVisit === yesterday) {
+                    streak = parseInt(localStorage.getItem('writingtools_streak') || '0') + 1;
+                } else {
+                    streak = 1;
+                }
+                localStorage.setItem('writingtools_last_visit', today);
+                localStorage.setItem('writingtools_streak', streak);
+            }
+
+            // Only show stats bar if there's activity
+            if (totalWords > 0 || projects > 0) {
+                document.getElementById('stats-bar').style.display = 'block';
+                document.getElementById('stat-words').innerText = totalWords.toLocaleString();
+                document.getElementById('stat-projects').innerText = projects;
+                document.getElementById('stat-streak').innerText = streak;
+            }
+        }
     </script>
 </body>
 </html>
