@@ -318,7 +318,64 @@
             animation: goal-flash 3s ease-in-out 2; 
         }
 
-        /* --- 5. MODAL --- */
+        /* --- 5. FOCUS MODE --- */
+        .focus-mode #editor-wrapper div:not(.focus-active) {
+            opacity: 0.3;
+            transition: opacity 0.3s ease;
+        }
+        .focus-mode #editor-wrapper div.focus-active {
+            opacity: 1;
+        }
+
+        /* --- 5.5. HELP MODAL --- */
+        .help-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 300;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .help-modal.open {
+            opacity: 1;
+            pointer-events: all;
+        }
+        .help-content {
+            background: var(--bg-color);
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 500px;
+            width: 90%;
+            border: 1px solid var(--ui-border);
+        }
+        .help-content h3 {
+            margin: 0 0 20px 0;
+            font-size: 1.2rem;
+            color: var(--text-color);
+        }
+        .shortcut-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--ui-border);
+        }
+        .shortcut-key {
+            background: var(--ui-hover);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+
+        /* --- 6. MODAL --- */
         #modal-overlay {
             position: fixed;
             top: 0;
@@ -521,6 +578,22 @@
         <a href="index.html" style="pointer-events: auto; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.15; color: inherit; text-decoration: none; transition: opacity 0.2s;" onmouseover="this.style.opacity=0.5" onmouseout="this.style.opacity=0.15">Writing Tools Suite</a>
     </div>
 
+    <!-- Help Modal -->
+    <div id="help-modal" class="help-modal">
+        <div class="help-content">
+            <h3>⌨️ Keyboard Shortcuts</h3>
+            <div class="shortcut-row"><span>Toggle Theme</span><span class="shortcut-key">Ctrl+D</span></div>
+            <div class="shortcut-row"><span>Focus Mode</span><span class="shortcut-key">Ctrl+F</span></div>
+            <div class="shortcut-row"><span>Ambient Sound</span><span class="shortcut-key">Ctrl+M</span></div>
+            <div class="shortcut-row"><span>Settings</span><span class="shortcut-key">Ctrl+,</span></div>
+            <div class="shortcut-row"><span>Export</span><span class="shortcut-key">Ctrl+S</span></div>
+            <div class="shortcut-row"><span>Show Help</span><span class="shortcut-key">?</span></div>
+            <div style="margin-top: 20px; text-align: center;">
+                <button onclick="app.closeHelp()" class="modal-btn" style="padding: 10px 30px;">Got it</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Settings Modal -->
     <div id="modal-overlay">
         <div class="modal">
@@ -558,7 +631,10 @@
                 timerDuration: 0,
                 timerRemaining: 0,
                 timerInterval: null,
-                goalReached: false
+                goalReached: false,
+                focusMode: false,
+                ambientPlaying: false,
+                ambientAudio: null
             },
             
             dom: {
@@ -598,9 +674,9 @@
                     this.dom.editor.innerText = this.state.text;
                 }
 
-                // Theme Persistence
-                if(s.getItem('writingtools_wribbon_theme')) {
-                    this.state.theme = s.getItem('writingtools_wribbon_theme');
+                // Theme Persistence (Suite-wide sync)
+                if(s.getItem('writingtools_theme')) {
+                    this.state.theme = s.getItem('writingtools_theme');
                 } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
                     this.state.theme = 'dark';
                 }
@@ -610,7 +686,66 @@
             saveState() {
                 localStorage.setItem('writingtools_wribbon_goal', this.state.goal);
                 localStorage.setItem('writingtools_wribbon_text', this.state.text);
-                localStorage.setItem('writingtools_wribbon_theme', this.state.theme);
+                localStorage.setItem('writingtools_theme', this.state.theme); // Suite-wide sync
+            },
+
+            // Focus Mode - highlights current paragraph
+            toggleFocusMode() {
+                this.state.focusMode = !this.state.focusMode;
+                document.body.classList.toggle('focus-mode', this.state.focusMode);
+            },
+
+            // Ambient Sounds (Rain)
+            toggleAmbient() {
+                if (!this.state.ambientAudio) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    const ctx = new AudioContext();
+                    const bufferSize = 2 * ctx.sampleRate;
+                    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    let b = [0,0,0,0,0,0,0];
+                    for (let i = 0; i < bufferSize; i++) {
+                        const w = Math.random() * 2 - 1;
+                        b[0] = 0.99886 * b[0] + w * 0.0555179;
+                        b[1] = 0.99332 * b[1] + w * 0.0750759;
+                        b[2] = 0.96900 * b[2] + w * 0.1538520;
+                        b[3] = 0.86650 * b[3] + w * 0.3104856;
+                        b[4] = 0.55000 * b[4] + w * 0.5329522;
+                        b[5] = -0.7616 * b[5] - w * 0.0168980;
+                        data[i] = (b[0] + b[1] + b[2] + b[3] + b[4] + b[5] + b[6] + w * 0.5362) * 0.08;
+                        b[6] = w * 0.115926;
+                    }
+                    const source = ctx.createBufferSource();
+                    source.buffer = buffer;
+                    source.loop = true;
+                    const filter = ctx.createBiquadFilter();
+                    filter.type = 'lowpass';
+                    filter.frequency.value = 800;
+                    const gain = ctx.createGain();
+                    gain.gain.value = 0.3;
+                    source.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(ctx.destination);
+                    source.start();
+                    this.state.ambientAudio = { ctx, source, gain };
+                    this.state.ambientPlaying = true;
+                } else {
+                    if (this.state.ambientPlaying) {
+                        this.state.ambientAudio.gain.gain.value = 0;
+                        this.state.ambientPlaying = false;
+                    } else {
+                        this.state.ambientAudio.gain.gain.value = 0.3;
+                        this.state.ambientPlaying = true;
+                    }
+                }
+            },
+
+            // Help Modal
+            showHelp() {
+                document.getElementById('help-modal').classList.add('open');
+            },
+            closeHelp() {
+                document.getElementById('help-modal').classList.remove('open');
             },
 
             buildProgressBar() {
@@ -865,6 +1000,44 @@
                     input.addEventListener('keypress', (e) => {
                         if(e.key === 'Enter') this.saveSettings();
                     });
+                });
+
+                // Keyboard Shortcuts
+                window.addEventListener('keydown', (e) => {
+                    // ? for help
+                    if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+                        e.preventDefault();
+                        this.showHelp();
+                    }
+                    // Escape to close help
+                    if (e.key === 'Escape') {
+                        this.closeHelp();
+                    }
+                    // Ctrl+D for theme
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+                        e.preventDefault();
+                        this.toggleTheme();
+                    }
+                    // Ctrl+F for focus mode
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                        e.preventDefault();
+                        this.toggleFocusMode();
+                    }
+                    // Ctrl+M for ambient
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'm') {
+                        e.preventDefault();
+                        this.toggleAmbient();
+                    }
+                    // Ctrl+, for settings
+                    if ((e.ctrlKey || e.metaKey) && e.key === ',') {
+                        e.preventDefault();
+                        this.openModal();
+                    }
+                });
+
+                // Click outside help modal to close
+                document.getElementById('help-modal').addEventListener('click', (e) => {
+                    if (e.target.id === 'help-modal') this.closeHelp();
                 });
             }
         };
