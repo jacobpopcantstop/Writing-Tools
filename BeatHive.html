@@ -134,7 +134,7 @@
         const HEX_WIDTH = Math.sqrt(3) * HEX_SIZE;
         const HEX_HEIGHT = 2 * HEX_SIZE;
         const VERT_SPACING = HEX_HEIGHT * 0.75;
-        const LOCAL_STORAGE_KEY = 'beathive_local_sketches';
+        const LOCAL_STORAGE_KEY = 'writingtools_beathive_sketches';
 
         const Icon = ({ name, size = 20, className = "", style = {} }) => {
             const icons = {
@@ -875,7 +875,7 @@
                             <span className="flex items-center gap-2"><span className={`w-1.5 h-1.5 rounded-full animate-pulse ${user?.uid === 'local-user' ? 'bg-amber-500' : 'bg-emerald-500'}`}></span> {user?.uid === 'local-user' ? 'Local Storage' : 'Network Active'}</span>
                             <span>{user?.uid === 'local-user' ? 'Offline Mode' : `UID: ${user.uid.slice(0,8)}...`}</span>
                         </div>
-                        <div>v5.7.0 Stable</div>
+                        <a href="index.html" className="hover:opacity-100 transition-opacity" style={{textDecoration: 'none', color: 'inherit'}}>Writing Tools Suite</a>
                     </footer>
                 </div>
             );

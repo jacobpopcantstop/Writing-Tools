@@ -12,7 +12,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;900&family=Newsreader:ital,opsz,wght@1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/lucide@0.263.1"></script>
     <style>
         :root {
             /* Deeper, yellower cream (Vintage Ivory) */
@@ -232,7 +232,7 @@
             <div id="footer-hint" class="text-[9px] font-black tracking-[0.2em] opacity-40 uppercase">
                 [Enter] Capture Thought
             </div>
-            <div class="text-[9px] font-black tracking-[0.6em] uppercase opacity-10 mt-2">JOTERIE</div>
+            <a href="index.html" class="text-[9px] font-black tracking-[0.6em] uppercase opacity-10 mt-2 hover:opacity-30 transition-opacity no-underline" style="color: inherit; text-decoration: none;">WRITING TOOLS SUITE</a>
         </footer>
     </div>
 
@@ -248,7 +248,7 @@
             focusPrompt: '',
             timerInterval: null,
             isDarkMode: false,
-            archives: JSON.parse(localStorage.getItem('joterie_archives')) || []
+            archives: JSON.parse(localStorage.getItem('writingtools_joterie_archives')) || []
         };
 
         const elements = {
@@ -444,7 +444,7 @@
                 duration: formatTime(totalSecs)
             };
             state.archives.unshift(archiveEntry);
-            localStorage.setItem('joterie_archives', JSON.stringify(state.archives));
+            localStorage.setItem('writingtools_joterie_archives', JSON.stringify(state.archives));
 
             // Show Summary
             elements.summaryStat.innerText = `${kept.length} Kept / ${state.sessionCards.length} Total`;

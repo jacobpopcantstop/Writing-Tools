@@ -516,6 +516,11 @@
         </div>
     </div>
 
+    <!-- Suite Footer -->
+    <div style="position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%); z-index: 10; pointer-events: none;">
+        <a href="index.html" style="pointer-events: auto; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.15; color: inherit; text-decoration: none; transition: opacity 0.2s;" onmouseover="this.style.opacity=0.5" onmouseout="this.style.opacity=0.15">Writing Tools Suite</a>
+    </div>
+
     <!-- Settings Modal -->
     <div id="modal-overlay">
         <div class="modal">
@@ -577,25 +582,25 @@
                 this.updateUI();
                 
                 // Show modal on first visit or empty state
-                if (!this.state.text && !localStorage.getItem('wribbon_visited')) {
+                if (!this.state.text && !localStorage.getItem('writingtools_wribbon_visited')) {
                     this.openModal();
                 } else {
                     this.dom.editor.focus();
                 }
-                localStorage.setItem('wribbon_visited', 'true');
+                localStorage.setItem('writingtools_wribbon_visited', 'true');
             },
 
             loadState() {
                 const s = localStorage;
-                if(s.getItem('wribbon_goal')) this.state.goal = parseInt(s.getItem('wribbon_goal'));
-                if(s.getItem('wribbon_text')) {
-                    this.state.text = s.getItem('wribbon_text');
+                if(s.getItem('writingtools_wribbon_goal')) this.state.goal = parseInt(s.getItem('writingtools_wribbon_goal'));
+                if(s.getItem('writingtools_wribbon_text')) {
+                    this.state.text = s.getItem('writingtools_wribbon_text');
                     this.dom.editor.innerText = this.state.text;
                 }
-                
+
                 // Theme Persistence
-                if(s.getItem('wribbon_theme')) {
-                    this.state.theme = s.getItem('wribbon_theme');
+                if(s.getItem('writingtools_wribbon_theme')) {
+                    this.state.theme = s.getItem('writingtools_wribbon_theme');
                 } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
                     this.state.theme = 'dark';
                 }
@@ -603,9 +608,9 @@
             },
 
             saveState() {
-                localStorage.setItem('wribbon_goal', this.state.goal);
-                localStorage.setItem('wribbon_text', this.state.text);
-                localStorage.setItem('wribbon_theme', this.state.theme);
+                localStorage.setItem('writingtools_wribbon_goal', this.state.goal);
+                localStorage.setItem('writingtools_wribbon_text', this.state.text);
+                localStorage.setItem('writingtools_wribbon_theme', this.state.theme);
             },
 
             buildProgressBar() {
