@@ -299,12 +299,12 @@
             // Persistent State
             const [pinned, setPinned] = useState(() => {
                 try {
-                    const saved = localStorage.getItem('synax_pinned');
+                    const saved = localStorage.getItem('writingtools_synax_pinned');
                     return saved ? JSON.parse(saved) : [];
                 } catch { return []; }
             });
             const [editorContent, setEditorContent] = useState(() => {
-                return localStorage.getItem('synax_editor') || '';
+                return localStorage.getItem('writingtools_synax_editor') || '';
             });
             const [history, setHistory] = useState([]);
             
@@ -321,11 +321,11 @@
             // --- EFFECTS ---
 
             useEffect(() => {
-                localStorage.setItem('synax_pinned', JSON.stringify(pinned));
+                localStorage.setItem('writingtools_synax_pinned', JSON.stringify(pinned));
             }, [pinned]);
 
             useEffect(() => {
-                localStorage.setItem('synax_editor', editorContent);
+                localStorage.setItem('writingtools_synax_editor', editorContent);
             }, [editorContent]);
 
             useEffect(() => {
@@ -786,7 +786,7 @@
                                 {offlineMode ? <WifiOff size={12} className="text-rose-400"/> : <Wifi size={12} className="text-emerald-400"/>}
                                 {offlineMode ? 'OFFLINE' : 'ONLINE'}
                             </span>
-                            <span className="hidden sm:inline opacity-50">PRESS SPACE TO GENERATE</span>
+                            <a href="index.html" className="opacity-30 hover:opacity-100 transition-opacity" style={{textDecoration: 'none', color: 'inherit'}}>Writing Tools Suite</a>
                             </div>
                         )}
 

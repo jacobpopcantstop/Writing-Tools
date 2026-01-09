@@ -302,11 +302,14 @@
     <span id="page-count">Pg 1</span> | <span id="save-status">Ready</span>
 </div>
 
+<!-- Suite Footer -->
+<a href="index.html" style="position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%); z-index: 10; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.15; color: var(--text-color); text-decoration: none; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.5'" onmouseout="this.style.opacity='0.15'">Writing Tools Suite</a>
+
 <script>
     const EDITOR = document.getElementById('page');
     const STATUS = document.getElementById('save-status');
     const PAGE_COUNT = document.getElementById('page-count');
-    const STORAGE_KEY = 'courius_v2_storage';
+    const STORAGE_KEY = 'writingtools_courius_storage';
     
     const ELEMENT_CYCLE = ['scene-heading', 'action', 'character', 'parenthetical', 'dialogue', 'transition'];
     const NEXT_ELEMENT = {
@@ -338,7 +341,7 @@
             if (EDITOR.innerHTML.trim() === "") createLine('scene-heading');
         }
         updateSuggestions();
-        if (localStorage.getItem('nightMode') === 'true') document.body.classList.add('night-mode');
+        if (localStorage.getItem('writingtools_courius_nightmode') === 'true') document.body.classList.add('night-mode');
         updateSelectorUI();
         updatePageCount();
     });
@@ -357,7 +360,7 @@
 
     function toggleTheme() {
         document.body.classList.toggle('night-mode');
-        localStorage.setItem('nightMode', document.body.classList.contains('night-mode'));
+        localStorage.setItem('writingtools_courius_nightmode', document.body.classList.contains('night-mode'));
     }
 
     // --- Title Page Logic ---

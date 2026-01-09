@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en" data-wt-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Writing Tools Suite | Your Complete Writer's Toolkit</title>
+    <meta name="description" content="A curated collection of specialized writing tools for brainstorming, drafting, structuring, and formatting your creative work.">
+
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231a365d'/><text y='.9em' x='50' text-anchor='middle' font-size='60' fill='%23f7f3e9'>W</text></svg>">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@0.263.1"></script>
+
+    <style>
+        /* Design System Variables */
+        :root {
+            --wt-primary: #1a365d;
+            --wt-primary-light: #2c5282;
+            --wt-secondary: #f7f3e9;
+            --wt-accent: #6b46c1;
+            --wt-gray-50: #fafafa;
+            --wt-gray-100: #f4f4f5;
+            --wt-gray-400: #a1a1aa;
+            --wt-gray-600: #52525b;
+            --wt-gray-800: #27272a;
+            --wt-gray-900: #18181b;
+            --wt-gray-950: #09090b;
+
+            --wt-font-ui: 'Inter', system-ui, sans-serif;
+            --wt-font-display: 'Playfair Display', Georgia, serif;
+        }
+
+        [data-wt-theme="light"] {
+            --bg: var(--wt-secondary);
+            --bg-card: white;
+            --text: var(--wt-gray-900);
+            --text-muted: var(--wt-gray-600);
+            --border: rgba(0,0,0,0.08);
+        }
+
+        [data-wt-theme="dark"] {
+            --bg: var(--wt-gray-950);
+            --bg-card: var(--wt-gray-900);
+            --text: var(--wt-gray-100);
+            --text-muted: var(--wt-gray-400);
+            --border: rgba(255,255,255,0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--wt-font-ui);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            transition: background 0.5s ease, color 0.5s ease;
+            line-height: 1.6;
+        }
+
+        /* Skip Link */
+        .skip-link {
+            position: absolute;
+            top: -100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--wt-primary);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-weight: 600;
+            text-decoration: none;
+            z-index: 9999;
+            transition: top 0.2s;
+        }
+        .skip-link:focus { top: 1rem; }
+
+        /* Header */
+        header {
+            padding: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--wt-primary);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--wt-secondary);
+            font-weight: 900;
+            font-size: 1.25rem;
+        }
+
+        .logo-text {
+            font-weight: 800;
+            font-size: 1.125rem;
+            letter-spacing: -0.025em;
+        }
+
+        .theme-toggle {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            color: var(--text-muted);
+            opacity: 0.6;
+            transition: opacity 0.2s, transform 0.2s;
+            border-radius: 50%;
+        }
+
+        .theme-toggle:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        /* Hero */
+        .hero {
+            text-align: center;
+            padding: 4rem 2rem 6rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .hero h1 {
+            font-family: var(--wt-font-display);
+            font-size: clamp(2.5rem, 6vw, 4rem);
+            font-weight: 600;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .hero h1 em {
+            font-style: italic;
+            color: var(--wt-accent);
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Tools Grid */
+        .tools-section {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem 6rem;
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .tool-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            text-decoration: none;
+            color: inherit;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tool-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--card-accent, var(--wt-accent));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            border-color: var(--card-accent, var(--wt-accent));
+        }
+
+        .tool-card:hover::before {
+            opacity: 1;
+        }
+
+        .tool-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.25rem;
+            color: white;
+            background: var(--card-accent, var(--wt-accent));
+        }
+
+        .tool-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.025em;
+        }
+
+        .tool-tagline {
+            font-family: var(--wt-font-display);
+            font-style: italic;
+            color: var(--text-muted);
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .tool-description {
+            color: var(--text-muted);
+            font-size: 0.9375rem;
+            flex: 1;
+            margin-bottom: 1.5rem;
+        }
+
+        .tool-features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .tool-feature {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 0.375rem 0.75rem;
+            border-radius: 20px;
+            background: var(--bg);
+            color: var(--text-muted);
+        }
+
+        .tool-arrow {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            opacity: 0;
+            transform: translateX(-10px);
+            transition: opacity 0.3s, transform 0.3s;
+            color: var(--card-accent, var(--wt-accent));
+        }
+
+        .tool-card:hover .tool-arrow {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        /* Tool-specific accent colors */
+        .tool-card[data-tool="beathive"] { --card-accent: #4361ee; }
+        .tool-card[data-tool="joterie"] { --card-accent: #163312; }
+        .tool-card[data-tool="synax"] { --card-accent: #8b5cf6; }
+        .tool-card[data-tool="wribbon"] { --card-accent: #3A574C; }
+        .tool-card[data-tool="courius"] { --card-accent: #1a2f23; }
+
+        /* Workflow Section */
+        .workflow-section {
+            background: var(--bg-card);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            padding: 5rem 2rem;
+            text-align: center;
+        }
+
+        .workflow-section h2 {
+            font-family: var(--wt-font-display);
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .workflow-section p {
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto 3rem;
+        }
+
+        .workflow-steps {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .workflow-step {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 1.5rem;
+            background: var(--bg);
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.9375rem;
+        }
+
+        .workflow-step .step-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--wt-primary);
+            color: white;
+        }
+
+        .workflow-arrow {
+            color: var(--text-muted);
+            opacity: 0.4;
+        }
+
+        /* Footer */
+        footer {
+            padding: 3rem 2rem;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        footer a {
+            color: var(--wt-accent);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .workflow-arrow { display: none; }
+            .workflow-steps { flex-direction: column; align-items: center; }
+            .tools-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header>
+        <div class="logo">
+            <div class="logo-icon">W</div>
+            <span class="logo-text">Writing Tools</span>
+        </div>
+        <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+            <i data-lucide="moon" id="theme-icon"></i>
+        </button>
+    </header>
+
+    <main id="main">
+        <section class="hero">
+            <h1>Your complete <em>writer's</em> toolkit</h1>
+            <p>Five specialized tools for every stage of the creative process. Brainstorm, structure, draft, and format your work in one cohesive suite.</p>
+        </section>
+
+        <section class="tools-section" aria-label="Available Tools">
+            <div class="tools-grid">
+
+                <a href="Joterie.html" class="tool-card" data-tool="joterie">
+                    <div class="tool-icon">
+                        <i data-lucide="zap"></i>
+                    </div>
+                    <i data-lucide="arrow-right" class="tool-arrow"></i>
+                    <h2 class="tool-name">Joterie</h2>
+                    <p class="tool-tagline">Think Fast</p>
+                    <p class="tool-description">Rapid brainstorming with timed sprints. Capture raw ideas before they escape, then curate the best ones.</p>
+                    <div class="tool-features">
+                        <span class="tool-feature">Timed Sprints</span>
+                        <span class="tool-feature">Curation</span>
+                        <span class="tool-feature">Archives</span>
+                    </div>
+                </a>
+
+                <a href="Synax.html" class="tool-card" data-tool="synax">
+                    <div class="tool-icon">
+                        <i data-lucide="sparkles"></i>
+                    </div>
+                    <i data-lucide="arrow-right" class="tool-arrow"></i>
+                    <h2 class="tool-name">Synax</h2>
+                    <p class="tool-tagline">Creative Engine</p>
+                    <p class="tool-description">AI-powered prompt generation. Discover unexpected word combinations to spark new creative directions.</p>
+                    <div class="tool-features">
+                        <span class="tool-feature">Random Prompts</span>
+                        <span class="tool-feature">Rhyme Finder</span>
+                        <span class="tool-feature">Context Mode</span>
+                    </div>
+                </a>
+
+                <a href="BeatHive.html" class="tool-card" data-tool="beathive">
+                    <div class="tool-icon">
+                        <i data-lucide="hexagon"></i>
+                    </div>
+                    <i data-lucide="arrow-right" class="tool-arrow"></i>
+                    <h2 class="tool-name">BeatHive</h2>
+                    <p class="tool-tagline">Story Architect</p>
+                    <p class="tool-description">Map your narrative on an infinite hexagonal canvas. Visualize story beats and their connections.</p>
+                    <div class="tool-features">
+                        <span class="tool-feature">Hex Canvas</span>
+                        <span class="tool-feature">Beat Types</span>
+                        <span class="tool-feature">Cloud Sync</span>
+                    </div>
+                </a>
+
+                <a href="Wribbon.html" class="tool-card" data-tool="wribbon">
+                    <div class="tool-icon">
+                        <i data-lucide="feather"></i>
+                    </div>
+                    <i data-lucide="arrow-right" class="tool-arrow"></i>
+                    <h2 class="tool-name">Wribbon</h2>
+                    <p class="tool-tagline">Flow State Writing</p>
+                    <p class="tool-description">Minimalist, distraction-free drafting. Zen mode hides the UI while you write, keeping focus on the words.</p>
+                    <div class="tool-features">
+                        <span class="tool-feature">Zen Mode</span>
+                        <span class="tool-feature">Word Goals</span>
+                        <span class="tool-feature">Timer</span>
+                    </div>
+                </a>
+
+                <a href="Courius.html" class="tool-card" data-tool="courius">
+                    <div class="tool-icon">
+                        <i data-lucide="film"></i>
+                    </div>
+                    <i data-lucide="arrow-right" class="tool-arrow"></i>
+                    <h2 class="tool-name">Courius</h2>
+                    <p class="tool-tagline">Screenwriter</p>
+                    <p class="tool-description">Professional screenplay formatting. Industry-standard elements with automatic styling and FDX export.</p>
+                    <div class="tool-features">
+                        <span class="tool-feature">FDX Export</span>
+                        <span class="tool-feature">Auto Format</span>
+                        <span class="tool-feature">Title Pages</span>
+                    </div>
+                </a>
+
+            </div>
+        </section>
+
+        <section class="workflow-section" aria-label="Suggested Workflow">
+            <h2>A natural creative flow</h2>
+            <p>Use the tools together for a complete writing process, from first spark to final format.</p>
+
+            <div class="workflow-steps">
+                <div class="workflow-step">
+                    <span class="step-icon"><i data-lucide="zap" style="width:16px;height:16px"></i></span>
+                    <span>Joterie</span>
+                </div>
+                <i data-lucide="arrow-right" class="workflow-arrow"></i>
+                <div class="workflow-step">
+                    <span class="step-icon"><i data-lucide="sparkles" style="width:16px;height:16px"></i></span>
+                    <span>Synax</span>
+                </div>
+                <i data-lucide="arrow-right" class="workflow-arrow"></i>
+                <div class="workflow-step">
+                    <span class="step-icon"><i data-lucide="hexagon" style="width:16px;height:16px"></i></span>
+                    <span>BeatHive</span>
+                </div>
+                <i data-lucide="arrow-right" class="workflow-arrow"></i>
+                <div class="workflow-step">
+                    <span class="step-icon"><i data-lucide="feather" style="width:16px;height:16px"></i></span>
+                    <span>Wribbon</span>
+                </div>
+                <i data-lucide="arrow-right" class="workflow-arrow"></i>
+                <div class="workflow-step">
+                    <span class="step-icon"><i data-lucide="film" style="width:16px;height:16px"></i></span>
+                    <span>Courius</span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>Writing Tools Suite v1.0 | All tools run locally in your browser.</p>
+        <p style="margin-top: 0.5rem; opacity: 0.6;">Your data stays on your device.</p>
+    </footer>
+
+    <script>
+        // Initialize icons
+        lucide.createIcons();
+
+        // Theme toggle
+        function toggleTheme() {
+            const html = document.documentElement;
+            const current = html.getAttribute('data-wt-theme');
+            const next = current === 'light' ? 'dark' : 'light';
+            html.setAttribute('data-wt-theme', next);
+            localStorage.setItem('writingtools_theme', next);
+
+            // Update icon
+            const icon = document.getElementById('theme-icon');
+            icon.setAttribute('data-lucide', next === 'dark' ? 'sun' : 'moon');
+            lucide.createIcons();
+        }
+
+        // Load saved theme
+        document.addEventListener('DOMContentLoaded', () => {
+            const saved = localStorage.getItem('writingtools_theme');
+            if (saved) {
+                document.documentElement.setAttribute('data-wt-theme', saved);
+                const icon = document.getElementById('theme-icon');
+                icon.setAttribute('data-lucide', saved === 'dark' ? 'sun' : 'moon');
+                lucide.createIcons();
+            }
+        });
+    </script>
+</body>
+</html>
