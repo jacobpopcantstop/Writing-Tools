@@ -432,14 +432,19 @@
             state.timeLeft = state.configTime;
             state.elapsedTime = 0;
             state.isTimerActive = false;
-            
+
             elements.activePrompt.innerText = state.focusPrompt || "Drafting...";
             elements.jotsCount.innerText = '0';
             elements.sprintInput.value = '';
             elements.sprintInput.placeholder = "Type your first thought to start...";
             elements.timerPill.classList.add('timer-idle');
             elements.timerDisplay.innerText = formatTime(state.configTime || 0);
-            
+
+            // Reset timer progress bar
+            const timerProgress = document.getElementById('timer-progress');
+            timerProgress.style.width = '100%';
+            timerProgress.style.opacity = '0.1';
+
             setView('sprint');
         }
 
