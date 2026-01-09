@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BeatHive - Story Structure Architect</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5' fill='%234361ee'/><text y='.65em' x='50' text-anchor='middle' font-size='40' fill='white' dy='25'>B</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5' fill='%234361ee'/><polygon points='50,20 80,37.5 80,62.5 50,80 20,62.5 20,37.5' fill='%23818cf8' opacity='0.6'/></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -14,8 +14,8 @@
         
         :root {
             --bg-dark: #09090b;
-            --bg-light: #e6e0d4;
-            --panel-light: #faedcd;
+            --bg-light: #E8DFD0;
+            --panel-light: #E0D4C0;
             --text-light: #432818;
             --sidebar-width: 320px;
         }
@@ -53,9 +53,9 @@
             border-color: rgba(255, 255, 255, 0.05);
         }
         
-        .light-theme .sidebar-panel { 
-            border-color: rgba(60, 40, 20, 0.08); 
-            background: rgba(239, 234, 221, 0.95);
+        .light-theme .sidebar-panel {
+            border-color: rgba(60, 40, 20, 0.08);
+            background: rgba(224, 212, 192, 0.95);
         }
         .dark-theme .sidebar-panel { 
             border-color: rgba(255, 255, 255, 0.08); 
@@ -77,12 +77,16 @@
 
         .hex-shadow {
             filter: drop-shadow(0 4px 6px rgba(0,0,0,0.15));
-            transition: transform 0.2s ease, filter 0.2s ease;
+            transition: transform 0.15s ease, filter 0.15s ease;
+            transform-origin: center center;
+            transform-box: fill-box;
         }
         .hex-group:hover .hex-shadow {
-            transform: translateY(-4px) scale(1.02);
-            filter: drop-shadow(0 12px 16px rgba(0,0,0,0.2));
+            transform: scale(1.015);
+            filter: drop-shadow(0 8px 12px rgba(0,0,0,0.18));
         }
+        /* Prevent hover jitter by adding invisible hit area */
+        .hex-group { isolation: isolate; }
 
         .tooltip { visibility: hidden; opacity: 0; transition: opacity 0.2s; position: absolute; z-index: 100; bottom: 120%; left: 50%; transform: translateX(-50%); pointer-events: none; }
         .group:hover .tooltip { visibility: visible; opacity: 1; }
@@ -230,7 +234,7 @@
             { id: 'setup', label: 'Normal World', color: { dark: '#1e3a8a', light: '#4361ee' }, stroke: { dark: '#3b82f6', light: '#2563eb' } },
             { id: 'inciting', label: 'First Weird Thing', color: { dark: '#581c87', light: '#7209b7' }, stroke: { dark: '#a855f7', light: '#9333ea' } },
             { id: 'heightening', label: 'Heightening', color: { dark: '#14532d', light: '#bbf7d0' }, stroke: { dark: '#22c55e', light: '#16a34a' } },
-            { id: 'blowoff', label: 'Blow-off', color: { dark: '#7f1d1d', light: '#fca5a5' }, stroke: { dark: '#ef4444', light: '#dc2626' } },
+            { id: 'blowoff', label: 'Ending', color: { dark: '#7f1d1d', light: '#fca5a5' }, stroke: { dark: '#ef4444', light: '#dc2626' } },
             { id: 'note', label: 'Context / Note', color: { dark: '#1e293b', light: '#6c757d' }, stroke: { dark: '#475569', light: '#9ca3af' } },
         ];
 
@@ -283,16 +287,28 @@
                         strokeWidth={isSelected ? 6 : (data ? 3 : 2)} 
                     />
                     
+                    {/* Tags as subtle colored notches on the hex edge */}
                     {data?.tags?.length > 0 && !isFarZoom && (
-                        <g transform={`translate(${x - HEX_WIDTH / 2 + 25}, ${y - HEX_SIZE + 40})`}>
+                        <g>
                             {data.tags.map((tagId, idx) => {
                                 const s = STICKERS.find(st => st.id === tagId);
-                                return s ? (
-                                    <g key={tagId} transform={`translate(${idx * 28}, 0)`}>
-                                        <circle r="12" fill={theme === 'dark' ? '#000' : '#faedcd'} className="shadow-sm" />
-                                        <Icon name={s.icon} size={16} style={{ color: s.color }} x="-8" y="-8" />
-                                    </g>
-                                ) : null;
+                                if (!s) return null;
+                                // Position tags along the top-right edge of the hex
+                                const angle = (-30 + idx * 25) * (Math.PI / 180);
+                                const tagX = x + (HEX_SIZE - 8) * Math.cos(angle);
+                                const tagY = y + (HEX_SIZE - 8) * Math.sin(angle);
+                                return (
+                                    <circle
+                                        key={tagId}
+                                        cx={tagX}
+                                        cy={tagY}
+                                        r="8"
+                                        fill={s.color}
+                                        stroke={theme === 'dark' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.8)'}
+                                        strokeWidth="2"
+                                        style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}
+                                    />
+                                );
                             })}
                         </g>
                     )}
