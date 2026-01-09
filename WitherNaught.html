@@ -190,16 +190,16 @@
         };
 
         // --- PROGRESSION DATA ---
-        // Light mode: Soft warm garden theme | Dark mode: Fungal/Mycorrhizal network theme
+        // Light mode: Lush green garden theme | Dark mode: Fungal/Mycorrhizal network theme
         const ZONES = [
-            { w: 0, title: "Barren Soil", darkTitle: "Dead Earth", color: "#F5EDE0", darkColor: "#0d0f0a" },
-            { w: 100, title: "First Sprout", darkTitle: "Mycelium Stirs", color: "#E8F0E0", darkColor: "#0f1a0a" },
-            { w: 500, title: "Meadow", darkTitle: "Spore Cloud", color: "#E0EBE0", darkColor: "#141f14" },
-            { w: 1500, title: "Young Grove", darkTitle: "Fungal Network", color: "#DDE8E0", darkColor: "#1a1f1a" },
-            { w: 3000, title: "Deep Forest", darkTitle: "Bioluminescent Cave", color: "#D8E5D0", darkColor: "#0f2318" },
-            { w: 6000, title: "Cherry Blossom", darkTitle: "Toxic Bloom", color: "#EDE0E0", darkColor: "#1f0f1a" },
-            { w: 10000, title: "Golden Canopy", darkTitle: "Cordyceps Ascent", color: "#EDE8D0", darkColor: "#1a1a0f" },
-            { w: 25000, title: "WitherNaught", darkTitle: "The Rot Throne", color: "#E0EAE5", darkColor: "#0a1412" }
+            { w: 0, title: "Barren Soil", darkTitle: "Dead Earth", color: "#E8F5E0", darkColor: "#0d0f0a" },
+            { w: 100, title: "First Sprout", darkTitle: "Mycelium Stirs", color: "#D4EDDA", darkColor: "#0f1a0a" },
+            { w: 500, title: "Meadow", darkTitle: "Spore Cloud", color: "#C3E6CB", darkColor: "#141f14" },
+            { w: 1500, title: "Young Grove", darkTitle: "Fungal Network", color: "#B8E0BE", darkColor: "#1a1f1a" },
+            { w: 3000, title: "Deep Forest", darkTitle: "Bioluminescent Cave", color: "#A3D9A5", darkColor: "#0f2318" },
+            { w: 6000, title: "Cherry Blossom", darkTitle: "Toxic Bloom", color: "#F0E8E0", darkColor: "#1f0f1a" },
+            { w: 10000, title: "Golden Canopy", darkTitle: "Cordyceps Ascent", color: "#E8F0D8", darkColor: "#1a1a0f" },
+            { w: 25000, title: "WitherNaught", darkTitle: "The Rot Throne", color: "#D0E8D8", darkColor: "#0a1412" }
         ];
 
         // --- AUDIO ENGINE V3 ---
@@ -647,7 +647,7 @@
             const [stats, setStats] = useState({ totalWords: 0, sunlight: 0, sessionWords: 0, combo: 0, maxCombo: 0 });
             const [frost, setFrost] = useState(0);
             const [isSunburst, setIsSunburst] = useState(false);
-            const [settings, setSettings] = useState({ muted: false, focusMode: false, darkMode: true }); // Dark mode default
+            const [settings, setSettings] = useState({ muted: false, focusMode: false, darkMode: true, difficulty: 'normal' }); // Dark mode default, difficulty: 'chill', 'normal', 'intense'
             const [wpm, setWpm] = useState(0);
             const [levelUpFlash, setLevelUpFlash] = useState(false);
             const [prevZoneIndex, setPrevZoneIndex] = useState(0);
@@ -657,6 +657,7 @@
             const lastTypeTime = useRef(0);
             const sessionStartTime = useRef(Date.now());
             const comboTimeout = useRef(null);
+            const textareaRef = useRef(null);
 
             // Calculate current zone
             const zoneIndex = ZONES.findLastIndex(z => stats.totalWords >= z.w);
@@ -680,8 +681,16 @@
                     try {
                         const data = JSON.parse(saved);
                         setText(data.text || "");
-                        setStats(data.stats || { totalWords: 0, sunlight: 0 });
-                        setSettings(s => ({...s, darkMode: data.darkMode || false}));
+                        // Ensure all stats are valid numbers
+                        const loadedStats = data.stats || {};
+                        setStats({
+                            totalWords: parseInt(loadedStats.totalWords) || 0,
+                            sunlight: parseInt(loadedStats.sunlight) || 0,
+                            sessionWords: 0,
+                            combo: 0,
+                            maxCombo: parseInt(loadedStats.maxCombo) || 0
+                        });
+                        setSettings(s => ({...s, darkMode: data.darkMode !== false})); // Default to dark mode
                     } catch(e) { console.error("Save Corrupt"); }
                 }
             }, []);
@@ -710,19 +719,29 @@
                 const now = Date.now();
                 const timeSinceType = now - lastTypeTime.current;
 
-                // Frost Mechanics - More aggressive pressure
+                // Frost Mechanics - Adjustable based on difficulty
                 if (isSunburst) {
                     setFrost(f => Math.max(0, f - 2.5));
                 } else {
-                    // Base rate increases with total words (you're expected to type faster)
-                    const baseRate = 0.08 + (stats.totalWords > 1000 ? 0.04 : 0) + (stats.totalWords > 5000 ? 0.04 : 0);
+                    // Difficulty multipliers
+                    const difficultyMult = settings.difficulty === 'chill' ? 0.3 : settings.difficulty === 'intense' ? 1.8 : 1.0;
 
-                    // Inactivity multiplier scales up aggressively
+                    // Base rate increases with total words (you're expected to type faster)
+                    let baseRate = 0.08 + (stats.totalWords > 1000 ? 0.04 : 0) + (stats.totalWords > 5000 ? 0.04 : 0);
+                    baseRate *= difficultyMult;
+
+                    // Inactivity thresholds - more forgiving in chill mode
+                    const thresholds = settings.difficulty === 'chill'
+                        ? [3000, 5000, 8000, 12000]
+                        : settings.difficulty === 'intense'
+                        ? [500, 1000, 1500, 2000]
+                        : [1000, 2000, 3000, 4000];
+
                     let inactivityMult = 0.4;
-                    if (timeSinceType > 1000) inactivityMult = 1.0;
-                    if (timeSinceType > 2000) inactivityMult = 2.0;
-                    if (timeSinceType > 3000) inactivityMult = 3.5;
-                    if (timeSinceType > 4000) inactivityMult = 5.0;
+                    if (timeSinceType > thresholds[0]) inactivityMult = 1.0;
+                    if (timeSinceType > thresholds[1]) inactivityMult = 2.0;
+                    if (timeSinceType > thresholds[2]) inactivityMult = 3.5;
+                    if (timeSinceType > thresholds[3]) inactivityMult = 5.0;
 
                     setFrost(f => {
                         const next = f + (baseRate * inactivityMult);
@@ -735,7 +754,7 @@
                 }
 
                 loopRef.current = requestAnimationFrame(tick);
-            }, [gameState, isSunburst, stats.totalWords]);
+            }, [gameState, isSunburst, stats.totalWords, settings.difficulty]);
 
             useEffect(() => {
                 if (gameState === 'PLAYING') loopRef.current = requestAnimationFrame(tick);
@@ -753,6 +772,13 @@
                 const added = val.length - text.length;
                 setText(val);
                 lastTypeTime.current = Date.now();
+
+                // Auto-scroll to bottom
+                if (textareaRef.current) {
+                    setTimeout(() => {
+                        textareaRef.current.scrollTop = textareaRef.current.scrollHeight;
+                    }, 0);
+                }
 
                 if (added > 0) {
                     const lastChar = val[val.length - 1];
@@ -875,11 +901,11 @@
                         />
                     )}
 
-                    {/* "TYPE NOW" urgency indicator */}
+                    {/* Subtle urgency indicator - smaller, less intrusive */}
                     {frost > 70 && gameState === 'PLAYING' && (
-                        <div className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-40 pointer-events-none ${frost > 85 ? 'urgency-critical' : 'urgency-warning'}`}>
-                            <div className={`text-4xl md:text-6xl font-black tracking-wider ${settings.darkMode ? 'text-red-500' : 'text-red-600'}`} style={{ textShadow: '0 0 30px currentColor' }}>
-                                {frost > 85 ? 'TYPE NOW!' : 'KEEP TYPING'}
+                        <div className="fixed bottom-32 left-1/2 -translate-x-1/2 z-40 pointer-events-none">
+                            <div className={`text-sm md:text-base font-bold tracking-widest uppercase opacity-60 ${settings.darkMode ? 'text-red-400' : 'text-red-500'}`}>
+                                {frost > 85 ? '⚠ type to survive' : 'keep writing...'}
                             </div>
                         </div>
                     )}
@@ -911,9 +937,9 @@
                         {gameState === 'PLAYING' && (
                             <div className="flex gap-3">
                                 {/* Combo Counter */}
-                                {stats.combo > 2 && (
+                                {stats.combo > 2 && !isNaN(stats.combo) && (
                                     <div className={`stat-card ${stats.combo > 10 ? 'combo-glow' : ''}`} style={{ color: settings.darkMode ? '#a3e635' : '#16a34a' }}>
-                                        <div className="stat-value">{stats.combo}x</div>
+                                        <div className="stat-value">{Math.floor(stats.combo)}x</div>
                                         <div className="stat-label">Combo</div>
                                     </div>
                                 )}
@@ -973,6 +999,7 @@
                     <main className="flex-grow relative z-30 flex justify-center pt-8 md:pt-16 px-4">
                         <div className={`w-full max-w-3xl h-[70vh] transition-all duration-1000 ${gameState === 'FROZEN' ? 'blur-sm grayscale opacity-50' : ''}`}>
                             <textarea
+                                ref={textareaRef}
                                 value={text}
                                 onChange={handleType}
                                 onKeyDown={(e) => { if(e.shiftKey && e.key === 'Enter') { e.preventDefault(); triggerSunburst(); } }}
@@ -1002,6 +1029,25 @@
                                         <div className="text-xs opacity-60 uppercase tracking-widest">Total Words Written</div>
                                     </div>
                                 )}
+
+                                {/* Difficulty Selector */}
+                                <div className="mb-6">
+                                    <div className="text-xs opacity-50 uppercase tracking-widest mb-3">Difficulty</div>
+                                    <div className="flex gap-2 justify-center">
+                                        {['chill', 'normal', 'intense'].map(d => (
+                                            <button
+                                                key={d}
+                                                onClick={() => setSettings(s => ({...s, difficulty: d}))}
+                                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${settings.difficulty === d
+                                                    ? (settings.darkMode ? 'bg-lime-700 text-lime-100' : 'bg-emerald-600 text-white')
+                                                    : 'opacity-40 hover:opacity-80'
+                                                }`}
+                                            >
+                                                {d === 'chill' ? '🌿 Chill' : d === 'normal' ? '🌱 Normal' : '🔥 Intense'}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
 
                                 <button onClick={startGame} className={`w-full py-4 rounded-lg transition shadow-lg text-lg font-serif mb-4 ${settings.darkMode ? 'bg-lime-900 hover:bg-lime-800 text-lime-100 border border-lime-700' : 'bg-emerald-900 hover:bg-emerald-800 text-white'}`}>
                                     {settings.darkMode ? 'Enter the Fungal Network' : 'Enter Garden'}
