@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Wribbon</title>
+    <meta name="description" content="A minimalist, distraction-free writing app.">
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#EAD895">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22 font-weight=%22bold%22 fill=%22%232C3E36%22>W</text></svg>">
+    
+    <style>
+        /* --- 1. VARIABLES & THEME --- */
+        :root {
+            /* Palette: Deep Parchment Gold & Deep Forest */
+            --bg-color: #EAD895; 
+            --text-color: #24332D; 
+            --caret-color: #3A574C;
+            --accent-color: #3A574C;
+            
+            /* UI Colors */
+            --ui-bg: rgba(234, 216, 149, 0.4); 
+            --ui-border: rgba(36, 51, 45, 0.15);
+            --ui-hover: rgba(36, 51, 45, 0.1);
+            --ui-icon: rgba(36, 51, 45, 0.5);
+            
+            /* Components */
+            --bar-track: rgba(36, 51, 45, 0.08);
+            --bar-fill: #24332D;
+            --bar-glow: rgba(36, 51, 45, 0.2);
+            --selection-bg: rgba(36, 51, 45, 0.15);
+
+            /* Typography */
+            --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif;
+            --line-height: 1.85;
+            --font-size: 1.45rem;
+            --max-width: 740px;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #11221C; /* Deep Forest */
+            /* UPDATED: Text is now Parchment Gold instead of White */
+            --text-color: #EAD895; 
+            --caret-color: #EAD895;
+            --accent-color: #EAD895;
+
+            --ui-bg: rgba(17, 34, 28, 0.5);
+            --ui-border: rgba(234, 216, 149, 0.15);
+            --ui-hover: rgba(234, 216, 149, 0.1);
+            --ui-icon: rgba(234, 216, 149, 0.5);
+            
+            --bar-track: rgba(234, 216, 149, 0.08);
+            --bar-fill: #EAD895;
+            --bar-glow: rgba(234, 216, 149, 0.25);
+            --selection-bg: rgba(234, 216, 149, 0.2);
+        }
+
+        /* --- 2. RESET & BASE --- */
+        * {
+            box-sizing: border-box;
+            transition: background-color 0.6s cubic-bezier(0.22, 1, 0.36, 1), 
+                        color 0.6s cubic-bezier(0.22, 1, 0.36, 1), 
+                        border-color 0.6s ease,
+                        opacity 0.4s ease;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-stack);
+            overflow-x: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: var(--ui-icon) transparent;
+        }
+
+        /* Paper Texture */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.04;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        ::selection {
+            background: var(--selection-bg);
+        }
+
+        /* --- 3. EDITOR LAYOUT --- */
+        #app-container {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            position: relative;
+            cursor: text;
+            z-index: 1;
+        }
+
+        #editor-wrapper {
+            width: 100%;
+            max-width: var(--max-width);
+            padding: 0 30px;
+            /* Typewriter offset */
+            padding-top: 35vh; 
+            padding-bottom: 60vh;
+            outline: none;
+        }
+
+        #editor {
+            width: 100%;
+            border: none;
+            outline: none;
+            background: transparent;
+            font-size: var(--font-size);
+            line-height: var(--line-height);
+            color: var(--text-color);
+            resize: none;
+            white-space: pre-wrap;
+            overflow-wrap: break-word;
+            caret-color: var(--caret-color);
+        }
+
+        #editor:empty:before {
+            content: 'Start writing...';
+            opacity: 0.4;
+            font-weight: 300;
+            font-style: italic;
+        }
+
+        /* --- 4. UI COMPONENTS --- */
+
+        /* Progress Bar */
+        #progress-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            display: flex;
+            z-index: 100;
+            background: var(--bar-track);
+        }
+
+        .progress-segment {
+            flex: 1;
+            background-color: transparent;
+            margin-right: 1px;
+            transition: background-color 0.6s ease;
+        }
+
+        .progress-segment:last-child { margin-right: 0; }
+
+        .progress-segment.active {
+            background-color: var(--bar-fill);
+            box-shadow: 0 0 12px var(--bar-glow);
+        }
+
+        /* Zen Mode Transitions */
+        .ui-layer {
+            transition: opacity 0.8s ease, transform 0.8s ease;
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        body.typing .ui-layer {
+            opacity: 0;
+            transform: translateY(-5px);
+            pointer-events: none;
+        }
+
+        /* Control Buttons */
+        .controls {
+            position: fixed;
+            top: 25px;
+            right: 25px;
+            display: flex;
+            gap: 12px;
+            z-index: 50;
+            user-select: none;
+            background: var(--ui-bg);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            padding: 8px 12px;
+            border-radius: 30px;
+            border: 1px solid var(--ui-border);
+            align-items: center;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 6px;
+            color: var(--ui-icon);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease-out;
+        }
+
+        .icon-btn:hover, .icon-btn.active {
+            color: var(--text-color);
+            background: var(--ui-hover);
+            transform: scale(1.1);
+        }
+
+        .icon-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+
+        /* Export Dropdown */
+        .control-group { position: relative; }
+
+        .export-menu {
+            position: absolute;
+            top: 140%;
+            right: 0;
+            background: var(--bg-color); 
+            border: 1px solid var(--ui-border);
+            border-radius: 12px;
+            padding: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-8px);
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            min-width: 160px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            z-index: 60;
+        }
+
+        .export-menu.open {
+            opacity: 1;
+            pointer-events: all;
+            transform: translateY(0);
+        }
+
+        .export-menu button {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            opacity: 0.8;
+            text-align: left;
+            padding: 12px 14px;
+            cursor: pointer;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+            font-family: var(--font-stack);
+            font-weight: 500;
+        }
+
+        .export-menu button:hover {
+            opacity: 1;
+            background: var(--ui-hover);
+        }
+
+        /* Stats Bar */
+        .stats {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            font-family: var(--font-stack);
+            font-size: 0.85rem;
+            color: var(--ui-icon);
+            z-index: 50;
+            background: var(--ui-bg);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid var(--ui-border);
+            letter-spacing: 0.5px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .timer-separator {
+            width: 1px;
+            height: 14px;
+            background: var(--ui-icon);
+            opacity: 0.5;
+        }
+
+        .timer-done {
+            animation: pulse-opacity 2s infinite ease-in-out;
+            color: var(--accent-color);
+            font-weight: 600;
+        }
+
+        @keyframes pulse-opacity {
+            0% { opacity: 1; }
+            50% { opacity: 0.4; }
+            100% { opacity: 1; }
+        }
+
+        /* Goal Flash Animation - Chill Version */
+        @keyframes goal-flash {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.15) drop-shadow(0 0 15px var(--accent-color)); }
+        }
+
+        .goal-achieved-anim {
+            animation: goal-flash 3s ease-in-out 2; 
+        }
+
+        /* --- 5. MODAL --- */
+        #modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+
+        #modal-overlay.open {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal {
+            background-color: var(--bg-color);
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.15);
+            text-align: center;
+            border: 1px solid var(--ui-border);
+            width: 90%;
+            max-width: 420px;
+            position: relative;
+        }
+        
+        .modal::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            opacity: 0.04;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            z-index: 0;
+            border-radius: 16px;
+        }
+        
+        .modal-content { position: relative; z-index: 1; }
+
+        .modal h2 {
+            margin: 0 0 8px 0;
+            font-weight: 500;
+            font-size: 1.6rem;
+            color: var(--text-color);
+        }
+
+        .modal p {
+            margin-bottom: 30px;
+            color: var(--ui-icon);
+            font-size: 0.95rem;
+        }
+
+        .modal-grid {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 35px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--ui-icon);
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .modal input {
+            padding: 5px;
+            font-size: 1.8rem;
+            border: none;
+            border-bottom: 2px solid var(--ui-border);
+            background: transparent;
+            color: var(--text-color);
+            width: 100px;
+            text-align: center;
+            font-weight: 300;
+            font-family: var(--font-stack);
+            transition: border-color 0.3s;
+        }
+        
+        .modal input:focus {
+            outline: none;
+            border-bottom-color: var(--accent-color);
+        }
+
+        .modal-btn {
+            background: var(--text-color);
+            color: var(--bg-color);
+            border: none;
+            padding: 14px 40px;
+            font-size: 0.95rem;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s, opacity 0.2s;
+        }
+
+        .modal-btn:hover {
+            opacity: 0.95;
+            transform: scale(1.02);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        /* --- 6. PRINT STYLES --- */
+        @media print {
+            .controls, .stats, #progress-container, body::before, #modal-overlay {
+                display: none !important;
+            }
+            body, html {
+                /* UPDATED: Force yellow theme on print unless user disables background graphics */
+                background-color: #EAD895 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                color: #24332D !important;
+                overflow: visible !important;
+                height: auto;
+            }
+            #app-container {
+                display: block;
+                min-height: auto;
+            }
+            #editor-wrapper {
+                padding: 0;
+                margin: 0;
+                max-width: 100%;
+            }
+            #editor {
+                color: #24332D !important;
+                font-size: 12pt;
+                line-height: 1.5;
+            }
+            @page {
+                margin: 2cm;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Progress -->
+    <div id="progress-container"></div>
+
+    <!-- Controls -->
+    <div class="controls ui-layer">
+        <div class="control-group">
+            <button class="icon-btn" onclick="app.toggleExportMenu()" title="Export Options" aria-label="Export Menu" id="export-btn">
+                <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+            </button>
+            <div id="export-menu" class="export-menu">
+                <button onclick="app.copyToClipboard()">Copy to Clipboard</button>
+                <button onclick="app.download('txt')">Text File (.txt)</button>
+                <button onclick="app.download('doc')">MS Word (.doc)</button>
+                <button onclick="app.download('md')">Markdown (.md)</button>
+                <button onclick="app.download('html')">HTML (.html)</button>
+                <button onclick="window.print()">Print / PDF</button>
+                <button onclick="app.email()">Email</button>
+            </div>
+        </div>
+
+        <button class="icon-btn" onclick="app.toggleTheme()" title="Switch Theme" aria-label="Switch Theme">
+            <svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/></svg>
+        </button>
+        <button class="icon-btn" onclick="app.openModal()" title="Settings" aria-label="Settings">
+            <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.488.488 0 0 0-.59.22L2.74 8.87c-.04.17 0 .4.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.58 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.04-.22 0-.45-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+        </button>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats ui-layer">
+        <div id="word-stats" title="Word Count / Goal">
+            <span id="word-current">0</span> / <span id="word-target">0</span>
+        </div>
+        <div id="timer-stats" style="display:none; display: flex; align-items: center; gap: 15px;">
+            <div class="timer-separator"></div>
+            <span id="timer-display" title="Time Remaining">00:00</span>
+        </div>
+    </div>
+
+    <!-- Editor -->
+    <div id="app-container" onclick="app.focusEditor()">
+        <div id="editor-wrapper">
+            <div id="editor" contenteditable="true" spellcheck="false" role="textbox" aria-multiline="true" aria-label="Editor"></div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="modal-overlay">
+        <div class="modal">
+            <div class="modal-content">
+                <h2>Session Setup</h2>
+                <p>Configure your writing session.</p>
+                
+                <div class="modal-grid">
+                    <div class="input-group">
+                        <label for="goal-input">Word Goal</label>
+                        <input type="number" id="goal-input" value="500" min="10" step="50">
+                    </div>
+                    <div class="input-group">
+                        <label for="timer-input">Minutes</label>
+                        <input type="number" id="timer-input" value="" min="1" step="5" placeholder="∞">
+                    </div>
+                </div>
+
+                <button class="modal-btn" onclick="app.saveSettings()">Begin Session</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * Wribbon - Production Ready v1.0
+         */
+        const app = {
+            state: {
+                goal: 500,
+                text: '',
+                theme: 'light',
+                isTyping: false,
+                typingTimer: null,
+                timerDuration: 0,
+                timerRemaining: 0,
+                timerInterval: null,
+                goalReached: false
+            },
+            
+            dom: {
+                editor: document.getElementById('editor'),
+                progressContainer: document.getElementById('progress-container'),
+                currentCount: document.getElementById('word-current'),
+                targetCount: document.getElementById('word-target'),
+                timerStats: document.getElementById('timer-stats'),
+                timerDisplay: document.getElementById('timer-display'),
+                modal: document.getElementById('modal-overlay'),
+                goalInput: document.getElementById('goal-input'),
+                timerInput: document.getElementById('timer-input'),
+                exportMenu: document.getElementById('export-menu'),
+                exportBtn: document.getElementById('export-btn')
+            },
+
+            init() {
+                this.loadState();
+                this.buildProgressBar();
+                this.setupEventListeners();
+                this.updateUI();
+                
+                // Show modal on first visit or empty state
+                if (!this.state.text && !localStorage.getItem('wribbon_visited')) {
+                    this.openModal();
+                } else {
+                    this.dom.editor.focus();
+                }
+                localStorage.setItem('wribbon_visited', 'true');
+            },
+
+            loadState() {
+                const s = localStorage;
+                if(s.getItem('wribbon_goal')) this.state.goal = parseInt(s.getItem('wribbon_goal'));
+                if(s.getItem('wribbon_text')) {
+                    this.state.text = s.getItem('wribbon_text');
+                    this.dom.editor.innerText = this.state.text;
+                }
+                
+                // Theme Persistence
+                if(s.getItem('wribbon_theme')) {
+                    this.state.theme = s.getItem('wribbon_theme');
+                } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    this.state.theme = 'dark';
+                }
+                document.documentElement.setAttribute('data-theme', this.state.theme);
+            },
+
+            saveState() {
+                localStorage.setItem('wribbon_goal', this.state.goal);
+                localStorage.setItem('wribbon_text', this.state.text);
+                localStorage.setItem('wribbon_theme', this.state.theme);
+            },
+
+            buildProgressBar() {
+                this.dom.progressContainer.innerHTML = '';
+                for(let i=0; i<10; i++) {
+                    const div = document.createElement('div');
+                    div.className = 'progress-segment';
+                    div.id = `seg-${i}`;
+                    this.dom.progressContainer.appendChild(div);
+                }
+            },
+
+            updateUI() {
+                const text = this.dom.editor.innerText;
+                const words = text.match(/\S+/g);
+                const count = words ? words.length : 0;
+                
+                this.dom.currentCount.innerText = count;
+                this.dom.targetCount.innerText = this.state.goal;
+
+                // Check Goal Completion
+                if (count >= this.state.goal && !this.state.goalReached) {
+                    this.state.goalReached = true;
+                    this.dom.progressContainer.classList.add('goal-achieved-anim');
+                    // Remove class after animation
+                    setTimeout(() => {
+                        this.dom.progressContainer.classList.remove('goal-achieved-anim');
+                    }, 6000); // 3s * 2 iterations
+                } else if (count < this.state.goal) {
+                    this.state.goalReached = false;
+                    this.dom.progressContainer.classList.remove('goal-achieved-anim');
+                }
+
+                const percentage = Math.min(100, (count / this.state.goal) * 100);
+                const segmentsFilled = Math.floor(percentage / 10);
+
+                for(let i=0; i<10; i++) {
+                    const seg = document.getElementById(`seg-${i}`);
+                    if (i < segmentsFilled) seg.classList.add('active');
+                    else seg.classList.remove('active');
+                }
+            },
+
+            handleInput(e) {
+                this.state.text = this.dom.editor.innerText;
+                this.updateUI();
+                this.saveState();
+                this.setTypingStatus(true);
+                this.smartScroll();
+            },
+
+            setTypingStatus(isTyping) {
+                if(isTyping) {
+                    document.body.classList.add('typing');
+                    this.dom.exportMenu.classList.remove('open');
+                    
+                    clearTimeout(this.state.typingTimer);
+                    this.state.typingTimer = setTimeout(() => {
+                        this.setTypingStatus(false);
+                    }, 1800);
+                } else {
+                    document.body.classList.remove('typing');
+                }
+            },
+
+            smartScroll() {
+                const sel = window.getSelection();
+                if (sel.rangeCount === 0) return;
+
+                const range = sel.getRangeAt(0);
+                const rect = range.getBoundingClientRect();
+                const targetY = window.innerHeight * 0.33; // Keep cursor at 33% height
+                const currentY = rect.top;
+                const diff = currentY - targetY;
+
+                // Threshold to avoid jitter
+                if (Math.abs(diff) > 40) {
+                    window.scrollBy({
+                        top: diff,
+                        behavior: 'smooth'
+                    });
+                }
+            },
+
+            toggleTheme() {
+                this.state.theme = this.state.theme === 'light' ? 'dark' : 'light';
+                document.documentElement.setAttribute('data-theme', this.state.theme);
+                this.saveState();
+            },
+
+            toggleExportMenu() {
+                const isOpen = this.dom.exportMenu.classList.contains('open');
+                if(isOpen) {
+                    this.dom.exportMenu.classList.remove('open');
+                    this.dom.exportBtn.classList.remove('active');
+                } else {
+                    this.dom.exportMenu.classList.add('open');
+                    this.dom.exportBtn.classList.add('active');
+                }
+            },
+
+            copyToClipboard() {
+                const text = this.state.text;
+                navigator.clipboard.writeText(text).then(() => {
+                    // Simple visual feedback could go here
+                    this.toggleExportMenu();
+                }).catch(err => {
+                    console.error('Failed to copy: ', err);
+                });
+            },
+
+            download(type) {
+                let content = this.state.text;
+                let mime = 'text/plain';
+                let extension = 'txt';
+                const date = new Date().toISOString().split('T')[0];
+                const bg = '#EAD895';
+                const textCol = '#24332D';
+
+                if (type === 'md') {
+                    extension = 'md';
+                    mime = 'text/markdown';
+                } else if (type === 'html') {
+                    extension = 'html';
+                    mime = 'text/html';
+                    // UPDATED: Added background color to export
+                    content = `<!DOCTYPE html><html><head><title>Wribbon Export - ${date}</title><style>body{font-family: sans-serif; max-width: 700px; margin: 2rem auto; line-height: 1.6; background-color: ${bg}; color: ${textCol}; padding: 2rem;}</style></head><body><pre style="white-space: pre-wrap; font-family: inherit;">${this.state.text}</pre></body></html>`;
+                } else if (type === 'doc') {
+                    extension = 'doc';
+                    mime = 'application/msword';
+                    // UPDATED: Added background color to export
+                    content = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>${date}</title><style>body{background-color:${bg}; color:${textCol};}</style></head><body>${this.state.text.replace(/\n/g, '<br>')}</body></html>`;
+                }
+
+                const blob = new Blob([content], { type: mime });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${date}-Wribbon.${extension}`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+                this.toggleExportMenu();
+            },
+
+            email() {
+                const subject = "My Wribbon Writing";
+                const body = encodeURIComponent(this.state.text);
+                window.location.href = `mailto:?subject=${subject}&body=${body}`;
+                this.toggleExportMenu();
+            },
+
+            openModal() {
+                this.dom.goalInput.value = this.state.goal;
+                this.dom.timerInput.value = this.state.timerDuration > 0 ? this.state.timerDuration : '';
+                this.dom.modal.classList.add('open');
+                setTimeout(() => this.dom.goalInput.focus(), 100);
+            },
+
+            saveSettings() {
+                const goalVal = parseInt(this.dom.goalInput.value);
+                if (goalVal && goalVal > 0) {
+                    this.state.goal = goalVal;
+                }
+
+                const timerVal = parseInt(this.dom.timerInput.value);
+                if (timerVal && timerVal > 0) {
+                    this.state.timerDuration = timerVal;
+                    this.startTimer(timerVal);
+                } else {
+                    this.stopTimer();
+                }
+
+                this.saveState();
+                this.updateUI();
+                this.dom.modal.classList.remove('open');
+                this.dom.editor.focus();
+            },
+
+            // --- Timer Logic ---
+            startTimer(minutes) {
+                this.stopTimer();
+                this.state.timerRemaining = minutes * 60;
+                this.dom.timerStats.style.display = 'flex'; // Use flex for layout
+                this.dom.timerDisplay.classList.remove('timer-done');
+                this.updateTimerDisplay();
+
+                this.state.timerInterval = setInterval(() => {
+                    this.state.timerRemaining--;
+                    this.updateTimerDisplay();
+                    
+                    if (this.state.timerRemaining <= 0) {
+                        this.stopTimer();
+                        this.dom.timerDisplay.classList.add('timer-done');
+                    }
+                }, 1000);
+            },
+
+            stopTimer() {
+                if (this.state.timerInterval) {
+                    clearInterval(this.state.timerInterval);
+                    this.state.timerInterval = null;
+                }
+                // Only hide if we aren't at 0 (completion state) AND user cleared input
+                if (this.state.timerDuration === 0 || (!this.dom.timerInput.value && this.state.timerRemaining > 0)) {
+                     this.dom.timerStats.style.display = 'none';
+                }
+            },
+
+            updateTimerDisplay() {
+                const m = Math.floor(this.state.timerRemaining / 60);
+                const s = this.state.timerRemaining % 60;
+                this.dom.timerDisplay.textContent = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            },
+
+            focusEditor() {
+                if(document.activeElement !== this.dom.editor && !this.dom.exportMenu.contains(document.activeElement)) {
+                    this.dom.editor.focus();
+                    const range = document.createRange();
+                    const sel = window.getSelection();
+                    range.selectNodeContents(this.dom.editor);
+                    range.collapse(false);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                }
+            },
+            
+            setupEventListeners() {
+                this.dom.editor.addEventListener('input', (e) => this.handleInput(e));
+                
+                // Immediate scroll on Enter
+                this.dom.editor.addEventListener('keydown', (e) => {
+                    if(e.key === 'Enter') {
+                        setTimeout(() => this.smartScroll(), 10);
+                    }
+                });
+
+                // Wake UI
+                window.addEventListener('mousemove', () => {
+                   this.setTypingStatus(false); 
+                });
+                
+                // Click outside menu
+                window.addEventListener('click', (e) => {
+                    if(!this.dom.exportMenu.contains(e.target) && !this.dom.exportBtn.contains(e.target)) {
+                        this.dom.exportMenu.classList.remove('open');
+                        this.dom.exportBtn.classList.remove('active');
+                    }
+                });
+
+                // Enter key in modal
+                [this.dom.goalInput, this.dom.timerInput].forEach(input => {
+                    input.addEventListener('keypress', (e) => {
+                        if(e.key === 'Enter') this.saveSettings();
+                    });
+                });
+            }
+        };
+
+        window.addEventListener('DOMContentLoaded', () => app.init());
+    </script>
+</body>
+</html>

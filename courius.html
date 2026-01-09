@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Courius Screenwriter</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⌨️</text></svg>">
+    <style>
+        :root {
+            /* Chessboard Theme - Cream & Dark Green */
+            --bg-color: #f0f2ef; /* Light grey-green background */
+            --paper-color: #fdfbf7; /* Rich Cream paper */
+            --text-color: #1a2f23; /* Deep Forest Green text */
+            --ui-bg: rgba(26, 47, 35, 0.95); /* Deep Green UI */
+            --ui-text: #e9edde; /* Sage text for UI */
+            --shadow: 0 12px 40px rgba(26, 47, 35, 0.15);
+            --caret: #1a2f23;
+            --suggestion: #a3ad9f;
+            --accent: #2d5a42; /* Classic Green accent */
+            --accent-gold: #c5a059; /* Muted Gold */
+            --courier: "Courier New", Courier, monospace;
+            --line-height: 1.15;
+            --font-size: 12pt;
+            
+            /* Page Break Guide Color */
+            --guide-color: rgba(0,0,0,0.1);
+        }
+
+        body.night-mode {
+            --bg-color: #0d140f;
+            --paper-color: #16211a; /* Dark Forest paper */
+            --text-color: #d1d9cf; /* Soft Sage text */
+            --ui-bg: rgba(5, 8, 6, 0.95);
+            --ui-text: #8fa194;
+            --shadow: 0 10px 40px rgba(0,0,0,0.5);
+            --caret: #d1d9cf;
+            --suggestion: #4a5c51;
+            --accent-gold: #9e7e44;
+            --guide-color: rgba(255,255,255,0.1);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: var(--courier);
+            background-color: var(--bg-color);
+            margin: 0;
+            display: flex;
+            flex-direction: column; 
+            height: 100vh;
+            overflow: hidden;
+            transition: background 0.4s ease;
+        }
+
+        /* --- Floating UI --- */
+        .floating-controls {
+            position: fixed;
+            z-index: 1000;
+            background: var(--ui-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 6px;
+            display: flex;
+            box-shadow: var(--shadow);
+            transition: opacity 0.3s ease;
+        }
+
+        .actions-bar {
+            top: 20px;
+            right: 20px;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .element-bar {
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            flex-direction: row;
+            gap: 4px;
+        }
+
+        .side-btn {
+            background: transparent;
+            border: none;
+            color: var(--ui-text);
+            width: 44px;
+            height: 44px;
+            cursor: pointer;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .element-bar .side-btn {
+            width: auto;
+            padding: 0 12px;
+        }
+
+        .side-btn:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+
+        .side-btn.active {
+            background: var(--accent-gold);
+            color: #fff;
+        }
+
+        /* Tooltips */
+        .side-btn::after {
+            content: attr(data-label);
+            position: absolute;
+            background: #000;
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+        .actions-bar .side-btn::after { right: 55px; top: 50%; transform: translateY(-50%); }
+        .element-bar .side-btn::after { bottom: 55px; left: 50%; transform: translateX(-50%); }
+        .side-btn:hover::after { opacity: 1; }
+
+        /* --- Main Workspace --- */
+        main {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: auto; 
+            display: block; 
+            padding: 60px 20px 100px 20px;
+            scroll-behavior: smooth;
+        }
+
+        #page {
+            background-color: var(--paper-color);
+            color: var(--text-color);
+            width: 8.5in;
+            min-height: 11in; 
+            padding: 1in 1in 1in 1.5in; 
+            box-shadow: var(--shadow);
+            outline: none;
+            caret-color: var(--caret);
+            transition: background 0.4s, color 0.4s;
+            position: relative;
+            margin: 0 auto; 
+            
+            /* Visual Page Breaks */
+            background-image: linear-gradient(to bottom, transparent calc(11in - 1px), var(--guide-color) calc(11in - 1px), var(--guide-color) 11in);
+            background-size: 100% 11in;
+            background-repeat: repeat-y;
+        }
+
+        #save-bar {
+            position: fixed;
+            bottom: 25px;
+            right: 80px;
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--suggestion);
+            opacity: 0.8;
+            pointer-events: none;
+            background: var(--ui-bg);
+            padding: 4px 10px;
+            border-radius: 4px;
+            color: #fff;
+        }
+
+        /* --- Screenplay Elements --- */
+        #page div { 
+            min-height: 1.1em; 
+            position: relative; 
+            overflow-wrap: break-word; 
+        }
+
+        #page .scene-heading { 
+            margin-top: 2.3em; 
+            margin-bottom: 1.15em; 
+            font-weight: bold; 
+            text-transform: uppercase; 
+            width: 100%;
+        }
+        
+        #page .action { 
+            margin-bottom: 1.15em; 
+            width: 100%;
+        }
+        
+        #page .character { 
+            margin-top: 1.15em; 
+            margin-left: 2.2in; 
+            width: 3.8in; 
+            text-transform: uppercase; 
+        }
+        
+        #page .parenthetical { 
+            margin-left: 1.6in; 
+            width: 2.5in; 
+        }
+        
+        #page .dialogue { 
+            margin-left: 1.1in; 
+            width: 3.3in; 
+            margin-bottom: 1.15em; 
+        }
+        
+        #page .transition { 
+            margin-top: 1.15em; 
+            margin-bottom: 1.15em; 
+            text-align: right; 
+            text-transform: uppercase; 
+            width: 100%;
+        }
+
+        #page div:empty::before {
+            content: attr(data-placeholder);
+            color: var(--suggestion);
+            pointer-events: none;
+            position: absolute;
+            left: -160px;
+            width: 140px;
+            text-align: right;
+            font-size: 8px;
+            font-weight: 800;
+            opacity: 0.4;
+            text-transform: uppercase;
+        }
+
+        span.suggestion { color: var(--suggestion); opacity: 0.5; pointer-events: none; }
+
+        /* --- Title Page Styles --- */
+        .title-page-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 9in; 
+            width: 100%;
+            text-align: center;
+            page-break-after: always;
+            position: relative;
+            margin-bottom: 1in;
+            border-bottom: 1px dashed var(--guide-color);
+        }
+
+        .tp-title { font-weight: bold; text-decoration: underline; margin-bottom: 2rem; font-size: 14pt; width: 80%; text-align: center; outline: none; }
+        .tp-by { margin-bottom: 2rem; }
+        .tp-author { margin-bottom: 4rem; width: 80%; text-align: center; outline: none; }
+        .tp-contact { position: absolute; bottom: 0; left: 0; text-align: left; font-size: 10pt; width: 50%; outline: none; }
+
+        @media print {
+            html, body { height: auto; overflow: visible; }
+            body { background: none; }
+            .floating-controls, #save-bar { display: none !important; }
+            main { padding: 0; display: block; overflow: visible; height: auto; }
+            #page { box-shadow: none; margin: 0; padding: 1in 1in 1in 1.5in !important; width: 100%; background-image: none; height: auto; overflow: visible; }
+            .title-page-container { height: auto; min-height: 9in; margin-bottom: 0; border: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="floating-controls actions-bar">
+    <div style="font-weight: 900; font-size: 0.5rem; text-align: center; margin-bottom: 4px; opacity: 0.5; color: var(--ui-text);">COURIUS</div>
+    <button class="side-btn" data-label="Title Page" onclick="toggleTitlePage()">Title</button>
+    <button class="side-btn" data-label="Import FDX" onclick="document.getElementById('file-input').click()">Imp</button>
+    <button class="side-btn" data-label="Theme" onclick="toggleTheme()">🌓</button>
+    <button class="side-btn" data-label="Export FDX" onclick="downloadFDX()">FDX</button>
+    <button class="side-btn" data-label="Print/PDF" onclick="window.print()">PDF</button>
+    <button class="side-btn" style="color: #fca5a5;" data-label="Clear All" onclick="resetScript()">🗑️</button>
+</div>
+
+<div class="floating-controls element-bar">
+    <button class="side-btn" data-type="scene-heading" data-label="Scene Heading" onclick="changeElementType('scene-heading')">EXT.</button>
+    <button class="side-btn" data-type="action" data-label="Action" onclick="changeElementType('action')">ACT</button>
+    <button class="side-btn" data-type="character" data-label="Character" onclick="changeElementType('character')">NAME</button>
+    <button class="side-btn" data-type="parenthetical" data-label="Parenthetical" onclick="changeElementType('parenthetical')">( )</button>
+    <button class="side-btn" data-type="dialogue" data-label="Dialogue" onclick="changeElementType('dialogue')">TALK</button>
+    <button class="side-btn" data-type="transition" data-label="Transition" onclick="changeElementType('transition')">CUT</button>
+</div>
+
+<!-- Hidden File Input -->
+<input type="file" id="file-input" accept=".fdx" style="display: none;" onchange="importFDX(this)">
+
+<main id="editor-container" onclick="focusEditor(event)" onscroll="updatePageCount()">
+    <div id="page" contenteditable="true" spellcheck="true" autocorrect="on"></div>
+</main>
+
+<div id="save-bar">
+    <span id="page-count">Pg 1</span> | <span id="save-status">Ready</span>
+</div>
+
+<script>
+    const EDITOR = document.getElementById('page');
+    const STATUS = document.getElementById('save-status');
+    const PAGE_COUNT = document.getElementById('page-count');
+    const STORAGE_KEY = 'courius_v2_storage';
+    
+    const ELEMENT_CYCLE = ['scene-heading', 'action', 'character', 'parenthetical', 'dialogue', 'transition'];
+    const NEXT_ELEMENT = {
+        'scene-heading': 'action',
+        'action': 'action',
+        'character': 'dialogue',
+        'parenthetical': 'dialogue',
+        'dialogue': 'action',
+        'transition': 'scene-heading'
+    };
+    const DISPLAY_NAMES = {
+        'scene-heading': 'Scene Heading',
+        'action': 'Action',
+        'character': 'Character',
+        'dialogue': 'Dialogue',
+        'parenthetical': 'Parenthetical',
+        'transition': 'Transition'
+    };
+
+    let characterSet = new Set();
+    let locationSet = new Set();
+    let saveTimeout;
+
+    window.addEventListener('DOMContentLoaded', () => {
+        const content = localStorage.getItem(STORAGE_KEY);
+        if (content) EDITOR.innerHTML = content;
+        if (!EDITOR.innerHTML.trim() || (EDITOR.children.length === 0)) {
+            // Ensure at least one line if empty
+            if (EDITOR.innerHTML.trim() === "") createLine('scene-heading');
+        }
+        updateSuggestions();
+        if (localStorage.getItem('nightMode') === 'true') document.body.classList.add('night-mode');
+        updateSelectorUI();
+        updatePageCount();
+    });
+
+    function focusEditor(e) {
+        if (e.target.id === 'editor-container' && document.activeElement !== EDITOR) {
+            const range = document.createRange();
+            const sel = window.getSelection();
+            range.selectNodeContents(EDITOR.lastElementChild || EDITOR);
+            range.collapse(false);
+            sel.removeAllRanges();
+            sel.addRange(range);
+            EDITOR.focus();
+        }
+    }
+
+    function toggleTheme() {
+        document.body.classList.toggle('night-mode');
+        localStorage.setItem('nightMode', document.body.classList.contains('night-mode'));
+    }
+
+    // --- Title Page Logic ---
+    function toggleTitlePage() {
+        const firstChild = EDITOR.firstElementChild;
+        if (firstChild && firstChild.classList.contains('title-page-container')) {
+            firstChild.remove();
+        } else {
+            const tp = document.createElement('div');
+            tp.className = 'title-page-container';
+            tp.contentEditable = "false"; 
+            tp.innerHTML = `
+                <div class="tp-title" contenteditable="true" data-placeholder="TITLE">TITLE</div>
+                <div class="tp-by">by</div>
+                <div class="tp-author" contenteditable="true" data-placeholder="Author Name">Author Name</div>
+                <div class="tp-contact" contenteditable="true" data-placeholder="Contact Info">Contact Info</div>
+            `;
+            EDITOR.prepend(tp);
+        }
+        triggerSave();
+    }
+
+    // --- Core Editor Logic ---
+
+    EDITOR.addEventListener('beforeinput', (e) => {
+        const sel = window.getSelection();
+        if (!sel.rangeCount) return;
+        
+        const rawNode = sel.anchorNode;
+        const el = rawNode.nodeType === 3 ? rawNode.parentNode : rawNode;
+
+        // Explicitly Allow title page editing
+        if (el.classList.contains('tp-title') || el.classList.contains('tp-author') || el.classList.contains('tp-contact')) {
+            return;
+        }
+
+        const block = getBlock(rawNode);
+        if (!block) return;
+        
+        // Prevent typing in title page container itself
+        if (block.classList.contains('title-page-container')) {
+             e.preventDefault();
+             return;
+        }
+
+        const type = block.className;
+        
+        if ((type === 'scene-heading' || type === 'character') && e.data) {
+            e.preventDefault();
+            document.execCommand('insertText', false, e.data.toUpperCase());
+        }
+
+        if (type === 'action' || type === 'dialogue') {
+            const text = getPureText(block);
+            if ((text.length === 0 || text.match(/[.!?]\s*$/)) && e.data && e.data.match(/[a-z]/)) {
+                e.preventDefault();
+                document.execCommand('insertText', false, e.data.toUpperCase());
+            }
+        }
+    });
+
+    EDITOR.addEventListener('keydown', (e) => {
+        const sel = window.getSelection();
+        if (!sel.rangeCount) return;
+        const range = sel.getRangeAt(0);
+        const currentBlock = getBlock(range.startContainer);
+        if (!currentBlock) return;
+        
+        const el = sel.anchorNode.nodeType === 3 ? sel.anchorNode.parentNode : sel.anchorNode;
+
+        // Skip script shortcuts if inside title page fields
+        if (el.classList.contains('tp-title') || el.classList.contains('tp-author') || el.classList.contains('tp-contact')) {
+             return;
+        }
+        
+        // Block Enter on the container wrapper
+        if (currentBlock.parentElement.classList.contains('title-page-container')) {
+            if (e.key === 'Enter') {
+                e.preventDefault(); 
+                return;
+            }
+            return; 
+        }
+
+        const type = currentBlock.className;
+
+        if (e.key === 'Tab') {
+            e.preventDefault();
+            const sugg = currentBlock.querySelector('.suggestion');
+            if (sugg) {
+                acceptSuggestion(currentBlock, sugg);
+            } else {
+                const currentIndex = ELEMENT_CYCLE.indexOf(type);
+                const nextIndex = e.shiftKey ? 
+                    (currentIndex - 1 + ELEMENT_CYCLE.length) % ELEMENT_CYCLE.length : 
+                    (currentIndex + 1) % ELEMENT_CYCLE.length;
+                setBlockType(currentBlock, ELEMENT_CYCLE[nextIndex]);
+            }
+            updateSelectorUI();
+        }
+
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const sugg = currentBlock.querySelector('.suggestion');
+            if (sugg) acceptSuggestion(currentBlock, sugg);
+            if (type === 'parenthetical') {
+                const text = getPureText(currentBlock).trim();
+                if (text === '()' || text === '(' || text === ')') currentBlock.innerHTML = '<br>';
+            }
+            createLine(NEXT_ELEMENT[type] || 'action', currentBlock);
+            updateSelectorUI();
+        }
+    });
+
+    EDITOR.addEventListener('keyup', (e) => {
+        const block = getBlock(window.getSelection().anchorNode);
+        if (block && (block.className === 'character' || block.className === 'scene-heading')) {
+            handleAutofill(block, block.className, e.key);
+        }
+        updateSelectorUI();
+        triggerSave();
+        updatePageCount();
+    });
+
+    // Add mouse interactions for UI sync
+    EDITOR.addEventListener('mouseup', updateSelectorUI);
+    EDITOR.addEventListener('click', updateSelectorUI);
+
+    function getBlock(node) {
+        if (!node) return null;
+        if (node.nodeType === 3) node = node.parentNode; // Text node -> Element
+        
+        // Walk up until we find a direct child of #page or stop at title page parts
+        while (node && node.parentElement && node.parentElement.id !== 'page' && !node.classList?.contains('title-page-container')) {
+             node = node.parentElement;
+        }
+        return node;
+    }
+
+    function setBlockType(div, type) {
+        const oldType = div.className;
+        if (oldType === 'parenthetical' && type !== 'parenthetical') {
+            let text = getPureText(div).trim().replace(/^\(|\)$/g, '');
+            div.innerText = text || '\n';
+        }
+        div.className = type;
+        div.setAttribute('data-placeholder', DISPLAY_NAMES[type]);
+        if (type === 'parenthetical') {
+            const text = getPureText(div).trim();
+            if (!text.startsWith('(')) {
+                div.innerHTML = '(' + text + ')';
+                const range = document.createRange();
+                const sel = window.getSelection();
+                if (div.firstChild) {
+                    range.setStart(div.firstChild, 1);
+                    range.collapse(true);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                }
+            }
+        }
+    }
+
+    function createLine(type, afterBlock = null) {
+        const div = document.createElement('div');
+        setBlockType(div, type);
+        if (type !== 'parenthetical') div.innerHTML = '<br>';
+        afterBlock ? afterBlock.after(div) : EDITOR.appendChild(div);
+        const range = document.createRange();
+        const sel = window.getSelection();
+        range.selectNodeContents(div);
+        range.collapse(type !== 'parenthetical');
+        if (type === 'parenthetical' && div.firstChild) range.setStart(div.firstChild, 1);
+        sel.removeAllRanges();
+        sel.addRange(range);
+        div.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function changeElementType(type) {
+        const sel = window.getSelection();
+        const currentBlock = getBlock(sel.anchorNode);
+        if (currentBlock && !currentBlock.classList.contains('title-page-container')) {
+            setBlockType(currentBlock, type);
+            updateSelectorUI();
+            EDITOR.focus();
+            triggerSave();
+        }
+    }
+
+    function updateSelectorUI() {
+        const sel = window.getSelection();
+        const block = getBlock(sel.anchorNode);
+        const type = block ? block.className : null;
+        document.querySelectorAll('.element-bar .side-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.type === type);
+        });
+    }
+
+    function getPureText(div) {
+        if (!div.firstChild) return "";
+        let text = div.firstChild.nodeType === 3 ? div.firstChild.textContent : div.innerText;
+        const sugg = div.querySelector('.suggestion');
+        if (sugg) text = text.replace(sugg.textContent, '');
+        return text.replace(/\n$/, '');
+    }
+
+    function handleAutofill(block, type, key) {
+        const existingSugg = block.querySelector('.suggestion');
+        if (existingSugg) existingSugg.remove();
+        const text = getPureText(block).toUpperCase();
+        if (text.length < 1 || ['Backspace', 'Delete', 'Enter'].includes(key)) return;
+        const targetSet = (type === 'character') ? characterSet : locationSet;
+        for (let entry of targetSet) {
+            if (entry.startsWith(text) && entry !== text) {
+                const span = document.createElement('span');
+                span.className = 'suggestion';
+                span.textContent = entry.substring(text.length);
+                block.appendChild(span);
+                break;
+            }
+        }
+    }
+
+    function acceptSuggestion(block, span) {
+        const text = span.textContent;
+        span.remove();
+        document.execCommand('insertText', false, text);
+    }
+
+    function triggerSave() {
+        STATUS.innerText = 'Syncing...';
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(() => {
+            const clone = EDITOR.cloneNode(true);
+            clone.querySelectorAll('.suggestion').forEach(s => s.remove());
+            localStorage.setItem(STORAGE_KEY, clone.innerHTML);
+            STATUS.innerText = 'Saved';
+            updateSuggestions();
+        }, 1000);
+    }
+
+    function updateSuggestions() {
+        characterSet.clear(); locationSet.clear();
+        document.querySelectorAll('.character').forEach(d => { const t = getPureText(d).trim().toUpperCase(); if (t) characterSet.add(t); });
+        document.querySelectorAll('.scene-heading').forEach(d => { const t = getPureText(d).trim().toUpperCase(); if (t) locationSet.add(t); });
+    }
+
+    function resetScript() {
+        if (confirm("Reset current script?")) {
+            EDITOR.innerHTML = '';
+            createLine('scene-heading');
+            triggerSave();
+        }
+    }
+
+    function updatePageCount() {
+        // Approximate: 11in page height = 1056px @ 96dpi
+        const pageHeight = 1056; 
+        const scrollTop = document.getElementById('editor-container').scrollTop;
+        const pageNum = Math.floor(scrollTop / pageHeight) + 1;
+        PAGE_COUNT.innerText = "Pg " + pageNum;
+    }
+
+    // --- FDX Import ---
+    function importFDX(input) {
+        const file = input.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(e.target.result, "text/xml");
+            
+            EDITOR.innerHTML = ''; // Clear existing
+            
+            // Handle Content
+            const paragraphs = xmlDoc.getElementsByTagName('Paragraph');
+            for (let i = 0; i < paragraphs.length; i++) {
+                const fdxType = (paragraphs[i].getAttribute('Type') || '').trim();
+                let type = 'action';
+                
+                // Map FDX types to Courius types
+                if (fdxType === 'Scene Heading') type = 'scene-heading';
+                else if (fdxType === 'Character') type = 'character';
+                else if (fdxType === 'Dialogue') type = 'dialogue';
+                else if (fdxType === 'Parenthetical') type = 'parenthetical';
+                else if (fdxType === 'Transition') type = 'transition';
+                
+                let text = '';
+                const textNode = paragraphs[i].getElementsByTagName('Text')[0];
+                if (textNode) text = textNode.textContent;
+                
+                const div = document.createElement('div');
+                setBlockType(div, type);
+                div.innerText = text || '\n'; // Preserve empty lines
+                EDITOR.appendChild(div);
+            }
+            
+            // Ensure something is there
+            if (EDITOR.children.length === 0) createLine('scene-heading');
+            
+            triggerSave();
+            updateSuggestions();
+        };
+        reader.readAsText(file);
+    }
+
+    // --- FDX Export ---
+    function downloadFDX() {
+        let xml = '<?xml version="1.0" encoding="UTF-8"?><FinalDraft DocumentType="Script" Template="No" Version="1">';
+        
+        // Handle Title Page
+        const tpContainer = EDITOR.querySelector('.title-page-container');
+        if (tpContainer) {
+            const title = tpContainer.querySelector('.tp-title').innerText;
+            const author = tpContainer.querySelector('.tp-author').innerText;
+            xml += `<TitlePage><Title>${escapeXml(title)}</Title><Author>${escapeXml(author)}</Author></TitlePage>`;
+        }
+        
+        xml += '<Content>';
+        
+        // Loop through script elements, ignoring title page container
+        Array.from(EDITOR.children).forEach(div => {
+            if (div.classList.contains('title-page-container')) return;
+            
+            const type = div.className;
+            let fdxType = 'Action';
+            if (type === 'scene-heading') fdxType = 'Scene Heading';
+            else if (type === 'character') fdxType = 'Character';
+            else if (type === 'dialogue') fdxType = 'Dialogue';
+            else if (type === 'parenthetical') fdxType = 'Parenthetical';
+            else if (type === 'transition') fdxType = 'Transition';
+            xml += `<Paragraph Type="${fdxType}"><Text>${escapeXml(getPureText(div).trim())}</Text></Paragraph>`;
+        });
+        
+        xml += '</Content></FinalDraft>';
+        const blob = new Blob([xml], { type: 'text/xml' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'script.fdx';
+        a.click();
+    }
+
+    function escapeXml(unsafe) {
+        return unsafe.replace(/[<>&'"]/g, function (c) {
+            switch (c) {
+                case '<': return '&lt;';
+                case '>': return '&gt;';
+                case '&': return '&amp;';
+                case '\'': return '&apos;';
+                case '"': return '&quot;';
+            }
+        });
+    }
+</script>
+</body>
+</html>

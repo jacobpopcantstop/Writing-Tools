@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en" id="main-html">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Joterie | Think Fast</title>
+    
+    <!-- Refined Favicon (Forest Green Tile with Ivory Bolt) -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2225%22 fill=%22%23163312%22/><path d=%22M54 15L24 55h28l-4 30 30-40H50l4-30z%22 fill=%22%23E2C990%22 stroke=%22%23E2C990%22 stroke-width=%224%22 stroke-linejoin=%22round%22/></svg>">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;900&family=Newsreader:ital,opsz,wght@1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            /* Deeper, yellower cream (Vintage Ivory) */
+            --bg-color: #E2C990; 
+            /* Richer forest green */
+            --text-color: #163312;
+            /* Increased opacity for better visibility on resting states */
+            --accent-opacity: rgba(22, 51, 18, 0.25);
+            /* Saturated Sage Green for placeholders */
+            --input-placeholder: #5c7a52; 
+            --card-bg: rgba(255, 255, 255, 0.15);
+        }
+
+        .dark {
+            --bg-color: #1a1a1a; 
+            --text-color: #f4f4f4; 
+            --accent-opacity: rgba(244, 244, 244, 0.15);
+            --input-placeholder: rgba(244, 244, 244, 0.4);
+            --card-bg: rgba(255, 255, 255, 0.05);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background-color 0.4s ease, color 0.4s ease;
+            overflow: hidden; /* Lock scroll on body */
+        }
+
+        .font-serif-italic {
+            font-family: 'Newsreader', serif;
+            font-style: italic;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--accent-opacity); border-radius: 10px; }
+        
+        @keyframes bulge {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.5; }
+            100% { transform: scale(1.1); opacity: 0; }
+        }
+        .bulge-out {
+            animation: bulge 0.2s ease-out forwards;
+        }
+
+        .view-transition {
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        .hidden-view {
+            display: none !important;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        .active-view {
+            display: flex !important;
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .timer-idle {
+            opacity: 0.4;
+        }
+        
+        /* Force placeholder color with !important */
+        input::placeholder, textarea::placeholder {
+            color: var(--input-placeholder) !important;
+            opacity: 1 !important;
+        }
+        
+        .selection-theme::selection {
+            background-color: var(--text-color);
+            color: var(--bg-color);
+        }
+
+        .interactive-layer {
+            position: relative;
+            z-index: 50;
+        }
+
+        .border-theme { border-color: var(--accent-opacity); }
+        .bg-theme-btn { background-color: var(--text-color); color: var(--bg-color); }
+    </style>
+</head>
+<body class="selection-theme">
+    <div class="flex-1 flex flex-col items-center pt-4 pb-6 px-6 max-h-screen overflow-hidden">
+        
+        <!-- Header -->
+        <header class="w-full max-w-5xl flex justify-between items-center mb-6 shrink-0 z-50">
+            <div id="logo-container" class="flex items-center gap-2 cursor-pointer group">
+                <i data-lucide="zap" class="w-5 h-5 transition-transform group-hover:scale-110" style="fill: var(--text-color)"></i>
+                <h1 class="text-sm font-black tracking-[0.5em]">JOTERIE</h1>
+            </div>
+            
+            <div class="flex items-center gap-6">
+                <div id="sprint-status" class="hidden flex items-center gap-4">
+                    <div id="timer-pill" class="px-4 py-1.5 rounded-full border border-theme bg-white/5 backdrop-blur-md flex items-center gap-2 timer-idle">
+                        <i id="timer-icon" data-lucide="clock" class="w-3.5 h-3.5"></i>
+                        <span id="timer-display" class="font-mono font-bold">1:00</span>
+                    </div>
+                </div>
+                <button id="history-btn" class="p-2 opacity-40 hover:opacity-100 transition-opacity">
+                    <i data-lucide="history" class="w-4 h-4"></i>
+                </button>
+                <button id="theme-toggle" class="p-2 opacity-40 hover:opacity-100 transition-opacity">
+                    <i data-lucide="moon" id="theme-icon" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </header>
+
+        <main class="w-full max-w-5xl flex-1 flex flex-col relative overflow-hidden">
+            
+            <!-- HOME VIEW -->
+            <section id="view-home" class="view-transition active-view flex-1 flex flex-col items-center justify-center text-center space-y-8">
+                <h2 class="text-5xl md:text-7xl font-serif-italic tracking-tight leading-none">Think fast.</h2>
+                <div class="w-full max-w-md space-y-8">
+                    <input id="home-prompt" type="text" placeholder="The topic at hand" 
+                           class="interactive-layer w-full px-0 py-4 bg-transparent border-b-2 border-theme focus:border-current outline-none transition-all font-serif-italic text-2xl md:text-3xl text-center">
+                    
+                    <div class="flex flex-col items-center gap-8">
+                        <div class="flex gap-8" id="time-selectors">
+                            <button data-time="30" class="time-btn text-xs font-black tracking-[0.2em] opacity-30 transition-opacity hover:opacity-60">30S</button>
+                            <button data-time="60" class="time-btn text-xs font-black tracking-[0.2em] transition-opacity hover:opacity-60">60S</button>
+                            <button data-time="300" class="time-btn text-xs font-black tracking-[0.2em] opacity-30 transition-opacity hover:opacity-60">5M</button>
+                            <button data-time="0" class="time-btn text-xs font-black tracking-[0.2em] opacity-30 transition-opacity hover:opacity-60">OPEN</button>
+                        </div>
+                        <button id="start-btn" class="interactive-layer bg-theme-btn px-14 py-5 rounded-full font-black text-xs tracking-[0.4em] shadow-2xl transition-transform hover:scale-105 active:scale-95">
+                            START SESSION
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SPRINT VIEW -->
+            <section id="view-sprint" class="view-transition hidden-view flex-1 flex flex-col gap-4 overflow-hidden relative">
+                <div id="active-prompt" class="text-center font-serif-italic text-xl md:text-2xl opacity-50 max-w-2xl mx-auto truncate shrink-0"></div>
+                <div class="relative flex-1 flex flex-col items-center justify-center overflow-hidden">
+                    <textarea id="sprint-input" 
+                              class="interactive-layer w-full h-full p-4 bg-transparent text-3xl md:text-5xl font-serif-italic outline-none resize-none text-center custom-scrollbar overflow-y-auto z-40"
+                              placeholder="Type your first thought..."></textarea>
+                    
+                    <!-- Finish Early Button (Bottom Left) -->
+                    <div id="finish-early-container" class="absolute bottom-4 left-0 z-50">
+                        <button id="finish-early-btn" class="text-current opacity-20 hover:opacity-100 hover:bg-white/10 px-6 py-3 rounded-xl text-[10px] font-black tracking-[0.3em] transition-all uppercase backdrop-blur-sm border border-transparent hover:border-current/10">
+                            Finish & Crate
+                        </button>
+                    </div>
+
+                    <div class="absolute bottom-4 right-0 flex items-center gap-6 opacity-30 z-10 pointer-events-none">
+                        <div class="flex flex-col items-end">
+                            <span class="text-[9px] font-black tracking-widest">JOTS</span>
+                            <span id="jots-count" class="text-2xl font-black">0</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- REVIEW VIEW -->
+            <section id="view-review" class="view-transition hidden-view flex-1 flex flex-col gap-6 overflow-hidden">
+                <div class="flex justify-between items-center border-b border-theme pb-4 shrink-0">
+                    <h3 class="text-xl font-serif-italic">Curation</h3>
+                    <button id="save-harvest-btn" class="interactive-layer text-[9px] font-black tracking-[0.3em] bg-theme-btn px-6 py-2.5 rounded-full shadow-lg">
+                        SAVE HARVEST
+                    </button>
+                </div>
+                <div id="review-list" class="flex-1 grid gap-3 overflow-y-auto pr-2 custom-scrollbar z-50">
+                </div>
+            </section>
+
+            <!-- SUMMARY VIEW -->
+            <section id="view-summary" class="view-transition hidden-view max-w-xl mx-auto w-full pt-8 text-center space-y-12 overflow-y-auto custom-scrollbar">
+                <div class="space-y-2">
+                    <h3 class="text-5xl font-serif-italic">Stored.</h3>
+                    <p id="summary-stat" class="text-[9px] font-black tracking-[0.4em] opacity-40 uppercase"></p>
+                </div>
+                <div class="flex justify-center gap-12 md:gap-20">
+                    <div class="space-y-1">
+                        <div class="text-[9px] font-black tracking-widest opacity-30 uppercase">IPM</div>
+                        <div id="summary-ipm" class="text-4xl font-black tracking-tighter">0</div>
+                    </div>
+                    <div class="space-y-1">
+                        <div class="text-[9px] font-black tracking-widest opacity-30 uppercase">Duration</div>
+                        <div id="summary-duration" class="text-4xl font-black tracking-tighter">0:00</div>
+                    </div>
+                </div>
+                <div class="flex flex-col items-center gap-6">
+                    <button id="new-session-btn" class="interactive-layer text-xs font-black tracking-[0.4em] border-b-2 border-current pb-1 hover:opacity-50 transition-opacity uppercase">New Session</button>
+                    <div class="flex gap-8">
+                        <button id="export-text-btn" class="interactive-layer text-[9px] font-black tracking-[0.4em] opacity-30 hover:opacity-100 transition-opacity uppercase">Export Text</button>
+                        <button id="export-email-btn" class="interactive-layer text-[9px] font-black tracking-[0.4em] opacity-30 hover:opacity-100 transition-opacity uppercase">Email</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- HISTORY VIEW -->
+            <section id="view-history" class="view-transition hidden-view flex-1 flex flex-col gap-6 overflow-hidden">
+                <div class="flex justify-between items-center border-b border-theme pb-4 shrink-0">
+                    <h3 class="text-xl font-serif-italic">Archives</h3>
+                    <button id="history-back-btn" class="interactive-layer text-[9px] font-black tracking-[0.3em] opacity-40 hover:opacity-100 uppercase">
+                        Back
+                    </button>
+                </div>
+                <div id="history-list" class="flex-1 grid gap-4 overflow-y-auto pr-2 custom-scrollbar z-50 content-start">
+                    <!-- History injected here -->
+                </div>
+            </section>
+
+        </main>
+
+        <footer class="mt-6 text-center h-8 flex flex-col items-center justify-center shrink-0">
+            <div id="footer-hint" class="text-[9px] font-black tracking-[0.2em] opacity-40 uppercase">
+                [Enter] Capture Thought
+            </div>
+            <div class="text-[9px] font-black tracking-[0.6em] uppercase opacity-10 mt-2">JOTERIE</div>
+        </footer>
+    </div>
+
+    <script>
+        // State Management with LocalStorage persistence for archives
+        let state = {
+            view: 'home',
+            configTime: 60,
+            timeLeft: 60,
+            elapsedTime: 0,
+            isTimerActive: false,
+            sessionCards: [],
+            focusPrompt: '',
+            timerInterval: null,
+            isDarkMode: false,
+            archives: JSON.parse(localStorage.getItem('joterie_archives')) || []
+        };
+
+        const elements = {
+            html: document.getElementById('main-html'),
+            logoContainer: document.getElementById('logo-container'),
+            homePrompt: document.getElementById('home-prompt'),
+            startBtn: document.getElementById('start-btn'),
+            sprintInput: document.getElementById('sprint-input'),
+            timerDisplay: document.getElementById('timer-display'),
+            timerPill: document.getElementById('timer-pill'),
+            jotsCount: document.getElementById('jots-count'),
+            activePrompt: document.getElementById('active-prompt'),
+            sprintStatus: document.getElementById('sprint-status'),
+            reviewList: document.getElementById('review-list'),
+            historyList: document.getElementById('history-list'),
+            saveHarvest: document.getElementById('save-harvest-btn'),
+            summaryStat: document.getElementById('summary-stat'),
+            summaryIpm: document.getElementById('summary-ipm'),
+            summaryDuration: document.getElementById('summary-duration'),
+            newSessionBtn: document.getElementById('new-session-btn'),
+            exportTextBtn: document.getElementById('export-text-btn'),
+            exportEmailBtn: document.getElementById('export-email-btn'),
+            footerHint: document.getElementById('footer-hint'),
+            finishEarlyBtn: document.getElementById('finish-early-btn'),
+            finishEarlyContainer: document.getElementById('finish-early-container'),
+            themeToggle: document.getElementById('theme-toggle'),
+            themeIcon: document.getElementById('theme-icon'),
+            historyBtn: document.getElementById('history-btn'),
+            historyBackBtn: document.getElementById('history-back-btn')
+        };
+
+        // Theme Logic
+        function toggleTheme() {
+            state.isDarkMode = !state.isDarkMode;
+            if (state.isDarkMode) {
+                elements.html.classList.add('dark');
+                elements.themeIcon.setAttribute('data-lucide', 'sun');
+            } else {
+                elements.html.classList.remove('dark');
+                elements.themeIcon.setAttribute('data-lucide', 'moon');
+            }
+            lucide.createIcons();
+        }
+
+        // Timer Logic
+        function stopTimer() {
+            if (state.timerInterval) {
+                clearInterval(state.timerInterval);
+                state.timerInterval = null;
+            }
+        }
+
+        function startTimer() {
+            stopTimer();
+            state.timerInterval = setInterval(() => {
+                if (state.configTime === 0) {
+                    state.elapsedTime++;
+                    elements.timerDisplay.innerText = formatTime(state.elapsedTime);
+                } else {
+                    state.timeLeft--;
+                    elements.timerDisplay.innerText = formatTime(state.timeLeft);
+                    if (state.timeLeft <= 0) {
+                        finishSession();
+                    }
+                }
+            }, 1000);
+        }
+
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60);
+            const s = seconds % 60;
+            return `${m}:${s.toString().padStart(2, '0')}`;
+        }
+
+        // View Navigation
+        function setView(viewName) {
+            document.querySelectorAll('section').forEach(s => {
+                s.classList.remove('active-view');
+                s.classList.add('hidden-view');
+            });
+            const target = document.getElementById(`view-${viewName}`);
+            target.classList.remove('hidden-view');
+            target.classList.add('active-view');
+            
+            state.view = viewName;
+            
+            // Context-specific UI updates
+            if (viewName === 'sprint') {
+                elements.sprintStatus.classList.remove('hidden');
+                elements.footerHint.innerText = '[Enter] Capture Thought';
+                elements.finishEarlyContainer.classList.remove('hidden');
+                setTimeout(() => elements.sprintInput.focus(), 50);
+            } else {
+                elements.sprintStatus.classList.add('hidden');
+                elements.finishEarlyContainer.classList.add('hidden');
+                if (viewName === 'home') {
+                    elements.footerHint.innerText = ''; // clear hint
+                    setTimeout(() => elements.homePrompt.focus(), 50);
+                } else if (viewName === 'review') {
+                    elements.footerHint.innerText = 'Click cards to toggle keep/toss';
+                    renderReview();
+                } else if (viewName === 'history') {
+                    elements.footerHint.innerText = '';
+                    renderHistory();
+                }
+            }
+        }
+
+        // Session Logic
+        function startSession() {
+            state.focusPrompt = elements.homePrompt.value;
+            state.sessionCards = [];
+            state.timeLeft = state.configTime;
+            state.elapsedTime = 0;
+            state.isTimerActive = false;
+            
+            elements.activePrompt.innerText = state.focusPrompt || "Drafting...";
+            elements.jotsCount.innerText = '0';
+            elements.sprintInput.value = '';
+            elements.sprintInput.placeholder = "Type your first thought to start...";
+            elements.timerPill.classList.add('timer-idle');
+            elements.timerDisplay.innerText = formatTime(state.configTime || 0);
+            
+            setView('sprint');
+        }
+
+        function submitCard() {
+            const text = elements.sprintInput.value.trim();
+            if (!text) return;
+
+            if (!state.isTimerActive) {
+                state.isTimerActive = true;
+                elements.timerPill.classList.remove('timer-idle');
+                startTimer();
+            }
+
+            state.sessionCards.unshift({
+                id: Date.now(),
+                text: text,
+                status: 'kept'
+            });
+
+            elements.jotsCount.innerText = state.sessionCards.length;
+            
+            // Bulge Animation
+            elements.sprintInput.classList.add('bulge-out');
+            setTimeout(() => {
+                elements.sprintInput.value = '';
+                elements.sprintInput.classList.remove('bulge-out');
+                elements.sprintInput.placeholder = "...";
+                elements.sprintInput.focus();
+            }, 180);
+        }
+
+        function finishSession() {
+            stopTimer();
+            setView('review');
+        }
+
+        // Curation Logic
+        function renderReview() {
+            elements.reviewList.innerHTML = '';
+            state.sessionCards.forEach(card => {
+                const cardEl = document.createElement('div');
+                cardEl.className = `flex items-stretch gap-4 rounded-xl transition-all duration-200 border border-transparent hover:border-current/10 ${card.status === 'kept' ? 'bg-white/5' : 'opacity-20'}`;
+                cardEl.innerHTML = `
+                    <div class="flex-1 font-serif-italic text-lg md:text-xl leading-relaxed p-4 cursor-pointer">${card.text}</div>
+                    <button class="w-16 flex items-center justify-center transition-all bg-black/5 rounded-r-xl">
+                        <i data-lucide="${card.status === 'kept' ? 'check' : 'rotate-ccw'}" class="w-5 h-5"></i>
+                    </button>
+                `;
+                cardEl.onclick = () => {
+                    card.status = card.status === 'kept' ? 'tossed' : 'kept';
+                    renderReview();
+                };
+                elements.reviewList.appendChild(cardEl);
+            });
+            lucide.createIcons();
+        }
+
+        function saveHarvest() {
+            const kept = state.sessionCards.filter(c => c.status === 'kept');
+            const totalSecs = state.configTime === 0 ? state.elapsedTime : (state.configTime - state.timeLeft);
+            const ipm = totalSecs > 0 ? ((kept.length / totalSecs) * 60).toFixed(1) : kept.length;
+
+            // Persist to Archive
+            const archiveEntry = {
+                id: Date.now(),
+                date: new Date().toLocaleDateString(),
+                prompt: state.focusPrompt || "Untitled Session",
+                cards: kept.map(c => c.text),
+                ipm: ipm,
+                duration: formatTime(totalSecs)
+            };
+            state.archives.unshift(archiveEntry);
+            localStorage.setItem('joterie_archives', JSON.stringify(state.archives));
+
+            // Show Summary
+            elements.summaryStat.innerText = `${kept.length} Kept / ${state.sessionCards.length} Total`;
+            elements.summaryIpm.innerText = ipm;
+            elements.summaryDuration.innerText = formatTime(totalSecs);
+            
+            setView('summary');
+        }
+
+        // History Logic
+        function renderHistory() {
+            elements.historyList.innerHTML = '';
+            if (state.archives.length === 0) {
+                elements.historyList.innerHTML = '<div class="text-center opacity-30 mt-10 font-serif-italic">No archives found.</div>';
+                return;
+            }
+            state.archives.forEach(entry => {
+                const el = document.createElement('div');
+                el.className = 'bg-white/5 p-6 rounded-2xl border border-transparent hover:border-current/10 transition-colors';
+                el.innerHTML = `
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <div class="text-[10px] font-black tracking-[0.2em] opacity-40 uppercase mb-1">${entry.date}</div>
+                            <div class="font-serif-italic text-2xl">${entry.prompt}</div>
+                        </div>
+                        <div class="text-right opacity-40">
+                            <div class="text-[10px] font-black tracking-[0.2em]">${entry.cards.length} JOTS</div>
+                            <div class="text-[10px] font-black tracking-[0.2em]">${entry.ipm} IPM</div>
+                        </div>
+                    </div>
+                    <div class="space-y-2 opacity-60 text-sm font-serif-italic pl-2 border-l-2 border-current/10">
+                        ${entry.cards.slice(0, 3).map(c => `<div class="truncate">${c}</div>`).join('')}
+                        ${entry.cards.length > 3 ? `<div class="text-[10px] opacity-50">+${entry.cards.length - 3} more</div>` : ''}
+                    </div>
+                `;
+                // Click to re-load into summary/export view could be added here
+                elements.historyList.appendChild(el);
+            });
+        }
+
+        // Export Logic
+        function exportText() {
+            const kept = state.sessionCards.filter(c => c.status === 'kept');
+            const content = kept.map((c, i) => `${i + 1}. ${c.text}`).join('\n');
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `joterie-harvest-${Date.now()}.txt`;
+            a.click();
+        }
+
+        function exportEmail() {
+            const kept = state.sessionCards.filter(c => c.status === 'kept');
+            const subject = encodeURIComponent(`Joterie Harvest: ${state.focusPrompt || 'Untitled'}`);
+            const bodyContent = kept.map((c, i) => `${i + 1}. ${c.text}`).join('\n');
+            const body = encodeURIComponent(bodyContent);
+            window.location.href = `mailto:?subject=${subject}&body=${body}`;
+        }
+
+        // Event Listeners
+        elements.startBtn.onclick = startSession;
+        elements.saveHarvest.onclick = saveHarvest;
+        elements.newSessionBtn.onclick = () => setView('home');
+        elements.exportTextBtn.onclick = exportText;
+        elements.exportEmailBtn.onclick = exportEmail;
+        elements.themeToggle.onclick = toggleTheme;
+        elements.historyBtn.onclick = () => setView('history');
+        elements.historyBackBtn.onclick = () => setView('home');
+        
+        elements.finishEarlyBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            finishSession();
+        });
+
+        elements.logoContainer.onclick = (e) => {
+            if (state.view === 'sprint') {
+                if (confirm('Abandon this session? Your progress will be lost.')) {
+                    stopTimer();
+                    setView('home');
+                }
+            } else if (state.view !== 'home') {
+                setView('home');
+            }
+        };
+
+        // Time Selectors with focus prevention
+        document.querySelectorAll('.time-btn').forEach(btn => {
+            btn.onmousedown = (e) => e.preventDefault(); // Prevents focusing the button, keeping focus on input
+            btn.onclick = () => {
+                state.configTime = parseInt(btn.dataset.time);
+                document.querySelectorAll('.time-btn').forEach(b => b.classList.add('opacity-30'));
+                btn.classList.remove('opacity-30');
+            };
+        });
+
+        // Keyboard Inputs
+        elements.sprintInput.onkeydown = (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                submitCard();
+            }
+        };
+
+        elements.homePrompt.onkeydown = (e) => {
+            if (e.key === 'Enter') startSession();
+        };
+
+        // Init
+        lucide.createIcons();
+        elements.homePrompt.focus();
+    </script>
+</body>
+</html>
