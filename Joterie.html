@@ -144,13 +144,13 @@
                            class="interactive-layer w-full px-0 py-4 bg-transparent border-b-2 border-theme focus:border-current outline-none transition-all font-serif-italic text-2xl md:text-3xl text-center">
                     
                     <div class="flex flex-col items-center gap-8" style="pointer-events: auto;">
-                        <div class="flex gap-8" id="time-selectors" style="pointer-events: auto;">
-                            <button type="button" data-time="30" onclick="selectTime(30)" class="time-btn text-xs font-black tracking-[0.2em] opacity-30 transition-opacity hover:opacity-60 cursor-pointer" style="pointer-events: auto;">30S</button>
-                            <button type="button" data-time="60" onclick="selectTime(60)" class="time-btn text-xs font-black tracking-[0.2em] transition-opacity hover:opacity-60 cursor-pointer" style="pointer-events: auto;">60S</button>
-                            <button type="button" data-time="300" onclick="selectTime(300)" class="time-btn text-xs font-black tracking-[0.2em] opacity-30 transition-opacity hover:opacity-60 cursor-pointer" style="pointer-events: auto;">5M</button>
-                            <button type="button" data-time="0" onclick="selectTime(0)" class="time-btn text-xs font-black tracking-[0.2em] opacity-30 transition-opacity hover:opacity-60 cursor-pointer" style="pointer-events: auto;">OPEN</button>
+                        <div class="flex gap-8" id="time-selectors">
+                            <button type="button" data-time="30" class="time-btn text-xs font-black tracking-[0.2em] opacity-30 transition-opacity hover:opacity-60 cursor-pointer">30S</button>
+                            <button type="button" data-time="60" class="time-btn text-xs font-black tracking-[0.2em] transition-opacity hover:opacity-60 cursor-pointer">60S</button>
+                            <button type="button" data-time="300" class="time-btn text-xs font-black tracking-[0.2em] opacity-30 transition-opacity hover:opacity-60 cursor-pointer">5M</button>
+                            <button type="button" data-time="0" class="time-btn text-xs font-black tracking-[0.2em] opacity-30 transition-opacity hover:opacity-60 cursor-pointer">OPEN</button>
                         </div>
-                        <button type="button" id="start-btn" onclick="startSession()" class="bg-theme-btn px-14 py-5 rounded-full font-black text-xs tracking-[0.4em] shadow-2xl transition-transform hover:scale-105 active:scale-95 cursor-pointer" style="pointer-events: auto;">
+                        <button type="button" id="start-btn" class="bg-theme-btn px-14 py-5 rounded-full font-black text-xs tracking-[0.4em] shadow-2xl transition-transform hover:scale-105 active:scale-95 cursor-pointer">
                             START SESSION
                         </button>
                     </div>
@@ -613,17 +613,39 @@
             }
         });
 
+        // Time selector buttons
+        document.querySelectorAll('.time-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const time = parseInt(btn.getAttribute('data-time'));
+                selectTime(time);
+            });
+        });
+
+        // Start session button
+        elements.startBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            startSession();
+        });
+
         // Keyboard Inputs
-        elements.sprintInput.onkeydown = (e) => {
+        elements.sprintInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
+                e.stopPropagation();
                 submitCard();
             }
-        };
+        });
 
-        elements.homePrompt.onkeydown = (e) => {
-            if (e.key === 'Enter') startSession();
-        };
+        elements.homePrompt.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                startSession();
+            }
+        });
 
         // Init
         lucide.createIcons();
