@@ -580,22 +580,27 @@
             window.location.href = `mailto:?subject=${subject}&body=${body}`;
         }
 
-        // Event Listeners
-        elements.startBtn.onclick = startSession;
-        elements.saveHarvest.onclick = saveHarvest;
-        elements.newSessionBtn.onclick = () => setView('home');
-        elements.exportTextBtn.onclick = exportText;
-        elements.exportEmailBtn.onclick = exportEmail;
-        elements.themeToggle.onclick = toggleTheme;
-        elements.historyBtn.onclick = () => setView('history');
-        elements.historyBackBtn.onclick = () => setView('home');
-        
+        // Event Listeners - using addEventListener for reliability
+        elements.startBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            startSession();
+        });
+
+        elements.saveHarvest.addEventListener('click', saveHarvest);
+        elements.newSessionBtn.addEventListener('click', () => setView('home'));
+        elements.exportTextBtn.addEventListener('click', exportText);
+        elements.exportEmailBtn.addEventListener('click', exportEmail);
+        elements.themeToggle.addEventListener('click', toggleTheme);
+        elements.historyBtn.addEventListener('click', () => setView('history'));
+        elements.historyBackBtn.addEventListener('click', () => setView('home'));
+
         elements.finishEarlyBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             finishSession();
         });
 
-        elements.logoContainer.onclick = (e) => {
+        elements.logoContainer.addEventListener('click', (e) => {
             if (state.view === 'sprint') {
                 if (confirm('Abandon this session? Your progress will be lost.')) {
                     stopTimer();
@@ -604,16 +609,19 @@
             } else if (state.view !== 'home') {
                 setView('home');
             }
-        };
+        });
 
-        // Time Selectors with focus prevention
+        // Time Selectors
         document.querySelectorAll('.time-btn').forEach(btn => {
-            btn.onmousedown = (e) => e.preventDefault(); // Prevents focusing the button, keeping focus on input
-            btn.onclick = () => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 state.configTime = parseInt(btn.dataset.time);
                 document.querySelectorAll('.time-btn').forEach(b => b.classList.add('opacity-30'));
                 btn.classList.remove('opacity-30');
-            };
+                // Return focus to input
+                elements.homePrompt.focus();
+            });
         });
 
         // Keyboard Inputs
