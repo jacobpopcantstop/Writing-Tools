@@ -144,13 +144,13 @@
                            class="interactive-layer w-full px-0 py-4 bg-transparent border-b-2 border-theme focus:border-current outline-none transition-all font-serif-italic text-2xl md:text-3xl text-center">
                     
                     <div class="flex flex-col items-center gap-8">
-                        <div class="flex gap-8" id="time-selectors">
-                            <button data-time="30" class="time-btn text-xs font-black tracking-[0.2em] opacity-30 transition-opacity hover:opacity-60">30S</button>
-                            <button data-time="60" class="time-btn text-xs font-black tracking-[0.2em] transition-opacity hover:opacity-60">60S</button>
-                            <button data-time="300" class="time-btn text-xs font-black tracking-[0.2em] opacity-30 transition-opacity hover:opacity-60">5M</button>
-                            <button data-time="0" class="time-btn text-xs font-black tracking-[0.2em] opacity-30 transition-opacity hover:opacity-60">OPEN</button>
+                        <div class="flex gap-8 interactive-layer" id="time-selectors">
+                            <button type="button" data-time="30" class="time-btn text-xs font-black tracking-[0.2em] opacity-30 transition-opacity hover:opacity-60 cursor-pointer">30S</button>
+                            <button type="button" data-time="60" class="time-btn text-xs font-black tracking-[0.2em] transition-opacity hover:opacity-60 cursor-pointer">60S</button>
+                            <button type="button" data-time="300" class="time-btn text-xs font-black tracking-[0.2em] opacity-30 transition-opacity hover:opacity-60 cursor-pointer">5M</button>
+                            <button type="button" data-time="0" class="time-btn text-xs font-black tracking-[0.2em] opacity-30 transition-opacity hover:opacity-60 cursor-pointer">OPEN</button>
                         </div>
-                        <button id="start-btn" class="interactive-layer bg-theme-btn px-14 py-5 rounded-full font-black text-xs tracking-[0.4em] shadow-2xl transition-transform hover:scale-105 active:scale-95">
+                        <button type="button" id="start-btn" class="interactive-layer bg-theme-btn px-14 py-5 rounded-full font-black text-xs tracking-[0.4em] shadow-2xl transition-transform hover:scale-105 active:scale-95 cursor-pointer">
                             START SESSION
                         </button>
                     </div>
@@ -432,14 +432,19 @@
             state.timeLeft = state.configTime;
             state.elapsedTime = 0;
             state.isTimerActive = false;
-            
+
             elements.activePrompt.innerText = state.focusPrompt || "Drafting...";
             elements.jotsCount.innerText = '0';
             elements.sprintInput.value = '';
             elements.sprintInput.placeholder = "Type your first thought to start...";
             elements.timerPill.classList.add('timer-idle');
             elements.timerDisplay.innerText = formatTime(state.configTime || 0);
-            
+
+            // Reset timer progress bar
+            const timerProgress = document.getElementById('timer-progress');
+            timerProgress.style.width = '100%';
+            timerProgress.style.opacity = '0.1';
+
             setView('sprint');
         }
 
@@ -575,22 +580,27 @@
             window.location.href = `mailto:?subject=${subject}&body=${body}`;
         }
 
-        // Event Listeners
-        elements.startBtn.onclick = startSession;
-        elements.saveHarvest.onclick = saveHarvest;
-        elements.newSessionBtn.onclick = () => setView('home');
-        elements.exportTextBtn.onclick = exportText;
-        elements.exportEmailBtn.onclick = exportEmail;
-        elements.themeToggle.onclick = toggleTheme;
-        elements.historyBtn.onclick = () => setView('history');
-        elements.historyBackBtn.onclick = () => setView('home');
-        
+        // Event Listeners - using addEventListener for reliability
+        elements.startBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            startSession();
+        });
+
+        elements.saveHarvest.addEventListener('click', saveHarvest);
+        elements.newSessionBtn.addEventListener('click', () => setView('home'));
+        elements.exportTextBtn.addEventListener('click', exportText);
+        elements.exportEmailBtn.addEventListener('click', exportEmail);
+        elements.themeToggle.addEventListener('click', toggleTheme);
+        elements.historyBtn.addEventListener('click', () => setView('history'));
+        elements.historyBackBtn.addEventListener('click', () => setView('home'));
+
         elements.finishEarlyBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             finishSession();
         });
 
-        elements.logoContainer.onclick = (e) => {
+        elements.logoContainer.addEventListener('click', (e) => {
             if (state.view === 'sprint') {
                 if (confirm('Abandon this session? Your progress will be lost.')) {
                     stopTimer();
@@ -599,16 +609,19 @@
             } else if (state.view !== 'home') {
                 setView('home');
             }
-        };
+        });
 
-        // Time Selectors with focus prevention
+        // Time Selectors
         document.querySelectorAll('.time-btn').forEach(btn => {
-            btn.onmousedown = (e) => e.preventDefault(); // Prevents focusing the button, keeping focus on input
-            btn.onclick = () => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 state.configTime = parseInt(btn.dataset.time);
                 document.querySelectorAll('.time-btn').forEach(b => b.classList.add('opacity-30'));
                 btn.classList.remove('opacity-30');
-            };
+                // Return focus to input
+                elements.homePrompt.focus();
+            });
         });
 
         // Keyboard Inputs

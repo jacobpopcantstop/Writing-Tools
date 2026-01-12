@@ -189,6 +189,20 @@
             return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{icons[name]}</svg>;
         };
 
+        // --- GARDEN PLANTS DATA ---
+        const GARDEN_PLANTS = [
+            { id: 'sprout', name: 'Tiny Sprout', cost: 50, emoji: '🌱', darkEmoji: '🍄', desc: 'A humble beginning' },
+            { id: 'flower', name: 'Wild Flower', cost: 150, emoji: '🌸', darkEmoji: '🔮', desc: 'Beauty in simplicity' },
+            { id: 'fern', name: 'Lush Fern', cost: 300, emoji: '🌿', darkEmoji: '🦠', desc: 'Ancient and wise' },
+            { id: 'tulip', name: 'Tulip', cost: 400, emoji: '🌷', darkEmoji: '💜', desc: 'Elegant grace' },
+            { id: 'sunflower', name: 'Sunflower', cost: 600, emoji: '🌻', darkEmoji: '✨', desc: 'Radiant energy' },
+            { id: 'rose', name: 'Rose Bush', cost: 800, emoji: '🌹', darkEmoji: '🎭', desc: 'Thorny beauty' },
+            { id: 'tree', name: 'Young Tree', cost: 1200, emoji: '🌳', darkEmoji: '🌑', desc: 'Growing strong' },
+            { id: 'bonsai', name: 'Bonsai', cost: 2000, emoji: '🎋', darkEmoji: '🕯️', desc: 'Patient mastery' },
+            { id: 'cherry', name: 'Cherry Blossom', cost: 3000, emoji: '🌸', darkEmoji: '💀', desc: 'Fleeting perfection' },
+            { id: 'mythic', name: 'Mythic Bloom', cost: 5000, emoji: '🏵️', darkEmoji: '👁️', desc: 'Legendary rarity' },
+        ];
+
         // --- PROGRESSION DATA ---
         // Light mode: Lush green garden theme | Dark mode: Fungal/Mycorrhizal network theme
         const ZONES = [
@@ -642,7 +656,7 @@
 
         // --- APP COMPONENT ---
         const App = () => {
-            const [gameState, setGameState] = useState('MENU'); // MENU, PLAYING, FROZEN
+            const [gameState, setGameState] = useState('MENU'); // MENU, PLAYING, FROZEN, GARDEN
             const [text, setText] = useState("");
             const [stats, setStats] = useState({ totalWords: 0, sunlight: 0, sessionWords: 0, combo: 0, maxCombo: 0 });
             const [frost, setFrost] = useState(0);
@@ -651,6 +665,11 @@
             const [wpm, setWpm] = useState(0);
             const [levelUpFlash, setLevelUpFlash] = useState(false);
             const [prevZoneIndex, setPrevZoneIndex] = useState(0);
+
+            // XP & Garden State
+            const [xp, setXp] = useState(0);
+            const [garden, setGarden] = useState([]); // Array of planted plant IDs
+            const [totalXpEarned, setTotalXpEarned] = useState(0);
 
             const audioRef = useRef(new AudioEngine());
             const loopRef = useRef();
@@ -691,18 +710,25 @@
                             maxCombo: parseInt(loadedStats.maxCombo) || 0
                         });
                         setSettings(s => ({...s, darkMode: data.darkMode !== false})); // Default to dark mode
+                        // Load XP and Garden
+                        setXp(parseInt(data.xp) || 0);
+                        setGarden(Array.isArray(data.garden) ? data.garden : []);
+                        setTotalXpEarned(parseInt(data.totalXpEarned) || 0);
                     } catch(e) { console.error("Save Corrupt"); }
                 }
             }, []);
 
             // Auto-Save
             useEffect(() => {
-                localStorage.setItem('withernaught_save', JSON.stringify({ 
-                    text, 
+                localStorage.setItem('withernaught_save', JSON.stringify({
+                    text,
                     stats,
-                    darkMode: settings.darkMode 
+                    darkMode: settings.darkMode,
+                    xp,
+                    garden,
+                    totalXpEarned
                 }));
-            }, [text, stats, settings.darkMode]);
+            }, [text, stats, settings.darkMode, xp, garden, totalXpEarned]);
 
             // Audio & Focus Logic
             useEffect(() => {
@@ -815,6 +841,12 @@
                                 return { totalWords: newTotal, sunlight: newSun, sessionWords: newSession, combo: newCombo, maxCombo: newMaxCombo };
                             });
 
+                            // Earn XP (base 1 + combo bonus)
+                            const comboBonus = Math.floor(stats.combo / 5);
+                            const xpGain = 1 + comboBonus;
+                            setXp(x => x + xpGain);
+                            setTotalXpEarned(t => t + xpGain);
+
                             // Update WPM
                             const elapsedMinutes = (Date.now() - sessionStartTime.current) / 60000;
                             if (elapsedMinutes > 0.1) {
@@ -873,6 +905,16 @@
             const toggleDarkMode = () => {
                 setSettings(s => ({...s, darkMode: !s.darkMode}));
             };
+
+            // Garden Functions
+            const buyPlant = (plantId) => {
+                const plant = GARDEN_PLANTS.find(p => p.id === plantId);
+                if (!plant || xp < plant.cost) return;
+                setXp(x => x - plant.cost);
+                setGarden(g => [...g, { id: plantId, timestamp: Date.now() }]);
+            };
+
+            const getPlantCount = (plantId) => garden.filter(p => p.id === plantId).length;
 
             // Render
             const bgColor = settings.darkMode ? currentZone.darkColor : currentZone.color;
@@ -963,6 +1005,15 @@
                         </div>
 
                         <div className="flex gap-3">
+                            {/* Garden Button with XP indicator */}
+                            <button
+                                onClick={() => setGameState(gameState === 'GARDEN' ? 'MENU' : 'GARDEN')}
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${gameState === 'GARDEN' ? (settings.darkMode ? 'bg-lime-700 text-lime-100' : 'bg-emerald-600 text-white') : (settings.darkMode ? 'bg-lime-900/50 hover:bg-lime-800/50 text-lime-300' : 'bg-emerald-100 hover:bg-emerald-200 text-emerald-700')}`}
+                                title="Open Garden"
+                            >
+                                <span className="text-lg">{settings.darkMode ? '🍄' : '🌱'}</span>
+                                <span className="text-xs font-bold">{xp} XP</span>
+                            </button>
                             <button onClick={toggleDarkMode} className={`p-2 rounded hover:bg-white/10 ${settings.darkMode ? 'text-lime-400' : 'text-slate-500'}`} title="Theme">
                                 {settings.darkMode ? <Icon name="Sun" className="w-5 h-5"/> : <Icon name="Moon" className="w-5 h-5"/>}
                             </button>
@@ -1093,6 +1144,128 @@
                                     <button onClick={() => setGameState('MENU')} className={`flex-1 py-3 rounded ${settings.darkMode ? 'bg-lime-700 hover:bg-lime-600' : 'bg-sky-600 hover:bg-sky-500'}`}>
                                         Try Again
                                     </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* GARDEN TAB */}
+                    {gameState === 'GARDEN' && (
+                        <div className={`fixed inset-0 z-50 flex flex-col backdrop-blur-md modal-enter ${settings.darkMode ? 'bg-black/95 text-stone-200' : 'bg-white/95 text-slate-800'}`}>
+                            {/* Garden Header */}
+                            <div className={`p-6 border-b ${settings.darkMode ? 'border-lime-900/50 bg-black/50' : 'border-emerald-100 bg-emerald-50/50'}`}>
+                                <div className="max-w-4xl mx-auto flex justify-between items-center">
+                                    <div>
+                                        <h1 className={`text-3xl font-serif ${settings.darkMode ? 'text-lime-400' : 'text-emerald-700'}`}>
+                                            {settings.darkMode ? '🍄 The Spore Garden' : '🌱 Your Garden'}
+                                        </h1>
+                                        <p className="text-sm opacity-60 mt-1">
+                                            {settings.darkMode ? 'Cultivate your fungal collection' : 'Grow your botanical paradise'}
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <div className={`px-4 py-2 rounded-lg ${settings.darkMode ? 'bg-lime-900/50' : 'bg-emerald-100'}`}>
+                                            <span className={`text-2xl font-black ${settings.darkMode ? 'text-lime-400' : 'text-emerald-600'}`}>{xp}</span>
+                                            <span className="text-xs opacity-60 ml-1">XP</span>
+                                        </div>
+                                        <button
+                                            onClick={() => setGameState('MENU')}
+                                            className={`px-4 py-2 rounded-lg ${settings.darkMode ? 'bg-stone-800 hover:bg-stone-700' : 'bg-slate-200 hover:bg-slate-300'}`}
+                                        >
+                                            ← Back
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex-1 overflow-auto p-6">
+                                <div className="max-w-4xl mx-auto">
+                                    {/* Garden Display - Shows planted items */}
+                                    <div className={`mb-8 p-6 rounded-2xl min-h-[200px] ${settings.darkMode ? 'bg-lime-950/30 border border-lime-900/50' : 'bg-emerald-50 border border-emerald-100'}`}>
+                                        <h3 className="text-sm font-bold uppercase tracking-widest opacity-50 mb-4">
+                                            Your Collection ({garden.length} plants)
+                                        </h3>
+                                        {garden.length === 0 ? (
+                                            <div className="text-center py-8 opacity-40">
+                                                <p className="text-4xl mb-2">{settings.darkMode ? '🌑' : '🌫️'}</p>
+                                                <p>Your garden is empty. Buy plants below to grow it!</p>
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-wrap gap-2">
+                                                {garden.map((planted, idx) => {
+                                                    const plant = GARDEN_PLANTS.find(p => p.id === planted.id);
+                                                    if (!plant) return null;
+                                                    return (
+                                                        <div
+                                                            key={idx}
+                                                            className={`text-3xl p-2 rounded-lg transition-transform hover:scale-125 cursor-default ${settings.darkMode ? 'hover:bg-lime-900/30' : 'hover:bg-emerald-100'}`}
+                                                            title={plant.name}
+                                                        >
+                                                            {settings.darkMode ? plant.darkEmoji : plant.emoji}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Plant Shop */}
+                                    <h3 className="text-sm font-bold uppercase tracking-widest opacity-50 mb-4">
+                                        {settings.darkMode ? 'Spore Shop' : 'Plant Shop'}
+                                    </h3>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                                        {GARDEN_PLANTS.map(plant => {
+                                            const canAfford = xp >= plant.cost;
+                                            const owned = getPlantCount(plant.id);
+                                            return (
+                                                <button
+                                                    key={plant.id}
+                                                    onClick={() => buyPlant(plant.id)}
+                                                    disabled={!canAfford}
+                                                    className={`p-4 rounded-xl text-center transition-all ${canAfford
+                                                        ? (settings.darkMode ? 'bg-lime-900/30 hover:bg-lime-800/50 border border-lime-700' : 'bg-emerald-50 hover:bg-emerald-100 border border-emerald-200')
+                                                        : 'opacity-40 cursor-not-allowed bg-black/10'
+                                                    }`}
+                                                >
+                                                    <div className="text-4xl mb-2">
+                                                        {settings.darkMode ? plant.darkEmoji : plant.emoji}
+                                                    </div>
+                                                    <div className="font-bold text-sm">{plant.name}</div>
+                                                    <div className="text-xs opacity-60 mb-2">{plant.desc}</div>
+                                                    <div className={`text-sm font-bold ${canAfford ? (settings.darkMode ? 'text-lime-400' : 'text-emerald-600') : 'text-red-400'}`}>
+                                                        {plant.cost} XP
+                                                    </div>
+                                                    {owned > 0 && (
+                                                        <div className="text-xs opacity-50 mt-1">Owned: {owned}</div>
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* Stats */}
+                                    <div className={`mt-8 p-4 rounded-xl ${settings.darkMode ? 'bg-stone-900/50' : 'bg-slate-100'}`}>
+                                        <div className="flex justify-around text-center">
+                                            <div>
+                                                <div className={`text-2xl font-black ${settings.darkMode ? 'text-lime-400' : 'text-emerald-600'}`}>
+                                                    {totalXpEarned.toLocaleString()}
+                                                </div>
+                                                <div className="text-xs opacity-60">Total XP Earned</div>
+                                            </div>
+                                            <div>
+                                                <div className={`text-2xl font-black ${settings.darkMode ? 'text-lime-400' : 'text-emerald-600'}`}>
+                                                    {garden.length}
+                                                </div>
+                                                <div className="text-xs opacity-60">Plants Collected</div>
+                                            </div>
+                                            <div>
+                                                <div className={`text-2xl font-black ${settings.darkMode ? 'text-lime-400' : 'text-emerald-600'}`}>
+                                                    {stats.totalWords.toLocaleString()}
+                                                </div>
+                                                <div className="text-xs opacity-60">Words Written</div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
