@@ -5,37 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Joterie | Think Fast</title>
     
-    <!-- Refined Favicon (Sepia Brown Tile with Parchment Bolt) -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2225%22 fill=%22%233D2B1F%22/><path d=%22M54 15L24 55h28l-4 30 30-40H50l4-30z%22 fill=%22%23F5E6C8%22 stroke=%22%23F5E6C8%22 stroke-width=%224%22 stroke-linejoin=%22round%22/></svg>">
+    <!-- Refined Favicon (Forest Green Tile with Ivory Bolt) -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2225%22 fill=%22%23163312%22/><path d=%22M54 15L24 55h28l-4 30 30-40H50l4-30z%22 fill=%22%23E2C990%22 stroke=%22%23E2C990%22 stroke-width=%224%22 stroke-linejoin=%22round%22/></svg>">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;900&family=Newsreader:ital,opsz,wght@1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@0.263.1"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
-            /* Warm Parchment Yellow */
-            --bg-color: #F5E6C8;
-            --bg-secondary: #EDD9B0;
-            /* Rich Sepia Brown for text */
-            --text-color: #3D2B1F;
-            /* Warm amber tones for accents */
-            --accent-opacity: rgba(61, 43, 31, 0.2);
-            /* Muted brown for placeholders */
-            --input-placeholder: #8B7355;
-            --card-bg: rgba(237, 217, 176, 0.6);
-            --card-border: rgba(61, 43, 31, 0.15);
+            /* Deeper, yellower cream (Vintage Ivory) */
+            --bg-color: #E2C990; 
+            /* Richer forest green */
+            --text-color: #163312;
+            /* Increased opacity for better visibility on resting states */
+            --accent-opacity: rgba(22, 51, 18, 0.25);
+            /* Saturated Sage Green for placeholders */
+            --input-placeholder: #5c7a52; 
+            --card-bg: rgba(255, 255, 255, 0.15);
         }
 
         .dark {
-            --bg-color: #1a1a1a;
-            --bg-secondary: #242424;
-            --text-color: #f4f4f4;
+            --bg-color: #1a1a1a; 
+            --text-color: #f4f4f4; 
             --accent-opacity: rgba(244, 244, 244, 0.15);
             --input-placeholder: rgba(244, 244, 244, 0.4);
             --card-bg: rgba(255, 255, 255, 0.05);
-            --card-border: rgba(255, 255, 255, 0.1);
         }
 
         body {
@@ -105,6 +101,17 @@
 
         .border-theme { border-color: var(--accent-opacity); }
         .bg-theme-btn { background-color: var(--text-color); color: var(--bg-color); }
+        
+        /* Specifically for history items to avoid grey look */
+        .history-item-border {
+            border-color: transparent;
+        }
+        .history-item-border:hover {
+            border-color: var(--accent-opacity);
+        }
+        .history-divider {
+            border-color: var(--accent-opacity);
+        }
     </style>
 </head>
 <body class="selection-theme">
@@ -119,10 +126,9 @@
             
             <div class="flex items-center gap-6">
                 <div id="sprint-status" class="hidden flex items-center gap-4">
-                    <div id="timer-pill" class="relative px-4 py-1.5 rounded-full border border-theme bg-white/5 backdrop-blur-md flex items-center gap-2 timer-idle overflow-hidden">
-                        <div id="timer-progress" class="absolute left-0 top-0 h-full bg-current opacity-10 transition-all duration-1000" style="width: 100%"></div>
-                        <i id="timer-icon" data-lucide="clock" class="w-3.5 h-3.5 relative z-10"></i>
-                        <span id="timer-display" class="font-mono font-bold relative z-10">1:00</span>
+                    <div id="timer-pill" class="px-4 py-1.5 rounded-full border border-theme bg-white/5 backdrop-blur-md flex items-center gap-2 timer-idle">
+                        <i id="timer-icon" data-lucide="clock" class="w-3.5 h-3.5"></i>
+                        <span id="timer-display" class="font-mono font-bold">1:00</span>
                     </div>
                 </div>
                 <button id="history-btn" class="p-2 opacity-40 hover:opacity-100 transition-opacity">
@@ -143,14 +149,14 @@
                     <input id="home-prompt" type="text" placeholder="The topic at hand" 
                            class="interactive-layer w-full px-0 py-4 bg-transparent border-b-2 border-theme focus:border-current outline-none transition-all font-serif-italic text-2xl md:text-3xl text-center">
                     
-                    <div class="flex flex-col items-center gap-8" style="pointer-events: auto;">
+                    <div class="flex flex-col items-center gap-8">
                         <div class="flex gap-8" id="time-selectors">
-                            <button type="button" data-time="30" class="time-btn text-xs font-black tracking-[0.2em] opacity-30 transition-opacity hover:opacity-60 cursor-pointer">30S</button>
-                            <button type="button" data-time="60" class="time-btn text-xs font-black tracking-[0.2em] transition-opacity hover:opacity-60 cursor-pointer">60S</button>
-                            <button type="button" data-time="300" class="time-btn text-xs font-black tracking-[0.2em] opacity-30 transition-opacity hover:opacity-60 cursor-pointer">5M</button>
-                            <button type="button" data-time="0" class="time-btn text-xs font-black tracking-[0.2em] opacity-30 transition-opacity hover:opacity-60 cursor-pointer">OPEN</button>
+                            <button data-time="30" class="time-btn text-xs font-black tracking-[0.2em] opacity-30 transition-opacity hover:opacity-60">30S</button>
+                            <button data-time="60" class="time-btn text-xs font-black tracking-[0.2em] transition-opacity hover:opacity-60">60S</button>
+                            <button data-time="300" class="time-btn text-xs font-black tracking-[0.2em] opacity-30 transition-opacity hover:opacity-60">5M</button>
+                            <button data-time="0" class="time-btn text-xs font-black tracking-[0.2em] opacity-30 transition-opacity hover:opacity-60">OPEN</button>
                         </div>
-                        <button type="button" id="start-btn" class="bg-theme-btn px-14 py-5 rounded-full font-black text-xs tracking-[0.4em] shadow-2xl transition-transform hover:scale-105 active:scale-95 cursor-pointer">
+                        <button id="start-btn" class="interactive-layer bg-theme-btn px-14 py-5 rounded-full font-black text-xs tracking-[0.4em] shadow-2xl transition-transform hover:scale-105 active:scale-95">
                             START SESSION
                         </button>
                     </div>
@@ -194,12 +200,13 @@
             </section>
 
             <!-- SUMMARY VIEW -->
-            <section id="view-summary" class="view-transition hidden-view max-w-xl mx-auto w-full pt-8 text-center space-y-12 overflow-y-auto custom-scrollbar">
-                <div class="space-y-2">
+            <section id="view-summary" class="view-transition hidden-view max-w-xl mx-auto w-full pt-8 text-center space-y-8 overflow-hidden flex flex-col">
+                <div class="space-y-2 shrink-0">
                     <h3 class="text-5xl font-serif-italic">Stored.</h3>
                     <p id="summary-stat" class="text-[9px] font-black tracking-[0.4em] opacity-40 uppercase"></p>
                 </div>
-                <div class="flex justify-center gap-16 md:gap-24">
+                
+                <div class="flex justify-center gap-12 md:gap-20 shrink-0">
                     <div class="space-y-1">
                         <div class="text-[9px] font-black tracking-widest opacity-30 uppercase">IPM</div>
                         <div id="summary-ipm" class="text-4xl font-black tracking-tighter">0</div>
@@ -209,11 +216,17 @@
                         <div id="summary-duration" class="text-4xl font-black tracking-tighter">0:00</div>
                     </div>
                 </div>
-                <div class="flex flex-col items-center gap-8 mt-4">
+
+                <!-- Kept Thoughts List -->
+                <div id="summary-list" class="flex-1 w-full text-left space-y-4 px-4 overflow-y-auto custom-scrollbar my-4">
+                    <!-- Cards injected here -->
+                </div>
+
+                <div class="flex flex-col items-center gap-6 shrink-0 pb-4">
                     <button id="new-session-btn" class="interactive-layer text-xs font-black tracking-[0.4em] border-b-2 border-current pb-1 hover:opacity-50 transition-opacity uppercase">New Session</button>
-                    <div class="flex gap-10">
-                        <button id="export-text-btn" class="interactive-layer text-[10px] font-black tracking-[0.3em] opacity-40 hover:opacity-100 transition-opacity uppercase">Export Text</button>
-                        <button id="export-email-btn" class="interactive-layer text-[10px] font-black tracking-[0.3em] opacity-40 hover:opacity-100 transition-opacity uppercase">Email</button>
+                    <div class="flex gap-8">
+                        <button id="export-text-btn" class="interactive-layer text-[9px] font-black tracking-[0.4em] opacity-30 hover:opacity-100 transition-opacity uppercase">Export Text</button>
+                        <button id="export-email-btn" class="interactive-layer text-[9px] font-black tracking-[0.4em] opacity-30 hover:opacity-100 transition-opacity uppercase">Email</button>
                     </div>
                 </div>
             </section>
@@ -226,7 +239,7 @@
                         Back
                     </button>
                 </div>
-                <div id="history-list" class="flex-1 flex flex-col gap-6 overflow-y-auto pr-2 pb-8 custom-scrollbar z-50">
+                <div id="history-list" class="flex-1 grid gap-4 overflow-y-auto pr-2 custom-scrollbar z-50 content-start">
                     <!-- History injected here -->
                 </div>
             </section>
@@ -237,7 +250,7 @@
             <div id="footer-hint" class="text-[9px] font-black tracking-[0.2em] opacity-40 uppercase">
                 [Enter] Capture Thought
             </div>
-            <a href="index.html" class="text-[9px] font-black tracking-[0.6em] uppercase opacity-10 mt-2 hover:opacity-30 transition-opacity no-underline" style="color: inherit; text-decoration: none;">WRITING TOOLS SUITE</a>
+            <div class="text-[9px] font-black tracking-[0.6em] uppercase opacity-10 mt-2">JOTERIE</div>
         </footer>
     </div>
 
@@ -253,7 +266,7 @@
             focusPrompt: '',
             timerInterval: null,
             isDarkMode: false,
-            archives: JSON.parse(localStorage.getItem('writingtools_joterie_archives')) || []
+            archives: JSON.parse(localStorage.getItem('joterie_archives')) || []
         };
 
         const elements = {
@@ -269,6 +282,7 @@
             sprintStatus: document.getElementById('sprint-status'),
             reviewList: document.getElementById('review-list'),
             historyList: document.getElementById('history-list'),
+            summaryList: document.getElementById('summary-list'), // New Element
             saveHarvest: document.getElementById('save-harvest-btn'),
             summaryStat: document.getElementById('summary-stat'),
             summaryIpm: document.getElementById('summary-ipm'),
@@ -285,69 +299,18 @@
             historyBackBtn: document.getElementById('history-back-btn')
         };
 
-        // Theme Logic (Suite-wide sync with auto mode)
-        // themeMode: 'light', 'dark', or 'auto'
-        let themeMode = localStorage.getItem('writingtools_theme_mode') || 'auto';
-
-        function applyTheme(isDark) {
-            state.isDarkMode = isDark;
-            if (isDark) {
+        // Theme Logic
+        function toggleTheme() {
+            state.isDarkMode = !state.isDarkMode;
+            if (state.isDarkMode) {
                 elements.html.classList.add('dark');
-            } else {
-                elements.html.classList.remove('dark');
-            }
-            updateThemeIcon();
-            lucide.createIcons();
-        }
-
-        function updateThemeIcon() {
-            // Icon shows: sun (when dark), moon (when light), or monitor (when auto)
-            if (themeMode === 'auto') {
-                elements.themeIcon.setAttribute('data-lucide', 'monitor');
-            } else if (state.isDarkMode) {
                 elements.themeIcon.setAttribute('data-lucide', 'sun');
             } else {
+                elements.html.classList.remove('dark');
                 elements.themeIcon.setAttribute('data-lucide', 'moon');
             }
+            lucide.createIcons();
         }
-
-        function toggleTheme() {
-            // Cycle: auto -> light -> dark -> auto
-            if (themeMode === 'auto') {
-                themeMode = 'light';
-                applyTheme(false);
-            } else if (themeMode === 'light') {
-                themeMode = 'dark';
-                applyTheme(true);
-            } else {
-                themeMode = 'auto';
-                applyTheme(window.matchMedia('(prefers-color-scheme: dark)').matches);
-            }
-            localStorage.setItem('writingtools_theme_mode', themeMode);
-            localStorage.setItem('writingtools_theme', state.isDarkMode ? 'dark' : 'light');
-        }
-
-        // Load theme on init with auto detection
-        (function initTheme() {
-            const savedMode = localStorage.getItem('writingtools_theme_mode');
-            if (savedMode) {
-                themeMode = savedMode;
-            }
-
-            if (themeMode === 'auto') {
-                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                applyTheme(prefersDark);
-            } else {
-                applyTheme(themeMode === 'dark');
-            }
-
-            // Listen for system theme changes when in auto mode
-            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-                if (themeMode === 'auto') {
-                    applyTheme(e.matches);
-                }
-            });
-        })();
 
         // Timer Logic
         function stopTimer() {
@@ -359,25 +322,13 @@
 
         function startTimer() {
             stopTimer();
-            const timerProgress = document.getElementById('timer-progress');
             state.timerInterval = setInterval(() => {
                 if (state.configTime === 0) {
                     state.elapsedTime++;
                     elements.timerDisplay.innerText = formatTime(state.elapsedTime);
-                    // For open mode, show a pulsing full bar
-                    timerProgress.style.width = '100%';
                 } else {
                     state.timeLeft--;
                     elements.timerDisplay.innerText = formatTime(state.timeLeft);
-                    // Update progress bar width
-                    const progressPercent = (state.timeLeft / state.configTime) * 100;
-                    timerProgress.style.width = progressPercent + '%';
-                    // Change color as time runs low
-                    if (progressPercent < 20) {
-                        timerProgress.style.opacity = '0.3';
-                    } else if (progressPercent < 50) {
-                        timerProgress.style.opacity = '0.2';
-                    }
                     if (state.timeLeft <= 0) {
                         finishSession();
                     }
@@ -425,14 +376,6 @@
             }
         }
 
-        // Time Selection (for inline onclick)
-        function selectTime(time) {
-            state.configTime = time;
-            document.querySelectorAll('.time-btn').forEach(b => b.classList.add('opacity-30'));
-            document.querySelector(`[data-time="${time}"]`).classList.remove('opacity-30');
-            elements.homePrompt.focus();
-        }
-
         // Session Logic
         function startSession() {
             state.focusPrompt = elements.homePrompt.value;
@@ -440,19 +383,14 @@
             state.timeLeft = state.configTime;
             state.elapsedTime = 0;
             state.isTimerActive = false;
-
+            
             elements.activePrompt.innerText = state.focusPrompt || "Drafting...";
             elements.jotsCount.innerText = '0';
             elements.sprintInput.value = '';
             elements.sprintInput.placeholder = "Type your first thought to start...";
             elements.timerPill.classList.add('timer-idle');
             elements.timerDisplay.innerText = formatTime(state.configTime || 0);
-
-            // Reset timer progress bar
-            const timerProgress = document.getElementById('timer-progress');
-            timerProgress.style.width = '100%';
-            timerProgress.style.opacity = '0.1';
-
+            
             setView('sprint');
         }
 
@@ -510,6 +448,20 @@
             lucide.createIcons();
         }
 
+        function renderSummaryList(cards) {
+            elements.summaryList.innerHTML = '';
+            if (cards.length === 0) {
+                elements.summaryList.innerHTML = '<div class="text-center opacity-40 text-sm font-serif-italic italic">No jots kept.</div>';
+                return;
+            }
+            cards.forEach(card => {
+                const el = document.createElement('div');
+                el.className = 'font-serif-italic text-xl border-b border-theme pb-2 mb-2 opacity-80';
+                el.innerText = card.text;
+                elements.summaryList.appendChild(el);
+            });
+        }
+
         function saveHarvest() {
             const kept = state.sessionCards.filter(c => c.status === 'kept');
             const totalSecs = state.configTime === 0 ? state.elapsedTime : (state.configTime - state.timeLeft);
@@ -525,13 +477,14 @@
                 duration: formatTime(totalSecs)
             };
             state.archives.unshift(archiveEntry);
-            localStorage.setItem('writingtools_joterie_archives', JSON.stringify(state.archives));
+            localStorage.setItem('joterie_archives', JSON.stringify(state.archives));
 
             // Show Summary
             elements.summaryStat.innerText = `${kept.length} Kept / ${state.sessionCards.length} Total`;
             elements.summaryIpm.innerText = ipm;
             elements.summaryDuration.innerText = formatTime(totalSecs);
             
+            renderSummaryList(kept);
             setView('summary');
         }
 
@@ -539,33 +492,49 @@
         function renderHistory() {
             elements.historyList.innerHTML = '';
             if (state.archives.length === 0) {
-                elements.historyList.innerHTML = '<div class="text-center opacity-30 mt-20 font-serif-italic text-lg">No archives found.</div>';
+                elements.historyList.innerHTML = '<div class="text-center opacity-30 mt-10 font-serif-italic">No archives found.</div>';
                 return;
             }
             state.archives.forEach(entry => {
                 const el = document.createElement('div');
-                el.className = 'p-8 rounded-2xl transition-all duration-200 shrink-0';
-                el.style.cssText = 'background: var(--card-bg); border: 1px solid var(--card-border);';
+                // Use history-item-border class to use theme color instead of generic current/10
+                el.className = 'bg-white/5 p-6 rounded-2xl border history-item-border transition-colors cursor-pointer group';
                 el.innerHTML = `
-                    <div class="flex justify-between items-start mb-6">
+                    <div class="flex justify-between items-start mb-4 pointer-events-none">
                         <div>
-                            <div class="text-[10px] font-black tracking-[0.2em] opacity-50 uppercase mb-2">${entry.date}</div>
-                            <div class="font-serif-italic text-2xl md:text-3xl">${entry.prompt}</div>
+                            <div class="text-[10px] font-black tracking-[0.2em] opacity-40 uppercase mb-1">${entry.date}</div>
+                            <div class="font-serif-italic text-2xl">${entry.prompt}</div>
                         </div>
-                        <div class="text-right opacity-50">
-                            <div class="text-[10px] font-black tracking-[0.2em] mb-1">${entry.cards.length} JOTS</div>
+                        <div class="text-right opacity-40">
+                            <div class="text-[10px] font-black tracking-[0.2em]">${entry.cards.length} JOTS</div>
                             <div class="text-[10px] font-black tracking-[0.2em]">${entry.ipm} IPM</div>
                         </div>
                     </div>
-                    <div class="space-y-3 opacity-70 text-base font-serif-italic pl-4 border-l-2" style="border-color: var(--card-border);">
-                        ${entry.cards.slice(0, 3).map(c => `<div class="truncate leading-relaxed">${c}</div>`).join('')}
-                        ${entry.cards.length > 3 ? `<div class="text-[10px] font-black tracking-[0.2em] opacity-50 pt-2">+${entry.cards.length - 3} more</div>` : ''}
+                    <div class="space-y-2 opacity-60 text-sm font-serif-italic pl-2 border-l-2 history-divider pointer-events-none">
+                        ${entry.cards.slice(0, 3).map(c => `<div class="truncate">${c}</div>`).join('')}
+                        ${entry.cards.length > 3 ? `<div class="text-[10px] opacity-50">+${entry.cards.length - 3} more</div>` : ''}
                     </div>
                 `;
-                el.onmouseenter = () => el.style.transform = 'translateY(-2px)';
-                el.onmouseleave = () => el.style.transform = 'translateY(0)';
+                
+                // Add click handler to load the session
+                el.onclick = () => loadArchiveEntry(entry);
+                
                 elements.historyList.appendChild(el);
             });
+        }
+
+        function loadArchiveEntry(entry) {
+            // Rehydrate state for Summary View
+            state.sessionCards = entry.cards.map(text => ({ text, status: 'kept' }));
+            state.focusPrompt = entry.prompt;
+            
+            // Populate Summary UI directly from archive data
+            elements.summaryStat.innerText = `${entry.cards.length} Kept`;
+            elements.summaryIpm.innerText = entry.ipm;
+            elements.summaryDuration.innerText = entry.duration;
+            
+            renderSummaryList(state.sessionCards);
+            setView('summary');
         }
 
         // Export Logic
@@ -589,20 +558,21 @@
         }
 
         // Event Listeners
-        elements.saveHarvest.addEventListener('click', saveHarvest);
-        elements.newSessionBtn.addEventListener('click', () => setView('home'));
-        elements.exportTextBtn.addEventListener('click', exportText);
-        elements.exportEmailBtn.addEventListener('click', exportEmail);
-        elements.themeToggle.addEventListener('click', toggleTheme);
-        elements.historyBtn.addEventListener('click', () => setView('history'));
-        elements.historyBackBtn.addEventListener('click', () => setView('home'));
-
+        elements.startBtn.onclick = startSession;
+        elements.saveHarvest.onclick = saveHarvest;
+        elements.newSessionBtn.onclick = () => setView('home');
+        elements.exportTextBtn.onclick = exportText;
+        elements.exportEmailBtn.onclick = exportEmail;
+        elements.themeToggle.onclick = toggleTheme;
+        elements.historyBtn.onclick = () => setView('history');
+        elements.historyBackBtn.onclick = () => setView('home');
+        
         elements.finishEarlyBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             finishSession();
         });
 
-        elements.logoContainer.addEventListener('click', (e) => {
+        elements.logoContainer.onclick = (e) => {
             if (state.view === 'sprint') {
                 if (confirm('Abandon this session? Your progress will be lost.')) {
                     stopTimer();
@@ -611,41 +581,29 @@
             } else if (state.view !== 'home') {
                 setView('home');
             }
-        });
+        };
 
-        // Time selector buttons
+        // Time Selectors with focus prevention
         document.querySelectorAll('.time-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const time = parseInt(btn.getAttribute('data-time'));
-                selectTime(time);
-            });
-        });
-
-        // Start session button
-        elements.startBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            startSession();
+            btn.onmousedown = (e) => e.preventDefault(); // Prevents focusing the button, keeping focus on input
+            btn.onclick = () => {
+                state.configTime = parseInt(btn.dataset.time);
+                document.querySelectorAll('.time-btn').forEach(b => b.classList.add('opacity-30'));
+                btn.classList.remove('opacity-30');
+            };
         });
 
         // Keyboard Inputs
-        elements.sprintInput.addEventListener('keydown', (e) => {
+        elements.sprintInput.onkeydown = (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                e.stopPropagation();
                 submitCard();
             }
-        });
+        };
 
-        elements.homePrompt.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                e.stopPropagation();
-                startSession();
-            }
-        });
+        elements.homePrompt.onkeydown = (e) => {
+            if (e.key === 'Enter') startSession();
+        };
 
         // Init
         lucide.createIcons();
