@@ -1,1281 +1,1140 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WitherNaught</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlowState</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-in-out-sine: cubic-bezier(0.37, 0, 0.63, 1);
+    }
 
-    <!-- Bioluminescent Mushroom Favicon -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%230d0f0a%22/><ellipse cx=%2250%22 cy=%2240%22 rx=%2230%22 ry=%2222%22 fill=%22%23166534%22/><rect x=%2242%22 y=%2255%22 width=%2216%22 height=%2230%22 rx=%224%22 fill=%22%231a1a1a%22/><circle cx=%2240%22 cy=%2235%22 r=%225%22 fill=%22%23a3e635%22 opacity=%220.8%22/><circle cx=%2255%22 cy=%2230%22 r=%223%22 fill=%22%23a3e635%22 opacity=%220.6%22/><circle cx=%2260%22 cy=%2242%22 r=%224%22 fill=%22%23a3e635%22 opacity=%220.7%22/></svg>">
+    body { 
+      font-family: 'Cormorant Garamond', Georgia, serif; 
+    }
+    .font-sans { 
+      font-family: 'DM Sans', system-ui, sans-serif; 
+    }
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    /* Noise texture overlay */
+    .noise-bg::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      opacity: 0.025;
+      pointer-events: none;
+      z-index: 1000;
+    }
 
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;1,400&family=Montserrat:wght@300;500;700&display=swap');
+    /* Animations */
+    @keyframes fade-in { 
+      from { opacity: 0; } 
+      to { opacity: 1; } 
+    }
+    @keyframes slide-up { 
+      from { opacity: 0; transform: translateY(20px); } 
+      to { opacity: 1; transform: translateY(0); } 
+    }
+    @keyframes scale-in { 
+      from { opacity: 0; transform: scale(0.95); } 
+      to { opacity: 1; transform: scale(1); } 
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-8px); }
+    }
+    @keyframes spark-float {
+      0% { transform: translate(0, 0) scale(0); opacity: 0; }
+      15% { opacity: 1; transform: translate(calc(var(--drift) * 0.1), -20px) scale(1); }
+      100% { transform: translate(var(--drift), -180px) scale(0.3); opacity: 0; }
+    }
+    @keyframes spark-twinkle {
+      0%, 100% { opacity: 0; transform: scale(0); }
+      20% { opacity: 1; transform: scale(1.2); }
+      40% { opacity: 0.6; transform: scale(0.8); }
+      60% { opacity: 1; transform: scale(1); }
+      80% { opacity: 0.4; transform: scale(0.6); }
+    }
+    @keyframes spark-burst {
+      0% { transform: translate(0, 0) scale(0); opacity: 0; }
+      20% { opacity: 1; transform: scale(1.5); }
+      100% { transform: translate(var(--drift), var(--rise)) scale(0); opacity: 0; }
+    }
+    @keyframes spark-spiral {
+      0% { transform: translate(0, 0) rotate(0deg) scale(0); opacity: 0; }
+      20% { opacity: 1; transform: rotate(90deg) scale(1); }
+      100% { transform: translate(var(--drift), -160px) rotate(720deg) scale(0.2); opacity: 0; }
+    }
+    @keyframes spark-glow-pulse {
+      0%, 100% { box-shadow: 0 0 8px var(--glow-color), 0 0 16px var(--glow-color); }
+      50% { box-shadow: 0 0 20px var(--glow-color), 0 0 40px var(--glow-color), 0 0 60px var(--glow-color); }
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(1); opacity: 0.4; }
+      100% { transform: scale(2); opacity: 0; }
+    }
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    @keyframes breathe {
+      0%, 100% { opacity: 0.15; }
+      50% { opacity: 0.25; }
+    }
+    @keyframes score-pop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+      100% { transform: scale(1); }
+    }
 
-        body {
-            font-family: 'Cormorant Garamond', serif;
-            background-color: #0d0f0a;
-            color: #e7e5e4;
-            transition: background-color 1s ease, color 0.5s ease;
-            overflow: hidden;
-            margin: 0;
-        }
+    .animate-fade-in { animation: fade-in 0.8s var(--ease-out-expo) forwards; }
+    .animate-slide-up { animation: slide-up 0.8s var(--ease-out-expo) forwards; }
+    .animate-scale-in { animation: scale-in 0.6s var(--ease-out-expo) forwards; }
+    .animate-float { animation: float 6s var(--ease-in-out-sine) infinite; }
+    .animate-spark-float { animation: spark-float ease-out forwards; }
+    .animate-spark-twinkle { animation: spark-twinkle ease-in-out forwards; }
+    .animate-spark-burst { animation: spark-burst ease-out forwards; }
+    .animate-spark-spiral { animation: spark-spiral linear forwards; }
+    .animate-breathe { animation: breathe 4s var(--ease-in-out-sine) infinite; }
+    .animate-score-pop { animation: score-pop 0.4s var(--ease-out-expo); }
 
-        .sans-font { font-family: 'Montserrat', sans-serif; }
+    /* Staggered animations */
+    .stagger-1 { animation-delay: 0.1s; opacity: 0; }
+    .stagger-2 { animation-delay: 0.2s; opacity: 0; }
+    .stagger-3 { animation-delay: 0.3s; opacity: 0; }
+    .stagger-4 { animation-delay: 0.4s; opacity: 0; }
+    .stagger-5 { animation-delay: 0.5s; opacity: 0; }
 
-        /* LAYERS */
-        .layer { position: fixed; inset: 0; pointer-events: none; }
-        #static-canvas { z-index: 5; opacity: 0.9; transition: opacity 1s; }
-        #weather-canvas { z-index: 10; }
+    /* Scrollbar */
+    textarea::-webkit-scrollbar, div::-webkit-scrollbar { width: 0px; }
+    textarea::placeholder { opacity: 0.15; letter-spacing: 0.1em; }
 
-        /* UI TRANSITIONS */
-        .ui-element { transition: opacity 0.5s ease, transform 0.5s ease; }
-        .focus-mode .ui-element { opacity: 0.1; pointer-events: none; }
-        .focus-mode .ui-element:hover { opacity: 1; pointer-events: auto; }
+    /* Selection colors */
+    .selection-warm::selection { background: rgba(180, 120, 80, 0.25); }
+    .selection-cool::selection { background: rgba(140, 160, 200, 0.25); }
 
-        /* FROST/DECAY OVERLAY */
-        .frost-vignette {
-            background: radial-gradient(circle, transparent 40%, rgba(255, 255, 255, 0.8) 80%, rgba(200, 230, 255, 1) 100%);
-            z-index: 20;
-            mix-blend-mode: hard-light;
-            transition: opacity 0.5s;
-        }
+    /* Spark text highlights */
+    .spark-text-warm { 
+      background: linear-gradient(135deg, rgba(240, 200, 140, 0.5), rgba(230, 180, 120, 0.35));
+      border-radius: 3px; 
+      padding: 1px 4px; 
+      margin: 0 -2px; 
+      color: rgb(120, 70, 30); 
+      box-shadow: 0 2px 12px rgba(180, 120, 60, 0.25);
+      transition: all 1.2s var(--ease-out-expo); 
+    }
+    .spark-text-cool { 
+      color: rgb(180, 200, 240); 
+      text-shadow: 0 0 20px rgba(140, 180, 255, 0.6), 0 0 40px rgba(140, 180, 255, 0.3);
+      transition: all 1.2s var(--ease-out-expo); 
+    }
 
-        /* Dark Mode Decay - Purple/Green toxic fog */
-        .dark-mode .frost-vignette {
-            background: radial-gradient(circle, transparent 30%, rgba(88, 28, 135, 0.4) 70%, rgba(20, 83, 45, 0.7) 100%);
-            mix-blend-mode: normal;
-        }
+    /* Gradient text */
+    .gradient-text {
+      background: linear-gradient(135deg, currentColor 0%, currentColor 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+    }
 
-        /* TEXT EDITOR */
-        textarea { caret-color: #a3e635; }
-        textarea::placeholder { color: rgba(100, 116, 139, 0.4); font-style: italic; }
-        .dark-mode textarea::placeholder { color: rgba(163, 230, 53, 0.25); }
-        textarea:focus { outline: none; }
-        textarea::-webkit-scrollbar { width: 4px; }
-        textarea::-webkit-scrollbar-track { background: transparent; }
-        textarea::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
-        .dark-mode textarea::-webkit-scrollbar-thumb { background: rgba(163, 230, 53, 0.2); }
+    /* Glass morphism */
+    .glass {
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+    }
 
-        /* ANIMATIONS */
-        @keyframes sunburst-pulse {
-            0% { transform: scale(0.9); opacity: 0.5; }
-            50% { transform: scale(1.1); opacity: 1; }
-            100% { transform: scale(0.9); opacity: 0.5; }
-        }
-        .sun-active { animation: sunburst-pulse 2s infinite; }
-        .dark-mode .sun-active { color: #a3e635; filter: drop-shadow(0 0 12px rgba(163, 230, 53, 0.8)); }
+    /* Dropdown */
+    .dropdown-menu {
+      transform-origin: top right;
+      transition: transform 0.25s var(--ease-out-expo), opacity 0.2s ease;
+    }
+    .dropdown-menu.hidden {
+      transform: scaleY(0) scaleX(0.95);
+      opacity: 0;
+      pointer-events: none;
+    }
 
-        .modal-enter { animation: float-up 0.5s ease-out forwards; }
-        @keyframes float-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    /* Flow bar glow */
+    .flow-bar-glow {
+      transition: all 0.3s ease;
+    }
 
-        /* PROGRESS BAR ANIMATION */
-        .progress-bar {
-            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .progress-glow {
-            box-shadow: 0 0 20px currentColor, 0 0 40px currentColor;
-        }
+    /* Button hover effects */
+    .btn-primary {
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-primary::before {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%; 
+      width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.5s ease;
+    }
+    .btn-primary:hover::before {
+      left: 100%;
+    }
 
-        /* SCORE POPUP */
-        @keyframes score-pop {
-            0% { transform: translateY(0) scale(1); opacity: 1; }
-            100% { transform: translateY(-40px) scale(1.5); opacity: 0; }
-        }
-        .score-popup { animation: score-pop 0.8s ease-out forwards; }
-
-        /* COMBO INDICATOR */
-        @keyframes pulse-glow {
-            0%, 100% { box-shadow: 0 0 5px currentColor; }
-            50% { box-shadow: 0 0 25px currentColor, 0 0 50px currentColor; }
-        }
-        .combo-glow { animation: pulse-glow 0.5s ease-in-out infinite; }
-
-        /* URGENCY EFFECTS */
-        @keyframes urgent-pulse {
-            0%, 100% { opacity: 0; }
-            50% { opacity: 1; }
-        }
-        @keyframes screen-shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-2px); }
-            75% { transform: translateX(2px); }
-        }
-        .urgency-warning {
-            animation: urgent-pulse 1.5s ease-in-out infinite;
-        }
-        .urgency-critical {
-            animation: urgent-pulse 0.5s ease-in-out infinite;
-        }
-        .urgency-shake {
-            animation: screen-shake 0.1s linear infinite;
-        }
-        .urgency-overlay {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            z-index: 15;
-            transition: opacity 0.3s;
-        }
-
-        /* LEVEL UP FLASH */
-        @keyframes level-up {
-            0% { opacity: 0; transform: scale(0.8); }
-            20% { opacity: 1; transform: scale(1.1); }
-            100% { opacity: 0; transform: scale(1); }
-        }
-        .level-up-flash { animation: level-up 2s ease-out forwards; }
-
-        /* GLASS PANELS */
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.4);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(255,255,255,0.2);
-        }
-        .dark-mode .glass-panel {
-            background: rgba(10, 15, 10, 0.8);
-            border-bottom: 1px solid rgba(163, 230, 53, 0.1);
-            color: #e7e5e4;
-        }
-
-        /* GAME STATS BAR */
-        .stat-card {
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(163, 230, 53, 0.2);
-            border-radius: 8px;
-            padding: 8px 16px;
-        }
-        .stat-value {
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 700;
-            font-size: 1.5rem;
-            line-height: 1;
-        }
-        .stat-label {
-            font-size: 0.6rem;
-            text-transform: uppercase;
-            letter-spacing: 0.15em;
-            opacity: 0.6;
-        }
-    </style>
+    /* Decorative elements */
+    .corner-flourish {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      opacity: 0.08;
+      pointer-events: none;
+    }
+    .corner-flourish svg {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
 </head>
-<body>
-    <div id="root"></div>
+<body class="noise-bg">
+  <div id="app"></div>
 
-    <script type="text/babel">
-        const { useState, useEffect, useRef, useCallback, useMemo } = React;
+  <script>
+    // ===== CONSTANTS =====
+    const CONSTANTS = {
+      COMBO_THRESHOLD: 15,
+      SPARK_COUNT: 45,
+      HISTORY_LIMIT: 50,
+      COMBO_TIMEOUT_MS: 1200,
+      SPARK_DURATION_MS: 6000,
+      SPARK_WORD_HIGHLIGHT_MS: 5000,
+      MIN_SPARK_INTERVAL: 15,
+      MAX_SPARK_INTERVAL: 50,
+      SCORE_UPDATE_INTERVAL_MS: 5000,
+    };
 
-        // --- ICONS ---
-        const Icon = ({ name, className }) => {
-            const icons = {
-                Mushroom: <g><ellipse cx="12" cy="8" rx="8" ry="6"/><path d="M8 14v6c0 1 1 2 4 2s4-1 4-2v-6"/><circle cx="9" cy="6" r="1.5" fill="currentColor" opacity="0.3"/><circle cx="14" cy="5" r="1" fill="currentColor" opacity="0.3"/><circle cx="11" cy="9" r="1" fill="currentColor" opacity="0.3"/></g>,
-                Spore: <g><circle cx="12" cy="12" r="3"/><path d="M12 2v4"/><path d="M12 18v4"/><path d="M4.93 4.93l2.83 2.83"/><path d="M16.24 16.24l2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="M4.93 19.07l2.83-2.83"/><path d="M16.24 7.76l2.83-2.83"/></g>,
-                Leaf: <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.77 10-10 10Z M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>,
-                Sun: <g><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></g>,
-                Cloud: <g><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M16 14v6"/><path d="M8 14v6"/><path d="M12 16v6"/></g>,
-                Skull: <g><circle cx="12" cy="10" r="7"/><circle cx="9" cy="9" r="1.5"/><circle cx="15" cy="9" r="1.5"/><path d="M9 17v5"/><path d="M12 17v5"/><path d="M15 17v5"/></g>,
-                Save: <g><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></g>,
-                Upload: <g><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></g>,
-                SoundOn: <g><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></g>,
-                SoundOff: <g><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></g>,
-                Eye: <g><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></g>,
-                Moon: <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />,
-                Zap: <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-            };
-            return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{icons[name]}</svg>;
+    const DIFFICULTIES = {
+      Novice: { drainRate: 1.0, gainRate: 1.6, label: "Gentle pace", icon: "◦" },
+      Writer: { drainRate: 1.3, gainRate: 1.7, label: "Steady flow", icon: "◦◦" },
+      Adept: { drainRate: 1.7, gainRate: 1.8, label: "Sharp focus", icon: "◦◦◦" },
+      Master: { drainRate: 2.2, gainRate: 1.9, label: "Pure presence", icon: "◦◦◦◦" }
+    };
+
+    const THEMES = {
+      warm: {
+        name: 'Parchment',
+        bg: "#f0e6d3",
+        bgGradient: "linear-gradient(165deg, #f0e6d3 0%, #e8dcc8 50%, #e0d4be 100%)",
+        text: "#5c5347",
+        textMuted: "#8a8070",
+        card: "rgba(245, 238, 225, 0.92)",
+        cardSolid: "#f5eee1",
+        accent: "#a06830",
+        accentLight: "rgba(160, 104, 48, 0.12)",
+        border: "rgba(160, 140, 110, 0.35)",
+        input: "#4a4238",
+        bar: "#a06830",
+        barTrack: "rgba(160, 140, 110, 0.25)",
+        sparkColor: "rgba(200, 150, 80, 0.3)",
+        glow: "rgba(180, 120, 60, 0.45)"
+      },
+      cool: {
+        name: 'Moonlight',
+        bg: "#0c0c10",
+        bgGradient: "linear-gradient(165deg, #0c0c10 0%, #12121a 50%, #0a0a12 100%)",
+        text: "#b8c0d0",
+        textMuted: "#606878",
+        card: "rgba(20, 22, 30, 0.85)",
+        cardSolid: "#14161e",
+        accent: "#8ca8e0",
+        accentLight: "rgba(140, 168, 224, 0.1)",
+        border: "rgba(80, 90, 120, 0.3)",
+        input: "#d0d8e8",
+        bar: "#8ca8e0",
+        barTrack: "rgba(80, 90, 120, 0.3)",
+        sparkColor: "rgba(140, 180, 255, 0.2)",
+        glow: "rgba(140, 180, 255, 0.5)"
+      }
+    };
+
+    // ===== ICONS =====
+    const icons = {
+      wind: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/></svg>`,
+      barChart: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg>`,
+      moon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>`,
+      sun: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>`,
+      sparkles: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>`,
+      trophy: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>`,
+      history: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>`,
+      chevronRight: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>`,
+      chevronDown: `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>`,
+      x: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`,
+      trendingUp: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>`,
+      flame: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>`,
+      download: `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>`,
+      mail: `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>`,
+      pause: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/></svg>`,
+      play: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>`,
+      feather: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.67 19a2 2 0 0 0 1.416-.588l6.154-6.172a6 6 0 0 0-8.49-8.49L5.586 9.914A2 2 0 0 0 5 11.328V18a1 1 0 0 0 1 1z"/><path d="M16 8 2 22"/><path d="M17.5 15H9"/></svg>`,
+      flourish: `<svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 55 C 20 55, 55 20, 55 5" stroke="currentColor" stroke-width="1" fill="none"/><path d="M10 55 C 25 50, 50 25, 55 10" stroke="currentColor" stroke-width="0.5" fill="none"/><circle cx="55" cy="5" r="2" fill="currentColor"/></svg>`
+    };
+
+    // ===== STATE =====
+    const state = {
+      theme: 'warm',
+      difficulty: 'Writer',
+      gameState: 'idle',
+      showStats: false,
+      showMobileMenu: false,
+      text: '',
+      flow: 100,
+      targetFlow: 100,
+      score: 0,
+      displayScore: 0,
+      totalTime: 0,
+      combo: 0,
+      wordCount: 0,
+      nextSparkAt: getNextSparkInterval(),
+      sparks: [],
+      sparkedWords: {},
+      history: [],
+      streak: { current: 0, lastDate: null },
+      _highScoresCache: null,
+      _highScoresCacheKey: null,
+    };
+
+    // ===== TIMERS & REFS =====
+    let lastUpdate = null;
+    let lastScoreUpdate = 0;
+    let animationId = null;
+    let comboTimeout = null;
+    let sparkTimeouts = [];
+
+    // ===== DOM CACHE =====
+    const dom = {};
+
+    // ===== HELPERS =====
+    function getNextSparkInterval() {
+      return Math.floor(Math.random() * (CONSTANTS.MAX_SPARK_INTERVAL - CONSTANTS.MIN_SPARK_INTERVAL + 1) + CONSTANTS.MIN_SPARK_INTERVAL);
+    }
+
+    function generateSparks(count) {
+      const types = ['float', 'twinkle', 'burst', 'spiral'];
+      const shapes = ['circle', 'star', 'diamond'];
+      
+      return Array.from({ length: count }).map((_, i) => {
+        const type = types[Math.floor(Math.random() * types.length)];
+        const shape = shapes[Math.floor(Math.random() * shapes.length)];
+        const isCenterBurst = i < 8; // First 8 sparks burst from center
+        
+        return {
+          id: Math.random(),
+          type,
+          shape,
+          left: isCenterBurst ? 45 + Math.random() * 10 : Math.random() * 100,
+          top: isCenterBurst ? 40 + Math.random() * 10 : 10 + Math.random() * 60,
+          size: type === 'twinkle' ? Math.random() * 6 + 2 : Math.random() * 14 + 5,
+          delay: isCenterBurst ? Math.random() * 0.3 : Math.random() * 2,
+          duration: type === 'twinkle' ? Math.random() * 2 + 1.5 : Math.random() * 3 + 2.5,
+          drift: (Math.random() - 0.5) * (isCenterBurst ? 200 : 100),
+          rise: isCenterBurst ? -(Math.random() * 150 + 50) : -140,
+          rotation: Math.random() * 360,
+          hueShift: Math.random() * 30 - 15 // Slight color variation
         };
+      });
+    }
 
-        // --- GARDEN PLANTS DATA ---
-        const GARDEN_PLANTS = [
-            { id: 'sprout', name: 'Tiny Sprout', cost: 50, emoji: '🌱', darkEmoji: '🍄', desc: 'A humble beginning' },
-            { id: 'flower', name: 'Wild Flower', cost: 150, emoji: '🌸', darkEmoji: '🔮', desc: 'Beauty in simplicity' },
-            { id: 'fern', name: 'Lush Fern', cost: 300, emoji: '🌿', darkEmoji: '🦠', desc: 'Ancient and wise' },
-            { id: 'tulip', name: 'Tulip', cost: 400, emoji: '🌷', darkEmoji: '💜', desc: 'Elegant grace' },
-            { id: 'sunflower', name: 'Sunflower', cost: 600, emoji: '🌻', darkEmoji: '✨', desc: 'Radiant energy' },
-            { id: 'rose', name: 'Rose Bush', cost: 800, emoji: '🌹', darkEmoji: '🎭', desc: 'Thorny beauty' },
-            { id: 'tree', name: 'Young Tree', cost: 1200, emoji: '🌳', darkEmoji: '🌑', desc: 'Growing strong' },
-            { id: 'bonsai', name: 'Bonsai', cost: 2000, emoji: '🎋', darkEmoji: '🕯️', desc: 'Patient mastery' },
-            { id: 'cherry', name: 'Cherry Blossom', cost: 3000, emoji: '🌸', darkEmoji: '💀', desc: 'Fleeting perfection' },
-            { id: 'mythic', name: 'Mythic Bloom', cost: 5000, emoji: '🏵️', darkEmoji: '👁️', desc: 'Legendary rarity' },
-        ];
+    function getHighScores() {
+      const cacheKey = state.history.length + '-' + (state.history[0]?.id || 0);
+      if (state._highScoresCacheKey === cacheKey) {
+        return state._highScoresCache;
+      }
+      state._highScoresCache = [...state.history].sort((a, b) => b.score - a.score).slice(0, 5);
+      state._highScoresCacheKey = cacheKey;
+      return state._highScoresCache;
+    }
 
-        // --- PROGRESSION DATA ---
-        // Light mode: Lush green garden theme | Dark mode: Fungal/Mycorrhizal network theme
-        const ZONES = [
-            { w: 0, title: "Barren Soil", darkTitle: "Dead Earth", color: "#E8F5E0", darkColor: "#0d0f0a" },
-            { w: 100, title: "First Sprout", darkTitle: "Mycelium Stirs", color: "#D4EDDA", darkColor: "#0f1a0a" },
-            { w: 500, title: "Meadow", darkTitle: "Spore Cloud", color: "#C3E6CB", darkColor: "#141f14" },
-            { w: 1500, title: "Young Grove", darkTitle: "Fungal Network", color: "#B8E0BE", darkColor: "#1a1f1a" },
-            { w: 3000, title: "Deep Forest", darkTitle: "Bioluminescent Cave", color: "#A3D9A5", darkColor: "#0f2318" },
-            { w: 6000, title: "Cherry Blossom", darkTitle: "Toxic Bloom", color: "#F0E8E0", darkColor: "#1f0f1a" },
-            { w: 10000, title: "Golden Canopy", darkTitle: "Cordyceps Ascent", color: "#E8F0D8", darkColor: "#1a1a0f" },
-            { w: 25000, title: "WitherNaught", darkTitle: "The Rot Throne", color: "#D0E8D8", darkColor: "#0a1412" }
-        ];
+    function loadFromStorage() {
+      try {
+        const saved = localStorage.getItem('flowstate_history_v13');
+        state.history = saved ? JSON.parse(saved) : [];
+        
+        const streakData = localStorage.getItem('flowstate_streak_v13');
+        if (streakData) state.streak = JSON.parse(streakData);
+        
+        const prefs = localStorage.getItem('flowstate_prefs_v13');
+        if (prefs) {
+          const { theme, difficulty } = JSON.parse(prefs);
+          if (theme) state.theme = theme;
+          if (difficulty) state.difficulty = difficulty;
+        }
+      } catch (e) {
+        console.warn('LocalStorage unavailable:', e);
+      }
+    }
 
-        // --- AUDIO ENGINE V3 ---
-        class AudioEngine {
-            constructor() {
-                this.ctx = null;
-                this.master = null;
-                this.nodes = {};
-                this.muted = false;
-            }
+    function saveHistory() {
+      try { localStorage.setItem('flowstate_history_v13', JSON.stringify(state.history)); } catch (e) {}
+    }
 
-            init() {
-                if (this.ctx) return;
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                this.ctx = new AudioContext();
-                this.master = this.ctx.createGain();
-                this.master.gain.value = 0.5;
-                this.master.connect(this.ctx.destination);
-                
-                this.setupAmbience();
-            }
+    function saveStreak() {
+      try { localStorage.setItem('flowstate_streak_v13', JSON.stringify(state.streak)); } catch (e) {}
+    }
 
-            setupAmbience() {
-                // Pink Noise Generator for Wind
-                const bufferSize = 2 * this.ctx.sampleRate;
-                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-                const data = buffer.getChannelData(0);
-                let b = [0,0,0,0,0,0,0];
-                for (let i = 0; i < bufferSize; i++) {
-                    const w = Math.random() * 2 - 1;
-                    b[0] = 0.99886 * b[0] + w * 0.0555179;
-                    b[1] = 0.99332 * b[1] + w * 0.0750759;
-                    b[2] = 0.96900 * b[2] + w * 0.1538520;
-                    b[3] = 0.86650 * b[3] + w * 0.3104856;
-                    b[4] = 0.55000 * b[4] + w * 0.5329522;
-                    b[5] = -0.7616 * b[5] - w * 0.0168980;
-                    data[i] = b[0] + b[1] + b[2] + b[3] + b[4] + b[5] + b[6] + w * 0.5362;
-                    data[i] *= 0.11;
-                    b[6] = w * 0.115926;
-                }
+    function savePrefs() {
+      try { localStorage.setItem('flowstate_prefs_v13', JSON.stringify({ theme: state.theme, difficulty: state.difficulty })); } catch (e) {}
+    }
 
-                const windSrc = this.ctx.createBufferSource();
-                windSrc.buffer = buffer;
-                windSrc.loop = true;
-                
-                const windFilter = this.ctx.createBiquadFilter();
-                windFilter.type = 'lowpass';
-                windFilter.frequency.value = 300; 
+    function updateStreak() {
+      const today = new Date().toDateString();
+      if (state.streak.lastDate === today) return;
+      
+      const yesterday = new Date(Date.now() - 86400000).toDateString();
+      state.streak.current = (state.streak.lastDate === yesterday) ? state.streak.current + 1 : 1;
+      state.streak.lastDate = today;
+      saveStreak();
+    }
 
-                const windGain = this.ctx.createGain();
-                windGain.gain.value = 0.1;
+    function formatTime(seconds) {
+      const m = Math.floor(seconds / 60);
+      const s = Math.floor(seconds % 60);
+      return m === 0 ? `${s}s` : `${m}m ${s}s`;
+    }
 
-                windSrc.connect(windFilter);
-                windFilter.connect(windGain);
-                windGain.connect(this.master);
-                windSrc.start();
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
 
-                this.nodes.wind = { filter: windFilter, gain: windGain };
-                
-                // Ambient Drone (Three oscillators forming a major chord)
-                this.nodes.drones = [];
-                [130.81, 196.00, 261.63].forEach(f => {
-                    const osc = this.ctx.createOscillator();
-                    osc.frequency.value = f;
-                    const g = this.ctx.createGain();
-                    g.gain.value = 0; // Starts silent, builds up
-                    osc.connect(g);
-                    g.connect(this.master);
-                    osc.start();
-                    this.nodes.drones.push(g);
-                });
-            }
+    // ===== EXPORT FUNCTIONS =====
+    function exportText(format = 'txt') {
+      if (!state.text.trim()) return;
+      
+      const filename = `flowstate-${new Date().toISOString().slice(0,10)}.${format}`;
+      let content = state.text;
+      
+      if (format === 'md') {
+        content = `# FlowState Session\n\n*${new Date().toLocaleDateString()} • ${state.wordCount} words • ${formatTime(state.totalTime)}*\n\n---\n\n${state.text}`;
+      }
+      
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
 
-            updateAmbience(levelRatio, frostRatio) {
-                if (!this.ctx || this.muted) return;
-                
-                // Wind gets louder/sharper with frost
-                const targetFreq = 300 + (frostRatio * 1000);
-                const targetWindVol = 0.1 + (frostRatio * 0.3);
-                this.nodes.wind.filter.frequency.setTargetAtTime(targetFreq, this.ctx.currentTime, 1);
-                this.nodes.wind.gain.gain.setTargetAtTime(targetWindVol, this.ctx.currentTime, 1);
+    function exportToGmail() {
+      if (!state.text.trim()) return;
+      
+      const subject = encodeURIComponent(`FlowState Session - ${new Date().toLocaleDateString()}`);
+      const wpm = Math.floor((state.wordCount / (state.totalTime / 60)) || 0);
+      const stats = `[${state.wordCount} words • ${formatTime(state.totalTime)} • ${wpm} WPM • Score: ${Math.floor(state.score).toLocaleString()}]`;
+      const body = encodeURIComponent(`${state.text}\n\n---\n${stats}\nWritten in FlowState`);
+      
+      window.open(`https://mail.google.com/mail/?view=cm&fs=1&su=${subject}&body=${body}`, '_blank');
+    }
 
-                // Drone gets louder with Garden Level (levelRatio 0 to 1)
-                const droneVol = 0.05 * levelRatio * (1 - frostRatio); // Frost kills the drone
-                this.nodes.drones.forEach(g => {
-                    g.gain.setTargetAtTime(droneVol, this.ctx.currentTime, 2);
-                });
-            }
+    // ===== RENDER HELPERS =====
+    function renderHighlightedText() {
+      if (!state.text) return '';
+      const words = state.text.split(/(\s+)/);
+      let wordIndexCount = 0;
+      return words.map((part) => {
+        if (/\s+/.test(part)) return part;
+        const currentIndex = wordIndexCount++;
+        const isSparkActive = state.sparkedWords[currentIndex];
+        return `<span class="${isSparkActive ? `spark-text-${state.theme}` : 'transition-all duration-1000'}">${escapeHtml(part)}</span>`;
+      }).join('');
+    }
 
-            playTypeSound() {
-                if (this.muted || !this.ctx) return;
-                const t = this.ctx.currentTime;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                
-                // Random Pentatonic Note
-                const notes = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50];
-                const note = notes[Math.floor(Math.random() * notes.length)];
-                
-                // FM Synthesis for "Glassy" sound
-                const mod = this.ctx.createOscillator();
-                const modGain = this.ctx.createGain();
-                
-                osc.frequency.value = note;
-                mod.frequency.value = note * 2.5; // Inharmonic
-                modGain.gain.value = 200;
-                
-                mod.connect(modGain);
-                modGain.connect(osc.frequency);
-                
-                osc.connect(gain);
-                gain.connect(this.master);
-                
-                gain.gain.setValueAtTime(0, t);
-                gain.gain.linearRampToValueAtTime(0.05, t + 0.01);
-                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
-                
-                osc.start(t);
-                mod.start(t);
-                osc.stop(t + 0.5);
-                mod.stop(t + 0.5);
-            }
+    function renderSparks(t) {
+      return state.sparks.map(spark => {
+        const animClass = `animate-spark-${spark.type}`;
+        
+        // Create different shapes
+        let shapeStyle = '';
+        let innerContent = '';
+        
+        if (spark.shape === 'star') {
+          innerContent = `<svg viewBox="0 0 24 24" fill="${t.sparkColor}" style="width: 100%; height: 100%; filter: drop-shadow(0 0 ${spark.size}px ${t.glow});">
+            <path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7L12 17l-6.3 4 2.3-7-6-4.6h7.6z"/>
+          </svg>`;
+        } else if (spark.shape === 'diamond') {
+          shapeStyle = `transform: rotate(45deg); border-radius: 3px;`;
+        } else {
+          shapeStyle = `border-radius: 50%;`;
+        }
+        
+        const glowIntensity = spark.type === 'burst' ? 3 : 2;
+        const baseColor = t.sparkColor;
+        const glowColor = t.glow;
+        
+        return `
+          <div class="absolute ${animClass}"
+            style="left: ${spark.left}%; top: ${spark.top}%; width: ${spark.size}px; height: ${spark.size}px; 
+            ${spark.shape !== 'star' ? `background: radial-gradient(circle, ${baseColor} 0%, ${baseColor.replace('0.3', '0.1')} 50%, transparent 70%);` : ''}
+            ${shapeStyle}
+            box-shadow: 0 0 ${spark.size * glowIntensity}px ${glowColor}, 0 0 ${spark.size * glowIntensity * 2}px ${baseColor}; 
+            animation-delay: ${spark.delay}s; 
+            animation-duration: ${spark.duration}s; 
+            --drift: ${spark.drift}px;
+            --rise: ${spark.rise}px;
+            --glow-color: ${glowColor};">
+            ${innerContent}
+          </div>
+        `;
+      }).join('');
+    }
 
-            playSunburst() {
-                if (this.muted || !this.ctx) return;
-                const t = this.ctx.currentTime;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(220, t);
-                osc.frequency.linearRampToValueAtTime(880, t + 1);
-                
-                gain.gain.setValueAtTime(0, t);
-                gain.gain.linearRampToValueAtTime(0.2, t + 0.1);
-                gain.gain.exponentialRampToValueAtTime(0.001, t + 3);
-                
-                osc.connect(gain);
-                gain.connect(this.master);
-                osc.start(t);
-                osc.stop(t + 3);
-            }
+    function renderEndScreen(t) {
+      const highScores = getHighScores();
+      const wpm = Math.floor((state.wordCount / (state.totalTime / 60)) || 0);
+      const isNewBest = state.score >= (highScores[0]?.score || 0) && state.history.length > 1;
+      
+      return `
+        <div class="absolute inset-0 z-40 flex items-center justify-center rounded-2xl glass" style="background: ${t.card};">
+          <div class="w-full max-w-md p-10 md:p-12 relative">
+            
+            <!-- Decorative corners -->
+            <div class="corner-flourish top-0 left-0" style="color: ${t.text};">${icons.flourish}</div>
+            <div class="corner-flourish top-0 right-0 rotate-90" style="color: ${t.text};">${icons.flourish}</div>
+            
+            <div class="animate-slide-up stagger-1">
+              <div class="flex justify-between items-start mb-8">
+                <div>
+                  <h2 class="text-3xl font-light tracking-tight mb-1">Session Complete</h2>
+                  <p class="text-xs uppercase tracking-[0.25em] opacity-40 font-sans">Your words have been captured</p>
+                </div>
+                ${isNewBest ? `
+                  <div class="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-sans font-medium uppercase tracking-wider animate-float" style="background: ${t.accentLight}; color: ${t.accent};">
+                    ${icons.trophy} Personal Best
+                  </div>
+                ` : ''}
+              </div>
+            </div>
 
-            setMute(isMuted) {
-                this.muted = isMuted;
-                if (this.ctx) {
-                    if (isMuted) this.ctx.suspend();
-                    else this.ctx.resume();
-                }
-            }
+            ${state.streak.current > 1 ? `
+              <div class="animate-slide-up stagger-2 mb-8 flex items-center gap-3" style="color: ${t.accent};">
+                <span class="animate-float">${icons.flame}</span>
+                <span class="text-lg font-light">${state.streak.current} day streak</span>
+              </div>
+            ` : ''}
+
+            <div class="animate-slide-up stagger-2 grid grid-cols-3 gap-6 mb-10 py-8 border-y" style="border-color: ${t.border};">
+              <div class="text-center">
+                <div class="text-3xl font-light mb-1">${Math.floor(state.score).toLocaleString()}</div>
+                <div class="text-[10px] uppercase tracking-[0.2em] opacity-40 font-sans">Score</div>
+              </div>
+              <div class="text-center">
+                <div class="text-3xl font-light mb-1">${state.wordCount}</div>
+                <div class="text-[10px] uppercase tracking-[0.2em] opacity-40 font-sans">Words</div>
+              </div>
+              <div class="text-center">
+                <div class="text-3xl font-light mb-1">${wpm}</div>
+                <div class="text-[10px] uppercase tracking-[0.2em] opacity-40 font-sans">WPM</div>
+              </div>
+            </div>
+
+            <div class="animate-slide-up stagger-3 mb-10 p-5 rounded-2xl" style="background: ${t.accentLight};">
+              <h3 class="text-[10px] uppercase tracking-[0.25em] opacity-50 mb-4 flex items-center gap-2 font-sans">
+                ${icons.history} Hall of Fame
+              </h3>
+              <div class="space-y-3">
+                ${highScores.length > 0 ? highScores.map((hs, idx) => `
+                  <div class="flex justify-between items-center text-sm opacity-80">
+                    <span class="flex items-center gap-3">
+                      <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-sans" style="background: ${t.border};">${idx + 1}</span>
+                      ${new Date(hs.date).toLocaleDateString()}
+                    </span>
+                    <span class="font-sans font-medium">${hs.score.toLocaleString()}</span>
+                  </div>
+                `).join('') : `
+                  <div class="text-sm opacity-40 italic text-center py-3">
+                    Your journey begins here
+                  </div>
+                `}
+              </div>
+            </div>
+            
+            <div class="animate-slide-up stagger-4 space-y-4">
+              <button onclick="FlowState.startNextRound(true)" class="btn-primary w-full flex items-center justify-center gap-3 px-8 py-4 rounded-2xl text-white font-sans text-xs tracking-[0.2em] uppercase transition-all hover:scale-[1.02] active:scale-[0.98]" style="background: ${t.accent}; box-shadow: 0 8px 32px ${t.glow};">
+                ${icons.chevronRight} Continue Writing
+              </button>
+              
+              <div class="grid grid-cols-3 gap-3">
+                <button onclick="FlowState.exportText('txt')" class="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border text-[10px] uppercase tracking-wider font-sans opacity-60 hover:opacity-100 transition-all hover:scale-[1.02]" style="border-color: ${t.border};">
+                  ${icons.download}
+                  <span class="hidden sm:inline">Save</span>
+                </button>
+                <button onclick="FlowState.exportToGmail()" class="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border text-[10px] uppercase tracking-wider font-sans opacity-60 hover:opacity-100 transition-all hover:scale-[1.02]" style="border-color: ${t.border};">
+                  ${icons.mail}
+                  <span class="hidden sm:inline">Gmail</span>
+                </button>
+                <button onclick="FlowState.startNextRound(false)" class="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border text-[10px] uppercase tracking-wider font-sans opacity-60 hover:opacity-100 transition-all hover:scale-[1.02]" style="border-color: ${t.border};">
+                  Fresh
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderStatsOverlay(t) {
+      const chartData = [...state.history].reverse().slice(-10);
+      const maxScore = Math.max(...chartData.map(d => d.score), 1);
+      const maxWords = Math.max(...chartData.map(d => d.words), 1);
+      const totalWords = state.history.reduce((acc, curr) => acc + curr.words, 0);
+      const totalTimeMinutes = Math.floor(state.history.reduce((acc, curr) => acc + curr.time, 0) / 60);
+      const avgWpm = state.history.length > 0 ? Math.floor(state.history.reduce((acc, curr) => acc + curr.wpm, 0) / state.history.length) : 0;
+
+      return `
+        <div class="absolute inset-0 z-50 flex items-center justify-center rounded-2xl glass" style="background: ${t.card};">
+          <div class="w-full h-full p-8 md:p-12 overflow-y-auto relative">
+            <button onclick="FlowState.closeStats()" class="absolute top-6 right-6 md:top-8 md:right-8 p-3 rounded-full opacity-40 hover:opacity-100 transition-all hover:rotate-90" style="background: ${t.accentLight};">
+              ${icons.x}
+            </button>
+            
+            <div class="max-w-xl mx-auto">
+              <div class="animate-slide-up stagger-1">
+                <div class="flex items-center justify-between mb-2">
+                  <h2 class="text-4xl font-light tracking-tight">Your Journey</h2>
+                  ${state.streak.current > 0 ? `
+                    <div class="flex items-center gap-2" style="color: ${t.accent};">
+                      ${icons.flame}
+                      <span class="text-xl font-sans font-bold">${state.streak.current}</span>
+                    </div>
+                  ` : ''}
+                </div>
+                <p class="text-xs uppercase tracking-[0.3em] opacity-40 mb-12 font-sans">Progress & Analytics</p>
+              </div>
+
+              <div class="space-y-12">
+                <section class="animate-slide-up stagger-2">
+                  <h3 class="text-[10px] uppercase tracking-[0.25em] opacity-50 mb-6 flex items-center gap-2 font-sans">
+                    ${icons.trendingUp} Score Progression
+                  </h3>
+                  <div class="flex items-end justify-between h-32 gap-2 pt-4 pb-2 border-b" style="border-color: ${t.border};">
+                    ${chartData.length > 0 ? chartData.map((d, i) => `
+                      <div class="w-full rounded-t transition-all duration-500 hover:opacity-100 cursor-default group relative" 
+                        style="height: ${Math.max(4, (d.score / maxScore) * 100)}%; background: linear-gradient(to top, ${t.accent}, ${t.accent}88); opacity: ${0.4 + (i / 10) * 0.6};">
+                        <div class="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 rounded text-[9px] font-sans opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap" style="background: ${t.cardSolid}; color: ${t.text};">
+                          ${d.score.toLocaleString()}
+                        </div>
+                      </div>
+                    `).join('') : '<div class="w-full text-center text-sm opacity-30 pb-8 italic">Begin your journey</div>'}
+                  </div>
+                </section>
+
+                <section class="animate-slide-up stagger-3">
+                  <h3 class="text-[10px] uppercase tracking-[0.25em] opacity-50 mb-6 font-sans">Word Volume</h3>
+                  <div class="flex items-end justify-between h-24 gap-2 pt-4 pb-2 border-b" style="border-color: ${t.border};">
+                    ${chartData.length > 0 ? chartData.map((d, i) => `
+                      <div class="w-full rounded-t transition-all duration-500" 
+                        style="height: ${Math.max(4, (d.words / maxWords) * 100)}%; background: linear-gradient(to top, #10b981, #10b98188); opacity: ${0.4 + (i / 10) * 0.6};"></div>
+                    `).join('') : ''}
+                  </div>
+                </section>
+
+                <div class="animate-slide-up stagger-4 grid grid-cols-3 gap-8 py-8 border-y" style="border-color: ${t.border};">
+                  <div>
+                    <div class="text-[10px] uppercase tracking-[0.2em] opacity-30 mb-2 font-sans">Total Words</div>
+                    <div class="text-3xl font-light">${totalWords.toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <div class="text-[10px] uppercase tracking-[0.2em] opacity-30 mb-2 font-sans">Time Spent</div>
+                    <div class="text-3xl font-light">${totalTimeMinutes}m</div>
+                  </div>
+                  <div>
+                    <div class="text-[10px] uppercase tracking-[0.2em] opacity-30 mb-2 font-sans">Avg WPM</div>
+                    <div class="text-3xl font-light">${avgWpm}</div>
+                  </div>
+                </div>
+
+                <div class="animate-slide-up stagger-5 pt-4">
+                  <h3 class="text-[10px] uppercase tracking-[0.25em] opacity-50 mb-6 font-sans">Recent Sessions</h3>
+                  <div class="space-y-4">
+                    ${state.history.slice(0, 6).map(h => `
+                      <div class="flex justify-between items-center py-3 border-b opacity-70 hover:opacity-100 transition-opacity" style="border-color: ${t.border};">
+                        <div>
+                          <div class="text-sm font-sans">${new Date(h.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</div>
+                          <div class="text-[10px] uppercase tracking-widest opacity-40 font-sans">${h.difficulty}</div>
+                        </div>
+                        <div class="text-right">
+                          <div class="text-sm font-sans font-medium">${h.score.toLocaleString()}</div>
+                          <div class="text-[10px] opacity-40 font-sans">${h.words}w • ${h.wpm}wpm</div>
+                        </div>
+                      </div>
+                    `).join('')}
+                    ${state.history.length === 0 ? `
+                      <div class="text-center py-12 opacity-30 italic">
+                        Your story awaits
+                      </div>
+                    ` : ''}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderPauseOverlay(t) {
+      return `
+        <div class="absolute inset-0 z-40 flex items-center justify-center rounded-2xl glass" style="background: ${t.card};">
+          <div class="text-center animate-scale-in">
+            <div class="w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center animate-breathe" style="background: ${t.accentLight}; color: ${t.accent};">
+              ${icons.pause}
+            </div>
+            <h2 class="text-3xl font-light tracking-tight mb-2">Paused</h2>
+            <p class="text-xs uppercase tracking-[0.25em] opacity-40 mb-10 font-sans">Take a breath</p>
+            <button onclick="FlowState.togglePause()" class="btn-primary px-10 py-4 rounded-2xl text-white font-sans text-xs tracking-[0.2em] uppercase transition-all hover:scale-105" style="background: ${t.accent}; box-shadow: 0 8px 32px ${t.glow};">
+              ${icons.play} Resume Flow
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    // ===== MAIN RENDER =====
+    function render() {
+      const t = THEMES[state.theme];
+      document.body.style.background = t.bgGradient;
+      
+      const app = document.getElementById('app');
+      app.innerHTML = `
+        <div class="min-h-screen transition-colors duration-1000 selection-${state.theme} flex flex-col items-center p-6 md:p-12 lg:p-16 overflow-hidden relative" style="color: ${t.text};">
+          
+          <!-- Ambient background glow -->
+          <div class="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] pointer-events-none opacity-30 animate-breathe" 
+            style="background: radial-gradient(ellipse at center, ${t.sparkColor} 0%, transparent 70%); filter: blur(60px);">
+          </div>
+
+          <!-- Spark particles -->
+          <div id="sparks-container" class="fixed top-0 left-0 w-full h-[50vh] pointer-events-none z-0 overflow-hidden" 
+            style="mask-image: linear-gradient(to bottom, black 30%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, black 30%, transparent 100%);">
+            ${renderSparks(t)}
+          </div>
+
+          <header class="w-full max-w-4xl flex justify-between items-center mb-12 md:mb-20 z-20 animate-fade-in">
+            <div class="flex items-center gap-4 cursor-default group">
+              <div class="p-2 rounded-xl transition-all duration-500 group-hover:scale-110" style="color: ${t.accent}; background: ${t.accentLight};">
+                ${icons.feather}
+              </div>
+              <div>
+                <h1 class="text-lg md:text-xl font-light tracking-[0.3em] uppercase">FlowState</h1>
+                <p class="text-[9px] tracking-[0.2em] uppercase opacity-40 font-sans hidden md:block">${DIFFICULTIES[state.difficulty].label}</p>
+              </div>
+            </div>
+            
+            <div class="flex gap-2 md:gap-4 items-center">
+              <!-- Streak -->
+              ${state.streak.current > 0 ? `
+                <div class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full" style="background: ${t.accentLight}; color: ${t.accent};">
+                  ${icons.flame}
+                  <span class="text-sm font-sans font-bold">${state.streak.current}</span>
+                </div>
+              ` : ''}
+
+              <!-- Stats -->
+              <button onclick="FlowState.openStats()" class="p-2.5 rounded-xl opacity-50 hover:opacity-100 transition-all hover:scale-105" style="background: ${t.accentLight};" title="View stats">
+                ${icons.barChart}
+              </button>
+
+              <!-- Pause -->
+              ${state.gameState === 'writing' ? `
+                <button onclick="FlowState.togglePause()" class="p-2.5 rounded-xl opacity-50 hover:opacity-100 transition-all hover:scale-105" style="background: ${t.accentLight};" title="Pause">
+                  ${icons.pause}
+                </button>
+              ` : ''}
+
+              <!-- Desktop difficulty -->
+              <div class="hidden md:flex gap-1 p-1 rounded-xl" style="background: ${t.accentLight};">
+                ${Object.entries(DIFFICULTIES).map(([d, config]) => `
+                  <button 
+                    onclick="FlowState.setDifficulty('${d}')"
+                    ${state.gameState === 'writing' || state.gameState === 'paused' ? 'disabled' : ''}
+                    class="px-3 py-1.5 rounded-lg text-[10px] tracking-wider uppercase font-sans transition-all ${state.difficulty === d ? '' : 'opacity-40 hover:opacity-70'} ${state.gameState === 'writing' ? 'cursor-not-allowed' : ''}"
+                    style="${state.difficulty === d ? `background: ${t.cardSolid}; color: ${t.accent}; box-shadow: 0 2px 8px ${t.glow};` : ''}"
+                    title="${config.label}">
+                    ${d}
+                  </button>
+                `).join('')}
+              </div>
+
+              <!-- Mobile difficulty -->
+              <div class="relative md:hidden">
+                <button onclick="FlowState.toggleMobileMenu()" 
+                  class="flex items-center gap-2 px-3 py-2 rounded-xl text-[10px] tracking-wider uppercase font-sans transition-all"
+                  style="background: ${t.accentLight};"
+                  ${state.gameState === 'writing' || state.gameState === 'paused' ? 'disabled' : ''}>
+                  ${state.difficulty}
+                  ${icons.chevronDown}
+                </button>
+                <div class="dropdown-menu absolute right-0 top-full mt-2 py-2 rounded-xl shadow-2xl border z-50 min-w-[140px] ${state.showMobileMenu ? '' : 'hidden'}" 
+                  style="background: ${t.cardSolid}; border-color: ${t.border};">
+                  ${Object.entries(DIFFICULTIES).map(([d, config]) => `
+                    <button onclick="FlowState.setDifficulty('${d}')" 
+                      class="w-full text-left px-4 py-2.5 text-[11px] tracking-wider uppercase font-sans transition-all ${state.difficulty === d ? 'opacity-100' : 'opacity-50 hover:opacity-80'}"
+                      style="${state.difficulty === d ? `color: ${t.accent}; background: ${t.accentLight};` : ''}">
+                      ${d}
+                      <span class="block text-[9px] opacity-50 normal-case tracking-normal mt-0.5">${config.label}</span>
+                    </button>
+                  `).join('')}
+                </div>
+              </div>
+
+              <!-- Theme -->
+              <button onclick="FlowState.toggleTheme()" class="p-2.5 rounded-xl opacity-50 hover:opacity-100 transition-all hover:scale-105 hover:rotate-12" style="background: ${t.accentLight};" title="Toggle theme">
+                ${state.theme === 'warm' ? icons.moon : icons.sun}
+              </button>
+            </div>
+          </header>
+
+          <main class="w-full max-w-3xl flex-grow flex flex-col relative z-10 animate-slide-up" style="animation-delay: 0.2s; opacity: 0;">
+            
+            <!-- Flow bar -->
+            <div class="mb-8 relative">
+              <div class="h-1 rounded-full overflow-hidden" style="background: ${t.barTrack};">
+                <div id="flow-bar" class="h-full rounded-full" 
+                  style="width: ${state.flow}%; background: linear-gradient(90deg, ${t.bar}, ${t.bar}dd); 
+                  transition: box-shadow 0.3s ease;
+                  box-shadow: ${state.flow < 30 ? `0 0 20px ${t.glow}, 0 0 40px ${t.glow}` : (state.sparks.length > 0 ? `0 0 30px ${t.sparkColor}` : 'none')};">
+                </div>
+              </div>
+              ${state.flow < 30 ? `
+                <div class="absolute inset-0 rounded-full animate-pulse" style="box-shadow: 0 0 20px ${t.glow};"></div>
+              ` : ''}
+            </div>
+
+            <!-- Score & Time display -->
+            <div class="flex justify-between items-end mb-10 px-1">
+              <div class="flex items-baseline gap-4">
+                <div id="score-display" class="text-4xl md:text-5xl font-light tracking-tight tabular-nums transition-all duration-300">${state.displayScore.toLocaleString()}</div>
+                <div id="combo-display" class="text-[10px] font-sans tracking-widest uppercase transition-all duration-500 flex items-center gap-2" 
+                  style="opacity: ${state.sparks.length > 0 ? 1 : (state.combo > 10 ? 0.4 : 0)}; transform: translateY(${state.sparks.length > 0 ? '-4px' : '0'});">
+                  ${state.sparks.length > 0 ? `<span style="color: ${t.accent};">${icons.sparkles}</span> Spark!` : `${Math.floor(state.combo / CONSTANTS.COMBO_THRESHOLD) + 1}× flow`}
+                </div>
+              </div>
+              <div id="time-display" class="text-sm tracking-widest opacity-40 font-sans tabular-nums">${formatTime(state.totalTime)}</div>
+            </div>
+
+            <!-- Writing area -->
+            <div class="relative flex-grow rounded-2xl" style="min-height: 420px;">
+              ${state.gameState === 'ended' ? renderEndScreen(t) : ''}
+              ${state.gameState === 'paused' ? renderPauseOverlay(t) : ''}
+              ${state.showStats ? renderStatsOverlay(t) : ''}
+
+              <!-- Text overlay for highlights -->
+              <div id="text-overlay" class="absolute inset-0 z-0 pointer-events-none whitespace-pre-wrap break-words text-xl md:text-2xl lg:text-[1.65rem] leading-[2] font-light p-1 overflow-y-auto transition-opacity duration-700 ${(state.gameState === 'ended' || state.gameState === 'paused' || state.showStats) ? 'opacity-5' : 'opacity-100'}" style="color: transparent;">
+                ${renderHighlightedText()}
+              </div>
+
+              <!-- Main textarea -->
+              <textarea
+                id="main-textarea"
+                ${state.gameState === 'ended' || state.gameState === 'paused' || state.showStats ? 'disabled' : ''}
+                spellcheck="false"
+                placeholder="${state.gameState === 'idle' ? 'Begin writing to enter the flow...' : ''}"
+                class="absolute inset-0 w-full h-full z-10 resize-none focus:outline-none text-xl md:text-2xl lg:text-[1.65rem] leading-[2] font-light p-1 overflow-y-auto transition-all duration-700 ${(state.gameState === 'ended' || state.gameState === 'paused' || state.showStats) ? 'opacity-5 blur-xl scale-[0.99]' : 'opacity-100'}"
+                style="background: transparent; color: ${t.input}; -webkit-text-fill-color: currentColor; caret-color: ${t.accent};"
+              >${state.text}</textarea>
+            </div>
+          </main>
+
+          <footer class="mt-auto pt-10 flex flex-col items-center gap-3 z-10 animate-fade-in" style="animation-delay: 0.4s; opacity: 0;">
+            <div class="w-12 h-px rounded-full" style="background: ${t.border};"></div>
+            <p class="font-sans text-[9px] tracking-[0.4em] uppercase opacity-20">
+              FlowState v13
+            </p>
+          </footer>
+        </div>
+      `;
+
+      cacheDomRefs();
+      attachEventListeners();
+    }
+
+    function cacheDomRefs() {
+      dom.textarea = document.getElementById('main-textarea');
+      dom.overlay = document.getElementById('text-overlay');
+      dom.flowBar = document.getElementById('flow-bar');
+      dom.scoreDisplay = document.getElementById('score-display');
+      dom.timeDisplay = document.getElementById('time-display');
+      dom.comboDisplay = document.getElementById('combo-display');
+      dom.sparksContainer = document.getElementById('sparks-container');
+    }
+
+    function attachEventListeners() {
+      if (dom.textarea) {
+        dom.textarea.addEventListener('input', handleTextInput);
+        dom.textarea.addEventListener('scroll', handleScroll);
+        
+        if (state.gameState !== 'ended' && state.gameState !== 'paused' && !state.showStats) {
+          dom.textarea.focus();
+          const len = state.text.length;
+          dom.textarea.setSelectionRange(len, len);
+        }
+      }
+
+      document.addEventListener('click', (e) => {
+        if (state.showMobileMenu && !e.target.closest('.relative.md\\:hidden')) {
+          state.showMobileMenu = false;
+          render();
+        }
+      });
+    }
+
+    // ===== EVENT HANDLERS =====
+    function handleTextInput(e) {
+      if (state.gameState === 'ended' || state.gameState === 'paused') return;
+      
+      const newText = e.target.value;
+      const isAdding = newText.length > state.text.length;
+
+      if (state.gameState === 'idle' && newText.length > 0) {
+        state.gameState = 'writing';
+        state.targetFlow = 100;
+        state.flow = 100;
+        updateStreak();
+      }
+
+      if (isAdding) {
+        state.targetFlow = Math.min(100, state.targetFlow + DIFFICULTIES[state.difficulty].gainRate);
+        state.combo++;
+
+        const wordsArray = newText.trim().split(/\s+/).filter(w => w.length > 0);
+        const currentWordCount = wordsArray.length;
+
+        if (currentWordCount > state.wordCount) {
+          state.wordCount = currentWordCount;
+          if (currentWordCount >= state.nextSparkAt) {
+            triggerSpark(currentWordCount);
+          }
         }
 
-        // --- GENERATIVE ART ENGINE ---
-        const GardenRenderer = ({ totalWords, frost, darkMode }) => {
-            const staticCanvas = useRef(null);
-            const weatherCanvas = useRef(null);
-            const animationRef = useRef(null);
-
-            // Deterministic Random for consistent growth
-            const seededRandom = (seed) => {
-                let x = Math.sin(seed) * 10000;
-                return x - Math.floor(x);
-            };
-
-            // Draw mushroom for dark mode
-            const drawMushroom = (ctx, x, y, size, seed) => {
-                ctx.save();
-
-                // Mushroom colors - bioluminescent greens, toxic purples
-                const hues = [120, 280, 160, 300]; // Green, purple, cyan-green, magenta
-                const hue = hues[Math.floor(seededRandom(seed) * hues.length)];
-                const glow = `hsla(${hue}, 70%, 50%, 0.3)`;
-                const capColor = `hsl(${hue}, 60%, ${25 + seededRandom(seed+1) * 15}%)`;
-                const stemColor = `hsl(${hue}, 20%, 20%)`;
-                const spotColor = `hsla(${hue}, 80%, 60%, 0.6)`;
-
-                // Glow effect
-                ctx.shadowColor = glow;
-                ctx.shadowBlur = 20;
-
-                // Stem
-                const stemWidth = size * 0.2;
-                const stemHeight = size * 0.6;
-                ctx.fillStyle = stemColor;
-                ctx.beginPath();
-                ctx.moveTo(x - stemWidth/2, y);
-                ctx.quadraticCurveTo(x - stemWidth/3, y - stemHeight/2, x - stemWidth/4, y - stemHeight);
-                ctx.lineTo(x + stemWidth/4, y - stemHeight);
-                ctx.quadraticCurveTo(x + stemWidth/3, y - stemHeight/2, x + stemWidth/2, y);
-                ctx.fill();
-
-                // Cap
-                const capWidth = size * (0.8 + seededRandom(seed+2) * 0.4);
-                const capHeight = size * 0.4;
-                ctx.fillStyle = capColor;
-                ctx.beginPath();
-                ctx.ellipse(x, y - stemHeight, capWidth/2, capHeight/2, 0, Math.PI, 0);
-                ctx.fill();
-
-                // Bioluminescent spots
-                ctx.shadowBlur = 10;
-                ctx.fillStyle = spotColor;
-                const numSpots = 3 + Math.floor(seededRandom(seed+3) * 4);
-                for(let i = 0; i < numSpots; i++) {
-                    const spotX = x + (seededRandom(seed+i*10) - 0.5) * capWidth * 0.6;
-                    const spotY = y - stemHeight - capHeight * 0.1 - seededRandom(seed+i*11) * capHeight * 0.3;
-                    const spotR = 2 + seededRandom(seed+i*12) * 4;
-                    ctx.beginPath();
-                    ctx.arc(spotX, spotY, spotR, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-
-                ctx.restore();
-            };
-
-            const drawTree = (ctx, x, y, len, angle, width, seed) => {
-                ctx.beginPath();
-                ctx.save();
-
-                ctx.strokeStyle = darkMode ? '#a8a29e' : '#4a3b32';
-                ctx.fillStyle = darkMode ? '#a8a29e' : '#4a3b32';
-
-                ctx.lineWidth = width;
-                ctx.lineCap = 'round';
-                ctx.translate(x, y);
-                ctx.rotate(angle * Math.PI / 180);
-                ctx.moveTo(0, 0);
-
-                const curve = (seededRandom(seed) - 0.5) * 20;
-                ctx.quadraticCurveTo(0, -len/2, curve, -len);
-                ctx.stroke();
-
-                if (len < 10) {
-                    ctx.beginPath();
-                    const hue = seededRandom(seed+1) > 0.5 ? 340 : 120;
-                    const sat = 50 + seededRandom(seed+2) * 50;
-                    const lightness = darkMode ? '80%' : '70%';
-                    ctx.fillStyle = `hsl(${hue}, ${sat}%, ${lightness})`;
-                    ctx.arc(curve, -len, 3 + seededRandom(seed+3) * 3, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.restore();
-                    return;
-                }
-
-                ctx.restore();
-
-                const nextX = x - len * Math.sin(angle * Math.PI / 180) + (curve * Math.cos(angle * Math.PI / 180));
-                const nextY = y - len * Math.cos(angle * Math.PI / 180) + (curve * Math.sin(angle * Math.PI / 180));
-
-                const numBranches = 2;
-                for (let i = 0; i < numBranches; i++) {
-                    const nextLen = len * (0.65 + seededRandom(seed+i) * 0.1);
-                    const nextAngle = angle + (seededRandom(seed+i*10) - 0.5) * 60;
-                    const nextWidth = width * 0.7;
-                    drawTree(ctx, nextX, nextY, nextLen, nextAngle, nextWidth, seed + i * 100);
-                }
-            };
-
-            // Mycelium network for dark mode background
-            const drawMycelium = (ctx, width, height, density) => {
-                ctx.strokeStyle = 'rgba(163, 230, 53, 0.1)';
-                ctx.lineWidth = 1;
-
-                const numLines = Math.min(density, 200);
-                for (let i = 0; i < numLines; i++) {
-                    const startX = seededRandom(i * 100) * width;
-                    const startY = height - seededRandom(i * 101) * 150;
-
-                    ctx.beginPath();
-                    ctx.moveTo(startX, startY);
-
-                    let x = startX, y = startY;
-                    const segments = 3 + Math.floor(seededRandom(i * 102) * 5);
-                    for (let j = 0; j < segments; j++) {
-                        x += (seededRandom(i * 103 + j) - 0.5) * 60;
-                        y -= seededRandom(i * 104 + j) * 30;
-                        ctx.lineTo(x, y);
-                    }
-                    ctx.stroke();
-                }
-            };
-
-            // Redraw Static Garden/Fungal Forest
-            useEffect(() => {
-                const cvs = staticCanvas.current;
-                const ctx = cvs.getContext('2d');
-                cvs.width = window.innerWidth;
-                cvs.height = window.innerHeight * 0.7;
-
-                ctx.clearRect(0, 0, cvs.width, cvs.height);
-
-                // Ground Gradient
-                const grad = ctx.createLinearGradient(0, cvs.height, 0, cvs.height - 100);
-                if (darkMode) {
-                    grad.addColorStop(0, '#0a0d08');
-                    grad.addColorStop(1, 'rgba(10,13,8,0)');
-                } else {
-                    grad.addColorStop(0, '#dcfce7');
-                    grad.addColorStop(1, 'rgba(255,255,255,0)');
-                }
-
-                ctx.fillStyle = grad;
-                ctx.fillRect(0, cvs.height - 100, cvs.width, 100);
-
-                // Set lower opacity for less intrusive visuals
-                ctx.globalAlpha = 0.5;
-
-                if (darkMode) {
-                    // Draw subtle mycelium network
-                    drawMycelium(ctx, cvs.width, cvs.height, totalWords / 8);
-
-                    // Draw fewer, smaller mushrooms
-                    const numMushrooms = Math.min(Math.floor(totalWords / 400), 10);
-                    for(let i = 0; i < numMushrooms; i++) {
-                        const x = seededRandom(i * 77) * cvs.width;
-                        const size = 20 + seededRandom(i * 78) * 30 + (totalWords / 1000);
-                        drawMushroom(ctx, x, cvs.height, Math.min(size, 60), i * 999);
-                    }
-                } else {
-                    // Light mode: Subtle grass and smaller trees
-                    const numGrass = Math.min(totalWords / 15, 300);
-                    for(let i = 0; i < numGrass; i++) {
-                        const x = seededRandom(i) * cvs.width;
-                        const h = 3 + seededRandom(i+1) * 10;
-                        ctx.beginPath();
-                        ctx.strokeStyle = `rgba(100, 140, 100, ${0.2 + seededRandom(i+2)*0.2})`;
-                        ctx.moveTo(x, cvs.height);
-                        ctx.lineTo(x + (seededRandom(i+3)-0.5)*6, cvs.height - h);
-                        ctx.stroke();
-                    }
-
-                    const numTrees = Math.min(Math.floor(totalWords / 1200), 5);
-                    for(let i = 0; i < numTrees; i++) {
-                        const x = (cvs.width / (numTrees + 1)) * (i + 1);
-                        const size = 40 + seededRandom(i*55) * 25;
-                        drawTree(ctx, x, cvs.height, size, 0, size/10, i * 999);
-                    }
-                }
-
-                ctx.globalAlpha = 1.0;
-
-            }, [totalWords, darkMode]);
-
-            // Weather Loop (Runs constantly)
-            useEffect(() => {
-                const cvs = weatherCanvas.current;
-                const ctx = cvs.getContext('2d');
-                let particles = [];
-                
-                const resize = () => {
-                    cvs.width = window.innerWidth;
-                    cvs.height = window.innerHeight;
-                };
-                window.addEventListener('resize', resize);
-                resize();
-
-                const loop = () => {
-                    ctx.clearRect(0, 0, cvs.width, cvs.height);
-                    
-                    // Add Particles - Spores in dark mode, snow/pollen in light
-                    if (particles.length < 100) {
-                        if (frost > 50) {
-                            // Decay/toxic particles in dark mode, snow in light
-                            particles.push({
-                                x: Math.random() * cvs.width,
-                                y: -10,
-                                vx: (Math.random() - 0.5) * 2,
-                                vy: 1 + Math.random() * 2,
-                                size: 2 + Math.random() * 3,
-                                type: darkMode ? 'toxic' : 'snow'
-                            });
-                        } else if (totalWords > 300) {
-                            // Spores in dark mode, pollen in light
-                            particles.push({
-                                x: Math.random() * cvs.width,
-                                y: cvs.height + 10,
-                                vx: (Math.random() - 0.5) * 1.5,
-                                vy: -(0.3 + Math.random() * 0.5),
-                                size: 1 + Math.random() * 3,
-                                type: darkMode ? 'spore' : 'pollen',
-                                hue: darkMode ? (Math.random() > 0.5 ? 120 : 280) : 0
-                            });
-                        }
-                    }
-
-                    // Update Particles
-                    particles.forEach((p, i) => {
-                        p.x += p.vx;
-                        p.y += p.vy;
-
-                        if (p.type === 'snow') {
-                            ctx.fillStyle = `rgba(255, 255, 255, ${0.8 * (frost/100)})`;
-                            ctx.beginPath();
-                            ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
-                            ctx.fill();
-                            if (p.y > cvs.height) particles.splice(i, 1);
-                        } else if (p.type === 'toxic') {
-                            // Green/purple toxic mist
-                            ctx.fillStyle = `hsla(${Math.random() > 0.5 ? 120 : 280}, 70%, 50%, ${0.3 * (frost/100)})`;
-                            ctx.beginPath();
-                            ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
-                            ctx.fill();
-                            if (p.y > cvs.height) particles.splice(i, 1);
-                        } else if (p.type === 'spore') {
-                            // Glowing spores - green or purple
-                            ctx.shadowColor = `hsla(${p.hue}, 80%, 60%, 0.8)`;
-                            ctx.shadowBlur = 8;
-                            ctx.fillStyle = `hsla(${p.hue}, 70%, 50%, ${0.5 + Math.random()*0.3})`;
-                            ctx.beginPath();
-                            ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
-                            ctx.fill();
-                            ctx.shadowBlur = 0;
-                            if (p.y < -10) particles.splice(i, 1);
-                        } else {
-                            // Pollen/Petal for light mode
-                            ctx.fillStyle = `rgba(255, 200, 200, 0.6)`;
-                            ctx.beginPath();
-                            ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
-                            ctx.fill();
-                            if (p.y < -10) particles.splice(i, 1);
-                        }
-                    });
-
-                    animationRef.current = requestAnimationFrame(loop);
-                };
-                loop();
-
-                return () => {
-                    cancelAnimationFrame(animationRef.current);
-                    window.removeEventListener('resize', resize);
-                };
-            }, [frost, totalWords, darkMode]);
-
-            return (
-                <>
-                    <canvas ref={staticCanvas} id="static-canvas" className="layer" />
-                    <canvas ref={weatherCanvas} id="weather-canvas" className="layer" />
-                </>
-            );
-        };
-
-        // --- APP COMPONENT ---
-        const App = () => {
-            const [gameState, setGameState] = useState('MENU'); // MENU, PLAYING, FROZEN, GARDEN
-            const [text, setText] = useState("");
-            const [stats, setStats] = useState({ totalWords: 0, sunlight: 0, sessionWords: 0, combo: 0, maxCombo: 0 });
-            const [frost, setFrost] = useState(0);
-            const [isSunburst, setIsSunburst] = useState(false);
-            const [settings, setSettings] = useState({ muted: false, focusMode: false, darkMode: true, difficulty: 'normal' }); // Dark mode default, difficulty: 'chill', 'normal', 'intense'
-            const [wpm, setWpm] = useState(0);
-            const [levelUpFlash, setLevelUpFlash] = useState(false);
-            const [prevZoneIndex, setPrevZoneIndex] = useState(0);
-
-            // XP & Garden State
-            const [xp, setXp] = useState(0);
-            const [garden, setGarden] = useState([]); // Array of planted plant IDs
-            const [totalXpEarned, setTotalXpEarned] = useState(0);
-
-            const audioRef = useRef(new AudioEngine());
-            const loopRef = useRef();
-            const lastTypeTime = useRef(0);
-            const sessionStartTime = useRef(Date.now());
-            const comboTimeout = useRef(null);
-            const textareaRef = useRef(null);
-
-            // Calculate current zone
-            const zoneIndex = ZONES.findLastIndex(z => stats.totalWords >= z.w);
-            const currentZone = ZONES[zoneIndex] || ZONES[0];
-            const nextZone = ZONES[zoneIndex + 1];
-            const zoneTitle = settings.darkMode ? (currentZone.darkTitle || currentZone.title) : currentZone.title;
-
-            // Level up detection
-            useEffect(() => {
-                if (zoneIndex > prevZoneIndex && gameState === 'PLAYING') {
-                    setLevelUpFlash(true);
-                    setTimeout(() => setLevelUpFlash(false), 2000);
-                }
-                setPrevZoneIndex(zoneIndex);
-            }, [zoneIndex, gameState]);
-
-            // Initial Load
-            useEffect(() => {
-                const saved = localStorage.getItem('withernaught_save');
-                if (saved) {
-                    try {
-                        const data = JSON.parse(saved);
-                        setText(data.text || "");
-                        // Ensure all stats are valid numbers
-                        const loadedStats = data.stats || {};
-                        setStats({
-                            totalWords: parseInt(loadedStats.totalWords) || 0,
-                            sunlight: parseInt(loadedStats.sunlight) || 0,
-                            sessionWords: 0,
-                            combo: 0,
-                            maxCombo: parseInt(loadedStats.maxCombo) || 0
-                        });
-                        setSettings(s => ({...s, darkMode: data.darkMode !== false})); // Default to dark mode
-                        // Load XP and Garden
-                        setXp(parseInt(data.xp) || 0);
-                        setGarden(Array.isArray(data.garden) ? data.garden : []);
-                        setTotalXpEarned(parseInt(data.totalXpEarned) || 0);
-                    } catch(e) { console.error("Save Corrupt"); }
-                }
-            }, []);
-
-            // Auto-Save
-            useEffect(() => {
-                localStorage.setItem('withernaught_save', JSON.stringify({
-                    text,
-                    stats,
-                    darkMode: settings.darkMode,
-                    xp,
-                    garden,
-                    totalXpEarned
-                }));
-            }, [text, stats, settings.darkMode, xp, garden, totalXpEarned]);
-
-            // Audio & Focus Logic
-            useEffect(() => {
-                audioRef.current.setMute(settings.muted);
-                const levelRatio = Math.min(stats.totalWords / 10000, 1);
-                const frostRatio = frost / 100;
-                audioRef.current.updateAmbience(levelRatio, frostRatio);
-            }, [settings.muted, frost, stats.totalWords]);
-
-            // Game Loop
-            const tick = useCallback(() => {
-                if (gameState !== 'PLAYING') return;
-
-                const now = Date.now();
-                const timeSinceType = now - lastTypeTime.current;
-
-                // Frost Mechanics - Adjustable based on difficulty
-                if (isSunburst) {
-                    setFrost(f => Math.max(0, f - 2.5));
-                } else {
-                    // Difficulty multipliers
-                    const difficultyMult = settings.difficulty === 'chill' ? 0.3 : settings.difficulty === 'intense' ? 1.8 : 1.0;
-
-                    // Base rate increases with total words (you're expected to type faster)
-                    let baseRate = 0.08 + (stats.totalWords > 1000 ? 0.04 : 0) + (stats.totalWords > 5000 ? 0.04 : 0);
-                    baseRate *= difficultyMult;
-
-                    // Inactivity thresholds - more forgiving in chill mode
-                    const thresholds = settings.difficulty === 'chill'
-                        ? [3000, 5000, 8000, 12000]
-                        : settings.difficulty === 'intense'
-                        ? [500, 1000, 1500, 2000]
-                        : [1000, 2000, 3000, 4000];
-
-                    let inactivityMult = 0.4;
-                    if (timeSinceType > thresholds[0]) inactivityMult = 1.0;
-                    if (timeSinceType > thresholds[1]) inactivityMult = 2.0;
-                    if (timeSinceType > thresholds[2]) inactivityMult = 3.5;
-                    if (timeSinceType > thresholds[3]) inactivityMult = 5.0;
-
-                    setFrost(f => {
-                        const next = f + (baseRate * inactivityMult);
-                        if (next >= 100) {
-                            setGameState('FROZEN');
-                            return 100;
-                        }
-                        return next;
-                    });
-                }
-
-                loopRef.current = requestAnimationFrame(tick);
-            }, [gameState, isSunburst, stats.totalWords, settings.difficulty]);
-
-            useEffect(() => {
-                if (gameState === 'PLAYING') loopRef.current = requestAnimationFrame(tick);
-                return () => cancelAnimationFrame(loopRef.current);
-            }, [tick, gameState]);
-
-            // Track current word being typed
-            const currentWordRef = useRef('');
-
-            // Handlers
-            const handleType = (e) => {
-                if (gameState === 'FROZEN') return;
-
-                const val = e.target.value;
-                const added = val.length - text.length;
-                setText(val);
-                lastTypeTime.current = Date.now();
-
-                // Auto-scroll to bottom
-                if (textareaRef.current) {
-                    setTimeout(() => {
-                        textareaRef.current.scrollTop = textareaRef.current.scrollHeight;
-                    }, 0);
-                }
-
-                if (added > 0) {
-                    const lastChar = val[val.length - 1];
-
-                    // Reduce Frost based on combo (but only for actual typing)
-                    const frostReduction = 0.4 + (stats.combo * 0.08);
-                    setFrost(f => Math.max(0, f - frostReduction));
-
-                    // Reset combo timeout
-                    clearTimeout(comboTimeout.current);
-                    comboTimeout.current = setTimeout(() => {
-                        setStats(s => ({ ...s, combo: 0 }));
-                    }, 1500); // Combo breaks faster
-
-                    // Audio
-                    if (Math.random() > 0.7) audioRef.current.playTypeSound();
-
-                    // Word validation - only count words with 2+ letters
-                    if (lastChar.match(/[\s\n]/)) {
-                        // Extract the word that was just completed
-                        const words = val.trim().split(/\s+/);
-                        const lastWord = words[words.length - 1] || '';
-
-                        // Only count if it's a real word (2+ alphabetic characters)
-                        if (lastWord.length >= 2 && /[a-zA-Z]{2,}/.test(lastWord)) {
-                            setStats(s => {
-                                const newTotal = s.totalWords + 1;
-                                const newSession = s.sessionWords + 1;
-                                const newCombo = s.combo + 1;
-                                const newMaxCombo = Math.max(s.maxCombo, newCombo);
-                                // Earn Sunlight every 50 words (boosted by combo)
-                                const sunThreshold = newCombo > 10 ? 30 : 50;
-                                const newSun = (newTotal % sunThreshold === 0) ? Math.min(s.sunlight + 1, 3) : s.sunlight;
-                                return { totalWords: newTotal, sunlight: newSun, sessionWords: newSession, combo: newCombo, maxCombo: newMaxCombo };
-                            });
-
-                            // Earn XP (base 1 + combo bonus)
-                            const comboBonus = Math.floor(stats.combo / 5);
-                            const xpGain = 1 + comboBonus;
-                            setXp(x => x + xpGain);
-                            setTotalXpEarned(t => t + xpGain);
-
-                            // Update WPM
-                            const elapsedMinutes = (Date.now() - sessionStartTime.current) / 60000;
-                            if (elapsedMinutes > 0.1) {
-                                setWpm(Math.round(stats.sessionWords / elapsedMinutes));
-                            }
-                        }
-                    }
-                }
-            };
-
-            const triggerSunburst = () => {
-                if (stats.sunlight > 0 && !isSunburst) {
-                    setStats(s => ({ ...s, sunlight: s.sunlight - 1 }));
-                    setIsSunburst(true);
-                    audioRef.current.playSunburst();
-                    setTimeout(() => setIsSunburst(false), 3000);
-                }
-            };
-
-            const handleImport = (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    try {
-                        const data = JSON.parse(ev.target.result);
-                        if (data.text && data.stats) {
-                            setText(data.text);
-                            setStats(data.stats);
-                            setGameState('PLAYING');
-                        }
-                    } catch(err) { alert("Invalid Save File"); }
-                };
-                reader.readAsText(file);
-            };
-
-            const exportSave = () => {
-                const data = JSON.stringify({ text, stats });
-                const blob = new Blob([data], {type: 'application/json'});
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `withernaught_save_${new Date().toISOString().slice(0,10)}.json`;
-                a.click();
-            };
-
-            const startGame = () => {
-                audioRef.current.init();
-                setGameState('PLAYING');
-                setFrost(0);
-                setStats(s => ({ ...s, sessionWords: 0, combo: 0 }));
-                sessionStartTime.current = Date.now();
-                setWpm(0);
-            };
-
-            const toggleDarkMode = () => {
-                setSettings(s => ({...s, darkMode: !s.darkMode}));
-            };
-
-            // Garden Functions
-            const buyPlant = (plantId) => {
-                const plant = GARDEN_PLANTS.find(p => p.id === plantId);
-                if (!plant || xp < plant.cost) return;
-                setXp(x => x - plant.cost);
-                setGarden(g => [...g, { id: plantId, timestamp: Date.now() }]);
-            };
-
-            const getPlantCount = (plantId) => garden.filter(p => p.id === plantId).length;
-
-            // Render
-            const bgColor = settings.darkMode ? currentZone.darkColor : currentZone.color;
-            const textColor = settings.darkMode ? 'text-stone-300' : 'text-slate-800';
-            const accentColor = settings.darkMode ? 'text-lime-400' : 'text-emerald-600';
-
-            return (
-                <div style={{ backgroundColor: bgColor }} className={`relative h-screen w-full flex flex-col overflow-hidden ${settings.focusMode && gameState === 'PLAYING' ? 'focus-mode' : ''} ${settings.darkMode ? 'dark-mode' : ''}`}>
-
-                    <GardenRenderer totalWords={stats.totalWords} frost={frost} darkMode={settings.darkMode} />
-
-                    {/* Sunburst/Spore Burst Flash */}
-                    <div className={`layer transition-opacity duration-1000 mix-blend-overlay ${isSunburst ? 'opacity-60' : 'opacity-0'}`}
-                         style={{ background: settings.darkMode ? 'radial-gradient(circle, rgba(163,230,53,0.5) 0%, transparent 70%)' : 'rgba(251, 191, 36, 0.5)' }}></div>
-
-                    {/* Frost/Decay Vignette */}
-                    <div className="layer frost-vignette" style={{ opacity: Math.max(0, (frost - 20) / 80) }}></div>
-
-                    {/* Urgency Overlay - pulsing red border when time is running out */}
-                    {frost > 50 && gameState === 'PLAYING' && (
-                        <div
-                            className={`urgency-overlay ${frost > 80 ? 'urgency-critical' : 'urgency-warning'}`}
-                            style={{
-                                boxShadow: `inset 0 0 ${frost > 80 ? '100px' : '60px'} ${frost > 80 ? '40px' : '20px'} ${settings.darkMode ? 'rgba(139, 0, 0, 0.6)' : 'rgba(220, 38, 38, 0.4)'}`,
-                            }}
-                        />
-                    )}
-
-                    {/* Subtle urgency indicator - smaller, less intrusive */}
-                    {frost > 70 && gameState === 'PLAYING' && (
-                        <div className="fixed bottom-32 left-1/2 -translate-x-1/2 z-40 pointer-events-none">
-                            <div className={`text-sm md:text-base font-bold tracking-widest uppercase opacity-60 ${settings.darkMode ? 'text-red-400' : 'text-red-500'}`}>
-                                {frost > 85 ? '⚠ type to survive' : 'keep writing...'}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Level Up Flash */}
-                    {levelUpFlash && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none level-up-flash">
-                            <div className={`text-6xl font-black ${accentColor} tracking-wider`}>
-                                {zoneTitle.toUpperCase()}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* HEADER UI */}
-                    <header className={`ui-element relative z-30 p-4 flex justify-between items-center glass-panel`}>
-                        <div className={`flex items-center gap-4 ${settings.darkMode ? 'text-stone-300' : 'text-slate-700'}`}>
-                            <div className={`p-2 rounded-full ${settings.darkMode ? 'bg-lime-900/50 text-lime-400' : 'bg-emerald-100 text-emerald-600'}`}>
-                                <Icon name={settings.darkMode ? "Mushroom" : "Leaf"} className="w-6 h-6"/>
-                            </div>
-                            <div>
-                                <h1 className="text-xl font-bold leading-none">{zoneTitle}</h1>
-                                <div className="text-xs opacity-60 font-sans tracking-widest mt-1">
-                                    {nextZone ? `${stats.totalWords.toLocaleString()} / ${nextZone.w.toLocaleString()} WORDS` : "ASCENDED"}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Gamification Stats */}
-                        {gameState === 'PLAYING' && (
-                            <div className="flex gap-3">
-                                {/* Combo Counter */}
-                                {stats.combo > 2 && !isNaN(stats.combo) && (
-                                    <div className={`stat-card ${stats.combo > 10 ? 'combo-glow' : ''}`} style={{ color: settings.darkMode ? '#a3e635' : '#16a34a' }}>
-                                        <div className="stat-value">{Math.floor(stats.combo)}x</div>
-                                        <div className="stat-label">Combo</div>
-                                    </div>
-                                )}
-                                {/* WPM */}
-                                {wpm > 0 && (
-                                    <div className="stat-card" style={{ color: settings.darkMode ? '#a3e635' : '#16a34a' }}>
-                                        <div className="stat-value">{wpm}</div>
-                                        <div className="stat-label">WPM</div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {/* Power-ups */}
-                        <div className="flex gap-2" title="Shift+Enter to Use Spore Burst">
-                            {[0,1,2].map(i => (
-                                <div key={i} className={`transition-all duration-500 ${i < stats.sunlight ? 'sun-active' : 'opacity-30'}`}>
-                                    <Icon name={settings.darkMode ? "Spore" : "Sun"} className={`w-6 h-6 ${settings.darkMode ? 'text-lime-400' : 'text-amber-400'}`}/>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="flex gap-3">
-                            {/* Garden Button with XP indicator */}
-                            <button
-                                onClick={() => setGameState(gameState === 'GARDEN' ? 'MENU' : 'GARDEN')}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${gameState === 'GARDEN' ? (settings.darkMode ? 'bg-lime-700 text-lime-100' : 'bg-emerald-600 text-white') : (settings.darkMode ? 'bg-lime-900/50 hover:bg-lime-800/50 text-lime-300' : 'bg-emerald-100 hover:bg-emerald-200 text-emerald-700')}`}
-                                title="Open Garden"
-                            >
-                                <span className="text-lg">{settings.darkMode ? '🍄' : '🌱'}</span>
-                                <span className="text-xs font-bold">{xp} XP</span>
-                            </button>
-                            <button onClick={toggleDarkMode} className={`p-2 rounded hover:bg-white/10 ${settings.darkMode ? 'text-lime-400' : 'text-slate-500'}`} title="Theme">
-                                {settings.darkMode ? <Icon name="Sun" className="w-5 h-5"/> : <Icon name="Moon" className="w-5 h-5"/>}
-                            </button>
-                            <button onClick={() => setSettings(s => ({...s, focusMode: !s.focusMode}))} className={`p-2 rounded hover:bg-white/10 ${settings.focusMode ? (settings.darkMode ? 'text-lime-400' : 'text-blue-500') : (settings.darkMode ? 'text-stone-400' : 'text-slate-500')}`} title="Focus Mode">
-                                <Icon name="Eye" className="w-5 h-5"/>
-                            </button>
-                            <button onClick={() => setSettings(s => ({...s, muted: !s.muted}))} className={`p-2 rounded hover:bg-white/10 ${settings.darkMode ? 'text-stone-400' : 'text-slate-500'}`} title="Mute Audio">
-                                <Icon name={settings.muted ? "SoundOff" : "SoundOn"} className="w-5 h-5"/>
-                            </button>
-                        </div>
-                    </header>
-
-                    {/* PROGRESS BAR - Animated */}
-                    <div className="ui-element relative z-30 w-full h-2 bg-black/30">
-                        <div
-                            className={`h-full progress-bar ${isSunburst ? 'progress-glow' : ''}`}
-                            style={{
-                                width: `${100 - frost}%`,
-                                background: settings.darkMode
-                                    ? `linear-gradient(90deg, #166534 0%, #a3e635 ${100-frost}%)`
-                                    : `linear-gradient(90deg, #0ea5e9 0%, #22d3ee ${100-frost}%)`,
-                                boxShadow: isSunburst ? (settings.darkMode ? '0 0 20px #a3e635' : '0 0 20px #fbbf24') : 'none'
-                            }}
-                        />
-                        {/* Progress markers */}
-                        <div className="absolute inset-0 flex justify-between px-1 pointer-events-none">
-                            {[25, 50, 75].map(mark => (
-                                <div key={mark} className="w-px h-full bg-white/10" style={{ marginLeft: `${mark}%` }}/>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* MAIN EDITOR */}
-                    <main className="flex-grow relative z-30 flex justify-center pt-8 md:pt-16 px-4">
-                        <div className={`w-full max-w-3xl h-[70vh] transition-all duration-1000 ${gameState === 'FROZEN' ? 'blur-sm grayscale opacity-50' : ''}`}>
-                            <textarea
-                                ref={textareaRef}
-                                value={text}
-                                onChange={handleType}
-                                onKeyDown={(e) => { if(e.shiftKey && e.key === 'Enter') { e.preventDefault(); triggerSunburst(); } }}
-                                disabled={gameState === 'FROZEN'}
-                                placeholder="The garden grows with every word..."
-                                className={`w-full h-full bg-transparent border-none resize-none text-xl md:text-2xl leading-loose font-serif p-4 ${textColor}`}
-                                spellCheck="false"
-                            />
-                        </div>
-                    </main>
-
-                    {/* MENUS */}
-                    {gameState === 'MENU' && (
-                        <div className={`fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md modal-enter ${settings.darkMode ? 'bg-black/90 text-stone-200' : 'bg-white/90 text-slate-800'}`}>
-                            <div className="max-w-md w-full p-8 text-center">
-                                <div className={`w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center ${settings.darkMode ? 'bg-lime-900/50' : 'bg-emerald-100'}`}>
-                                    <Icon name={settings.darkMode ? "Mushroom" : "Leaf"} className={`w-10 h-10 ${settings.darkMode ? 'text-lime-400' : 'text-emerald-600'}`}/>
-                                </div>
-                                <h1 className={`text-5xl font-serif mb-2 ${settings.darkMode ? 'text-lime-400' : 'text-emerald-800'}`}>WitherNaught</h1>
-                                <p className={`opacity-60 sans-font text-sm tracking-widest mb-8 ${settings.darkMode ? 'text-lime-200' : ''}`}>
-                                    {settings.darkMode ? 'FEED THE MYCELIUM' : 'CULTIVATE YOUR MIND'}
-                                </p>
-
-                                {stats.totalWords > 0 && (
-                                    <div className={`mb-6 p-4 rounded-lg ${settings.darkMode ? 'bg-lime-900/20 border border-lime-900/50' : 'bg-emerald-50'}`}>
-                                        <div className={`text-3xl font-black ${settings.darkMode ? 'text-lime-400' : 'text-emerald-600'}`}>{stats.totalWords.toLocaleString()}</div>
-                                        <div className="text-xs opacity-60 uppercase tracking-widest">Total Words Written</div>
-                                    </div>
-                                )}
-
-                                {/* Difficulty Selector */}
-                                <div className="mb-6">
-                                    <div className="text-xs opacity-50 uppercase tracking-widest mb-3">Difficulty</div>
-                                    <div className="flex gap-2 justify-center">
-                                        {['chill', 'normal', 'intense'].map(d => (
-                                            <button
-                                                key={d}
-                                                onClick={() => setSettings(s => ({...s, difficulty: d}))}
-                                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${settings.difficulty === d
-                                                    ? (settings.darkMode ? 'bg-lime-700 text-lime-100' : 'bg-emerald-600 text-white')
-                                                    : 'opacity-40 hover:opacity-80'
-                                                }`}
-                                            >
-                                                {d === 'chill' ? '🌿 Chill' : d === 'normal' ? '🌱 Normal' : '🔥 Intense'}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <button onClick={startGame} className={`w-full py-4 rounded-lg transition shadow-lg text-lg font-serif mb-4 ${settings.darkMode ? 'bg-lime-900 hover:bg-lime-800 text-lime-100 border border-lime-700' : 'bg-emerald-900 hover:bg-emerald-800 text-white'}`}>
-                                    {settings.darkMode ? 'Enter the Fungal Network' : 'Enter Garden'}
-                                </button>
-
-                                <label className="flex items-center justify-center gap-2 opacity-60 text-sm cursor-pointer hover:opacity-100 transition">
-                                    <Icon name="Upload" className="w-4 h-4"/> Load Save File
-                                    <input type="file" onChange={handleImport} className="hidden" accept=".json"/>
-                                </label>
-
-                                <button onClick={toggleDarkMode} className={`mt-8 text-xs opacity-40 hover:opacity-80 uppercase tracking-widest ${settings.darkMode ? 'text-lime-300' : ''}`}>
-                                    {settings.darkMode ? "Switch to Garden Mode" : "Switch to Fungal Mode"}
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {gameState === 'FROZEN' && (
-                        <div className={`fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md text-white modal-enter ${settings.darkMode ? 'bg-purple-950/90' : 'bg-slate-900/90'}`}>
-                            <div className={`max-w-md w-full p-8 text-center border rounded-xl ${settings.darkMode ? 'border-purple-800 bg-purple-950/50' : 'border-slate-700 bg-slate-800/50'}`}>
-                                <Icon name={settings.darkMode ? "Skull" : "Cloud"} className={`w-16 h-16 mx-auto mb-4 ${settings.darkMode ? 'text-purple-400' : 'text-sky-200'}`}/>
-                                <h2 className="text-4xl font-serif mb-2">{settings.darkMode ? 'The Rot Claims All' : 'Winter Has Come'}</h2>
-                                <p className={`text-sm mb-4 ${settings.darkMode ? 'text-purple-300' : 'text-slate-400'}`}>
-                                    {settings.darkMode ? 'The decay consumed your words.' : 'The frost claimed your words.'}
-                                </p>
-
-                                {/* Session Stats */}
-                                <div className="flex justify-center gap-8 mb-8">
-                                    <div>
-                                        <div className={`text-2xl font-black ${settings.darkMode ? 'text-lime-400' : 'text-sky-300'}`}>{stats.sessionWords}</div>
-                                        <div className="text-xs opacity-60">Words This Session</div>
-                                    </div>
-                                    <div>
-                                        <div className={`text-2xl font-black ${settings.darkMode ? 'text-lime-400' : 'text-sky-300'}`}>{stats.maxCombo}x</div>
-                                        <div className="text-xs opacity-60">Best Combo</div>
-                                    </div>
-                                </div>
-
-                                <div className="flex gap-4">
-                                    <button onClick={exportSave} className={`flex-1 py-3 rounded flex items-center justify-center gap-2 ${settings.darkMode ? 'bg-purple-800 hover:bg-purple-700' : 'bg-slate-700 hover:bg-slate-600'}`}>
-                                        <Icon name="Save" className="w-4 h-4"/> Save
-                                    </button>
-                                    <button onClick={() => setGameState('MENU')} className={`flex-1 py-3 rounded ${settings.darkMode ? 'bg-lime-700 hover:bg-lime-600' : 'bg-sky-600 hover:bg-sky-500'}`}>
-                                        Try Again
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* GARDEN TAB */}
-                    {gameState === 'GARDEN' && (
-                        <div className={`fixed inset-0 z-50 flex flex-col backdrop-blur-md modal-enter ${settings.darkMode ? 'bg-black/95 text-stone-200' : 'bg-white/95 text-slate-800'}`}>
-                            {/* Garden Header */}
-                            <div className={`p-6 border-b ${settings.darkMode ? 'border-lime-900/50 bg-black/50' : 'border-emerald-100 bg-emerald-50/50'}`}>
-                                <div className="max-w-4xl mx-auto flex justify-between items-center">
-                                    <div>
-                                        <h1 className={`text-3xl font-serif ${settings.darkMode ? 'text-lime-400' : 'text-emerald-700'}`}>
-                                            {settings.darkMode ? '🍄 The Spore Garden' : '🌱 Your Garden'}
-                                        </h1>
-                                        <p className="text-sm opacity-60 mt-1">
-                                            {settings.darkMode ? 'Cultivate your fungal collection' : 'Grow your botanical paradise'}
-                                        </p>
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                        <div className={`px-4 py-2 rounded-lg ${settings.darkMode ? 'bg-lime-900/50' : 'bg-emerald-100'}`}>
-                                            <span className={`text-2xl font-black ${settings.darkMode ? 'text-lime-400' : 'text-emerald-600'}`}>{xp}</span>
-                                            <span className="text-xs opacity-60 ml-1">XP</span>
-                                        </div>
-                                        <button
-                                            onClick={() => setGameState('MENU')}
-                                            className={`px-4 py-2 rounded-lg ${settings.darkMode ? 'bg-stone-800 hover:bg-stone-700' : 'bg-slate-200 hover:bg-slate-300'}`}
-                                        >
-                                            ← Back
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex-1 overflow-auto p-6">
-                                <div className="max-w-4xl mx-auto">
-                                    {/* Garden Display - Shows planted items */}
-                                    <div className={`mb-8 p-6 rounded-2xl min-h-[200px] ${settings.darkMode ? 'bg-lime-950/30 border border-lime-900/50' : 'bg-emerald-50 border border-emerald-100'}`}>
-                                        <h3 className="text-sm font-bold uppercase tracking-widest opacity-50 mb-4">
-                                            Your Collection ({garden.length} plants)
-                                        </h3>
-                                        {garden.length === 0 ? (
-                                            <div className="text-center py-8 opacity-40">
-                                                <p className="text-4xl mb-2">{settings.darkMode ? '🌑' : '🌫️'}</p>
-                                                <p>Your garden is empty. Buy plants below to grow it!</p>
-                                            </div>
-                                        ) : (
-                                            <div className="flex flex-wrap gap-2">
-                                                {garden.map((planted, idx) => {
-                                                    const plant = GARDEN_PLANTS.find(p => p.id === planted.id);
-                                                    if (!plant) return null;
-                                                    return (
-                                                        <div
-                                                            key={idx}
-                                                            className={`text-3xl p-2 rounded-lg transition-transform hover:scale-125 cursor-default ${settings.darkMode ? 'hover:bg-lime-900/30' : 'hover:bg-emerald-100'}`}
-                                                            title={plant.name}
-                                                        >
-                                                            {settings.darkMode ? plant.darkEmoji : plant.emoji}
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Plant Shop */}
-                                    <h3 className="text-sm font-bold uppercase tracking-widest opacity-50 mb-4">
-                                        {settings.darkMode ? 'Spore Shop' : 'Plant Shop'}
-                                    </h3>
-                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                                        {GARDEN_PLANTS.map(plant => {
-                                            const canAfford = xp >= plant.cost;
-                                            const owned = getPlantCount(plant.id);
-                                            return (
-                                                <button
-                                                    key={plant.id}
-                                                    onClick={() => buyPlant(plant.id)}
-                                                    disabled={!canAfford}
-                                                    className={`p-4 rounded-xl text-center transition-all ${canAfford
-                                                        ? (settings.darkMode ? 'bg-lime-900/30 hover:bg-lime-800/50 border border-lime-700' : 'bg-emerald-50 hover:bg-emerald-100 border border-emerald-200')
-                                                        : 'opacity-40 cursor-not-allowed bg-black/10'
-                                                    }`}
-                                                >
-                                                    <div className="text-4xl mb-2">
-                                                        {settings.darkMode ? plant.darkEmoji : plant.emoji}
-                                                    </div>
-                                                    <div className="font-bold text-sm">{plant.name}</div>
-                                                    <div className="text-xs opacity-60 mb-2">{plant.desc}</div>
-                                                    <div className={`text-sm font-bold ${canAfford ? (settings.darkMode ? 'text-lime-400' : 'text-emerald-600') : 'text-red-400'}`}>
-                                                        {plant.cost} XP
-                                                    </div>
-                                                    {owned > 0 && (
-                                                        <div className="text-xs opacity-50 mt-1">Owned: {owned}</div>
-                                                    )}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-
-                                    {/* Stats */}
-                                    <div className={`mt-8 p-4 rounded-xl ${settings.darkMode ? 'bg-stone-900/50' : 'bg-slate-100'}`}>
-                                        <div className="flex justify-around text-center">
-                                            <div>
-                                                <div className={`text-2xl font-black ${settings.darkMode ? 'text-lime-400' : 'text-emerald-600'}`}>
-                                                    {totalXpEarned.toLocaleString()}
-                                                </div>
-                                                <div className="text-xs opacity-60">Total XP Earned</div>
-                                            </div>
-                                            <div>
-                                                <div className={`text-2xl font-black ${settings.darkMode ? 'text-lime-400' : 'text-emerald-600'}`}>
-                                                    {garden.length}
-                                                </div>
-                                                <div className="text-xs opacity-60">Plants Collected</div>
-                                            </div>
-                                            <div>
-                                                <div className={`text-2xl font-black ${settings.darkMode ? 'text-lime-400' : 'text-emerald-600'}`}>
-                                                    {stats.totalWords.toLocaleString()}
-                                                </div>
-                                                <div className="text-xs opacity-60">Words Written</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            );
-        };
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
+        if (comboTimeout) clearTimeout(comboTimeout);
+        comboTimeout = setTimeout(() => { state.combo = 0; }, CONSTANTS.COMBO_TIMEOUT_MS);
+      }
+
+      state.text = newText;
+      
+      if (dom.overlay) {
+        dom.overlay.innerHTML = renderHighlightedText();
+      }
+    }
+
+    function triggerSpark(currentWordCount) {
+      state.targetFlow = Math.min(100, state.targetFlow + 40);
+      state.score += 500;
+
+      const targetIndex = currentWordCount - 1;
+      state.sparkedWords[targetIndex] = true;
+      
+      const highlightTimeout = setTimeout(() => {
+        state.sparkedWords[targetIndex] = false;
+        if (dom.overlay) dom.overlay.innerHTML = renderHighlightedText();
+      }, CONSTANTS.SPARK_WORD_HIGHLIGHT_MS);
+      sparkTimeouts.push(highlightTimeout);
+
+      state.nextSparkAt = currentWordCount + getNextSparkInterval();
+      state.sparks = generateSparks(CONSTANTS.SPARK_COUNT);
+      
+      if (dom.sparksContainer) {
+        dom.sparksContainer.innerHTML = renderSparks(THEMES[state.theme]);
+      }
+      
+      const sparkClearTimeout = setTimeout(() => {
+        state.sparks = [];
+        if (dom.sparksContainer) dom.sparksContainer.innerHTML = '';
+      }, CONSTANTS.SPARK_DURATION_MS);
+      sparkTimeouts.push(sparkClearTimeout);
+    }
+
+    function handleScroll() {
+      if (dom.overlay && dom.textarea) {
+        dom.overlay.scrollTop = dom.textarea.scrollTop;
+      }
+    }
+
+    function handleGameOver() {
+      state.gameState = 'ended';
+      state.displayScore = Math.floor(state.score); // Final update
+      const finalWords = state.text.trim().split(/\s+/).filter(w => w.length > 0).length;
+      const session = {
+        id: Date.now(),
+        date: new Date().toISOString(),
+        score: Math.floor(state.score),
+        words: finalWords,
+        time: Math.floor(state.totalTime),
+        wpm: Math.floor((finalWords / (state.totalTime / 60)) || 0),
+        difficulty: state.difficulty
+      };
+      state.history = [session, ...state.history].slice(0, CONSTANTS.HISTORY_LIMIT);
+      state._highScoresCache = null;
+      saveHistory();
+      render();
+    }
+
+    // ===== ANIMATION LOOP =====
+    function animate(time) {
+      if (lastUpdate !== null && state.gameState === 'writing') {
+        const deltaTime = (time - lastUpdate) / 1000;
+
+        const drain = DIFFICULTIES[state.difficulty].drainRate * deltaTime * 10;
+        state.targetFlow = Math.max(0, state.targetFlow - drain);
+
+        // When draining: snap directly to target (no lag)
+        // When filling: smooth lerp for nice visual feedback
+        if (state.targetFlow < state.flow) {
+          state.flow = state.targetFlow;
+        } else {
+          const diff = state.targetFlow - state.flow;
+          state.flow = Math.min(100, state.flow + diff * (deltaTime * 10));
+        }
+
+        // Game over when flow hits zero
+        if (state.flow <= 0) {
+          state.flow = 0;
+          updateFlowBar();
+          handleGameOver();
+        } else {
+          state.totalTime += deltaTime;
+          const multiplier = 1 + (Math.floor(state.combo / CONSTANTS.COMBO_THRESHOLD) * 0.1);
+          state.score += deltaTime * 10 * multiplier;
+
+          updateFlowBar();
+          updateTimeDisplay();
+          
+          // Update score display every 5 seconds
+          if (time - lastScoreUpdate >= CONSTANTS.SCORE_UPDATE_INTERVAL_MS) {
+            updateScoreDisplay();
+            lastScoreUpdate = time;
+          }
+        }
+      }
+      
+      lastUpdate = time;
+      animationId = requestAnimationFrame(animate);
+    }
+
+    function updateFlowBar() {
+      if (!dom.flowBar) return;
+      const t = THEMES[state.theme];
+      dom.flowBar.style.width = `${state.flow}%`;
+      dom.flowBar.style.boxShadow = state.flow < 30 
+        ? `0 0 20px ${t.glow}, 0 0 40px ${t.glow}` 
+        : (state.sparks.length > 0 ? `0 0 30px ${t.sparkColor}` : 'none');
+    }
+
+    function updateScoreDisplay() {
+      if (!dom.scoreDisplay) return;
+      const newScore = Math.floor(state.score);
+      if (newScore !== state.displayScore) {
+        state.displayScore = newScore;
+        dom.scoreDisplay.textContent = state.displayScore.toLocaleString();
+        dom.scoreDisplay.classList.remove('animate-score-pop');
+        void dom.scoreDisplay.offsetWidth; // Trigger reflow
+        dom.scoreDisplay.classList.add('animate-score-pop');
+      }
+    }
+
+    function updateTimeDisplay() {
+      if (!dom.timeDisplay) return;
+      dom.timeDisplay.textContent = formatTime(state.totalTime);
+    }
+
+    // ===== CLEANUP =====
+    function cleanup() {
+      if (animationId) cancelAnimationFrame(animationId);
+      if (comboTimeout) clearTimeout(comboTimeout);
+      sparkTimeouts.forEach(t => clearTimeout(t));
+    }
+
+    window.addEventListener('beforeunload', cleanup);
+
+    // ===== PUBLIC API =====
+    window.FlowState = {
+      startNextRound(preserveText) {
+        state.gameState = 'idle';
+        if (!preserveText) {
+          state.text = '';
+          state.wordCount = 0;
+          state.sparkedWords = {};
+          state.nextSparkAt = getNextSparkInterval();
+        }
+        state.flow = 100;
+        state.targetFlow = 100;
+        state.score = 0;
+        state.displayScore = 0;
+        state.totalTime = 0;
+        state.combo = 0;
+        state.sparks = [];
+        lastScoreUpdate = 0;
+        render();
+      },
+
+      setDifficulty(d) {
+        if (state.gameState !== 'writing' && state.gameState !== 'paused') {
+          state.difficulty = d;
+          state.showMobileMenu = false;
+          savePrefs();
+          render();
+        }
+      },
+
+      toggleTheme() {
+        state.theme = state.theme === 'warm' ? 'cool' : 'warm';
+        savePrefs();
+        render();
+      },
+
+      togglePause() {
+        if (state.gameState === 'writing') {
+          state.gameState = 'paused';
+          render();
+        } else if (state.gameState === 'paused') {
+          state.gameState = 'writing';
+          lastUpdate = null;
+          render();
+        }
+      },
+
+      toggleMobileMenu() {
+        if (state.gameState !== 'writing' && state.gameState !== 'paused') {
+          state.showMobileMenu = !state.showMobileMenu;
+          render();
+        }
+      },
+
+      openStats() {
+        state.showStats = true;
+        render();
+      },
+
+      closeStats() {
+        state.showStats = false;
+        render();
+      },
+
+      exportText,
+      exportToGmail
+    };
+
+    // ===== INIT =====
+    function init() {
+      loadFromStorage();
+      
+      if (!localStorage.getItem('flowstate_prefs_v13')) {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        state.theme = prefersDark ? 'cool' : 'warm';
+      }
+      
+      render();
+      animationId = requestAnimationFrame(animate);
+    }
+
+    init();
+  </script>
 </body>
 </html>
