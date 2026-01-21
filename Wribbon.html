@@ -5,30 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Wribbon</title>
     <meta name="description" content="A minimalist, distraction-free writing app.">
-    <!-- Theme Color -->
-    <meta name="theme-color" content="#EAD895">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22 font-weight=%22bold%22 fill=%22%232C3E36%22>W</text></svg>">
+    <!-- Theme Color - Dad Skeleton -->
+    <meta name="theme-color" content="#000000">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23000000%22/><text y=%22.9em%22 font-size=%2290%22 font-weight=%22bold%22 fill=%22%23fd19c8%22>W</text></svg>">
     
     <style>
-        /* --- 1. VARIABLES & THEME --- */
+        /* --- 1. VARIABLES & THEME - Dad Skeleton Theme --- */
         :root {
-            /* Palette: Deep Parchment Gold & Deep Forest */
-            --bg-color: #EAD895; 
-            --text-color: #24332D; 
-            --caret-color: #3A574C;
-            --accent-color: #3A574C;
-            
+            /* Palette: Dad Skeleton Dark Mode */
+            --bg-color: #000000;
+            --text-color: #ffffff;
+            --caret-color: #fd19c8;
+            --accent-color: #fd19c8;
+
             /* UI Colors */
-            --ui-bg: rgba(234, 216, 149, 0.4); 
-            --ui-border: rgba(36, 51, 45, 0.15);
-            --ui-hover: rgba(36, 51, 45, 0.1);
-            --ui-icon: rgba(36, 51, 45, 0.5);
-            
+            --ui-bg: rgba(20, 20, 20, 0.9);
+            --ui-border: rgba(253, 25, 200, 0.2);
+            --ui-hover: rgba(253, 25, 200, 0.15);
+            --ui-icon: rgba(253, 25, 200, 0.6);
+
             /* Components */
-            --bar-track: rgba(36, 51, 45, 0.08);
-            --bar-fill: #24332D;
-            --bar-glow: rgba(36, 51, 45, 0.2);
-            --selection-bg: rgba(36, 51, 45, 0.15);
+            --bar-track: rgba(253, 25, 200, 0.1);
+            --bar-fill: #fd19c8;
+            --bar-glow: rgba(253, 25, 200, 0.4);
+            --selection-bg: rgba(253, 25, 200, 0.2);
 
             /* Typography */
             --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -38,21 +38,20 @@
         }
 
         [data-theme="dark"] {
-            --bg-color: #11221C; /* Deep Forest */
-            /* UPDATED: Text is now Parchment Gold instead of White */
-            --text-color: #EAD895; 
-            --caret-color: #EAD895;
-            --accent-color: #EAD895;
+            --bg-color: #000000;
+            --text-color: #ffffff;
+            --caret-color: #fd19c8;
+            --accent-color: #fd19c8;
 
-            --ui-bg: rgba(17, 34, 28, 0.5);
-            --ui-border: rgba(234, 216, 149, 0.15);
-            --ui-hover: rgba(234, 216, 149, 0.1);
-            --ui-icon: rgba(234, 216, 149, 0.5);
-            
-            --bar-track: rgba(234, 216, 149, 0.08);
-            --bar-fill: #EAD895;
-            --bar-glow: rgba(234, 216, 149, 0.25);
-            --selection-bg: rgba(234, 216, 149, 0.2);
+            --ui-bg: rgba(10, 10, 10, 0.95);
+            --ui-border: rgba(253, 25, 200, 0.15);
+            --ui-hover: rgba(253, 25, 200, 0.12);
+            --ui-icon: rgba(253, 25, 200, 0.5);
+
+            --bar-track: rgba(253, 25, 200, 0.08);
+            --bar-fill: #fd19c8;
+            --bar-glow: rgba(253, 25, 200, 0.35);
+            --selection-bg: rgba(253, 25, 200, 0.25);
         }
 
         /* --- 2. RESET & BASE --- */
@@ -497,11 +496,10 @@
                 display: none !important;
             }
             body, html {
-                /* UPDATED: Force yellow theme on print unless user disables background graphics */
-                background-color: #EAD895 !important;
+                background-color: #ffffff !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
-                color: #24332D !important;
+                color: #000000 !important;
                 overflow: visible !important;
                 height: auto;
             }
@@ -515,7 +513,7 @@
                 max-width: 100%;
             }
             #editor {
-                color: #24332D !important;
+                color: #000000 !important;
                 font-size: 12pt;
                 line-height: 1.5;
             }

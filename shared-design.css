@@ -7,29 +7,33 @@
  */
 
 /* ============================================
-   1. BRAND COLORS
+   1. BRAND COLORS - Dad Skeleton Theme
    ============================================ */
 :root {
-  /* Primary - Literary Ink Blue */
-  --wt-primary: #1a365d;
-  --wt-primary-light: #2c5282;
-  --wt-primary-dark: #0f2440;
+  /* Primary - Hot Pink */
+  --wt-primary: #fd19c8;
+  --wt-primary-light: #ff4dd8;
+  --wt-primary-dark: #c9149f;
 
-  /* Secondary - Parchment */
-  --wt-secondary: #f7f3e9;
-  --wt-secondary-light: #fdfcf8;
-  --wt-secondary-dark: #e8e0cb;
+  /* Secondary - Orchid Purple */
+  --wt-secondary: #da70d6;
+  --wt-secondary-light: #e896e4;
+  --wt-secondary-dark: #b84db4;
 
-  /* Accent - Creative Purple (for highlights/actions) */
-  --wt-accent: #6b46c1;
-  --wt-accent-light: #805ad5;
-  --wt-accent-dark: #553c9a;
+  /* Accent - Electric Yellow */
+  --wt-accent: #fae84f;
+  --wt-accent-light: #fcf07a;
+  --wt-accent-dark: #e6d42e;
+
+  /* Core Colors */
+  --wt-black: #000000;
+  --wt-white: #ffffff;
 
   /* Semantic Colors */
-  --wt-success: #276749;
-  --wt-warning: #c27803;
-  --wt-error: #c53030;
-  --wt-info: #2b6cb0;
+  --wt-success: #4ade80;
+  --wt-warning: #fae84f;
+  --wt-error: #f87171;
+  --wt-info: #da70d6;
 
   /* Neutral Scale */
   --wt-gray-50: #fafafa;
@@ -238,27 +242,27 @@
 }
 
 /* ============================================
-   9. THEME PRESETS
+   9. THEME PRESETS - Dad Skeleton Dark Mode
    ============================================ */
 
-/* Light Theme (Default) */
+/* Light Theme */
 [data-wt-theme="light"] {
-  --wt-bg: var(--wt-secondary);
-  --wt-bg-elevated: white;
-  --wt-text: var(--wt-gray-900);
-  --wt-text-muted: var(--wt-gray-600);
-  --wt-border: var(--wt-gray-200);
-  --wt-ui-bg: rgba(255, 255, 255, 0.8);
+  --wt-bg: #1a1a1a;
+  --wt-bg-elevated: #242424;
+  --wt-text: var(--wt-white);
+  --wt-text-muted: rgba(255, 255, 255, 0.6);
+  --wt-border: rgba(253, 25, 200, 0.2);
+  --wt-ui-bg: rgba(30, 30, 30, 0.95);
 }
 
-/* Dark Theme */
+/* Dark Theme (Default) */
 [data-wt-theme="dark"] {
-  --wt-bg: var(--wt-gray-950);
-  --wt-bg-elevated: var(--wt-gray-900);
-  --wt-text: var(--wt-gray-100);
-  --wt-text-muted: var(--wt-gray-400);
-  --wt-border: var(--wt-gray-800);
-  --wt-ui-bg: rgba(24, 24, 27, 0.9);
+  --wt-bg: var(--wt-black);
+  --wt-bg-elevated: #0d0d0d;
+  --wt-text: var(--wt-white);
+  --wt-text-muted: rgba(255, 255, 255, 0.5);
+  --wt-border: rgba(253, 25, 200, 0.15);
+  --wt-ui-bg: rgba(10, 10, 10, 0.95);
 }
 
 /* ============================================
@@ -281,7 +285,7 @@
 /* Focus Ring */
 .wt-focus-ring:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(107, 70, 193, 0.4);
+  box-shadow: 0 0 0 3px rgba(253, 25, 200, 0.4);
 }
 
 /* Responsive Container */

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BeatHive - Story Structure Architect</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5' fill='%234361ee'/><polygon points='50,20 80,37.5 80,62.5 50,80 20,62.5 20,37.5' fill='%23818cf8' opacity='0.6'/></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5' fill='%23fd19c8'/><polygon points='50,20 80,37.5 80,62.5 50,80 20,62.5 20,37.5' fill='%23da70d6' opacity='0.6'/></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -13,35 +13,38 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=Space+Grotesk:wght@700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
         
         :root {
-            --bg-dark: #09090b;
-            --bg-light: #E8DFD0;
-            --panel-light: #E0D4C0;
-            --text-light: #432818;
+            --bg-dark: #000000;
+            --bg-light: #1a1a1a;
+            --panel-light: #242424;
+            --text-light: #ffffff;
+            --accent-pink: #fd19c8;
+            --accent-purple: #da70d6;
+            --accent-yellow: #fae84f;
             --sidebar-width: 320px;
         }
 
-        body { 
-            font-family: 'Inter', sans-serif; 
-            overflow: hidden; 
-            margin: 0; 
-            padding: 0; 
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
             transition: background-color 0.5s cubic-bezier(0.16, 1, 0.3, 1);
             user-select: none;
             -webkit-user-select: none;
         }
-        
+
         /* Typography */
         .font-display { font-family: 'Space Grotesk', sans-serif; }
         .font-serif { font-family: 'Lora', serif; }
 
         /* Theme Classes */
-        .light-theme { 
-            background-color: var(--bg-light) !important; 
-            color: #3d2b1f;
+        .light-theme {
+            background-color: var(--bg-light) !important;
+            color: #ffffff;
         }
-        .dark-theme { 
-            background-color: var(--bg-dark) !important; 
-            color: #f4f4f5; 
+        .dark-theme {
+            background-color: var(--bg-dark) !important;
+            color: #ffffff;
         }
 
         /* Smooth Sidebar Architecture */
@@ -54,12 +57,12 @@
         }
         
         .light-theme .sidebar-panel {
-            border-color: rgba(60, 40, 20, 0.08);
-            background: rgba(224, 212, 192, 0.95);
+            border-color: rgba(253, 25, 200, 0.15);
+            background: rgba(26, 26, 26, 0.95);
         }
-        .dark-theme .sidebar-panel { 
-            border-color: rgba(255, 255, 255, 0.08); 
-            background: rgba(20, 20, 23, 0.9); 
+        .dark-theme .sidebar-panel {
+            border-color: rgba(253, 25, 200, 0.12);
+            background: rgba(10, 10, 10, 0.95);
         }
 
         .sidebar-inner {
@@ -72,8 +75,8 @@
 
         /* Hex & Grid */
         .hex-transition { transition: transform 0.1s linear, fill 0.2s ease; }
-        .bg-grid-dark { background-image: radial-gradient(rgba(255,255,255,0.05) 1.5px, transparent 1px); background-size: 40px 40px; }
-        .bg-grid-light { background-image: radial-gradient(rgba(60, 40, 20, 0.1) 1.5px, transparent 1px); background-size: 40px 40px; }
+        .bg-grid-dark { background-image: radial-gradient(rgba(253, 25, 200, 0.08) 1.5px, transparent 1px); background-size: 40px 40px; }
+        .bg-grid-light { background-image: radial-gradient(rgba(253, 25, 200, 0.1) 1.5px, transparent 1px); background-size: 40px 40px; }
 
         .hex-shadow {
             filter: drop-shadow(0 4px 6px rgba(0,0,0,0.15));
@@ -137,11 +140,11 @@
             opacity: 1;
             transform: scale(1.05);
         }
-        .dark-theme .minimap { background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1); }
-        .light-theme .minimap { background: rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.1); }
+        .dark-theme .minimap { background: rgba(0,0,0,0.8); border: 1px solid rgba(253, 25, 200, 0.2); }
+        .light-theme .minimap { background: rgba(26,26,26,0.9); border: 1px solid rgba(253, 25, 200, 0.15); }
         .minimap-viewport {
             position: absolute;
-            border: 2px solid #6366f1;
+            border: 2px solid #fd19c8;
             border-radius: 3px;
             pointer-events: none;
         }
