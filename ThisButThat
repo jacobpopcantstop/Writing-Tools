@@ -1,0 +1,519 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Moon, 
+  Sun, 
+  Trash2, 
+  Medal, 
+  RefreshCw, 
+  Plus, 
+  Save, 
+  History, 
+  X,
+  Send,
+  Globe,
+  ArrowRight,
+  CheckCircle2
+} from 'lucide-react';
+
+// --- Components ---
+
+const Button = ({ onClick, children, variant = 'primary', className = '', disabled = false, size = 'md' }) => {
+  const baseStyle = "font-bold uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed border-2";
+  
+  const sizes = {
+    xs: "px-2 py-1 text-[10px] rounded",
+    sm: "px-3 py-1.5 text-xs rounded-md",
+    md: "px-4 py-2 text-sm rounded-lg",
+    lg: "px-6 py-3 text-base rounded-xl"
+  };
+
+  // Palette: Pink #fd19c8, Purple #da70d6, Yellow #fae84f
+  const variants = {
+    primary: "bg-[#fd19c8] border-[#fd19c8] text-white hover:bg-black hover:text-[#fd19c8] dark:hover:bg-white dark:hover:text-[#fd19c8]",
+    secondary: "bg-[#fae84f] border-[#fae84f] text-black hover:bg-black hover:text-[#fae84f] hover:border-[#fae84f] dark:hover:bg-white",
+    ghost: "bg-transparent border-transparent text-black dark:text-white hover:bg-[#da70d6]/10 hover:text-[#da70d6]",
+    outline: "bg-transparent border-black dark:border-white text-black dark:text-white hover:bg-[#da70d6] hover:border-[#da70d6] hover:text-white",
+    tag: "bg-transparent border-black/10 dark:border-white/20 text-black/60 dark:text-white/60 hover:border-[#fd19c8] hover:text-[#fd19c8] dark:hover:border-[#fd19c8] dark:hover:text-[#fd19c8]",
+    selected: "bg-black dark:bg-white text-white dark:text-black border-black dark:border-white shadow-[4px_4px_0px_0px_#fd19c8]"
+  };
+
+  return (
+    <button 
+      onClick={onClick} 
+      className={`${baseStyle} ${sizes[size]} ${variants[variant]} ${className}`}
+      disabled={disabled}
+    >
+      {children}
+    </button>
+  );
+};
+
+// Mini Header Medal
+const MiniMedal = ({ tier, active }) => {
+  const colors = {
+    bronze: "text-[#cd7f32]", // Classic Bronze
+    silver: "text-[#c0c0c0]", // Classic Silver
+    gold: "text-[#fae84f]"    // Electric Yellow Gold
+  };
+  
+  return (
+    <div className={`transition-all duration-500 ${active ? 'opacity-100 scale-110' : 'opacity-20 scale-75 grayscale'}`}>
+      <Medal className={`w-5 h-5 ${colors[tier]} ${active ? 'fill-current drop-shadow-[0_0_8px_rgba(253,25,200,0.5)]' : ''}`} />
+    </div>
+  );
+};
+
+// --- Main Application ---
+
+export default function App() {
+  // --- State ---
+  const [darkMode, setDarkMode] = useState(false);
+  
+  // Topic State
+  const [topicOptions, setTopicOptions] = useState([]);
+  const [selectedTopicIndex, setSelectedTopicIndex] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  // Game State
+  const [inputs, setInputs] = useState([]);
+  const [currentInput, setCurrentInput] = useState("");
+  const [history, setHistory] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
+
+  // Computed Current Prompt
+  const currentPrompt = topicOptions[selectedTopicIndex] || null;
+
+  // --- Theme Toggle ---
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
+
+  // --- Load History on Mount ---
+  useEffect(() => {
+    const savedHistory = localStorage.getItem('thisButThatHistory');
+    if (savedHistory) {
+      try {
+        setHistory(JSON.parse(savedHistory));
+      } catch (e) {
+        console.error("Failed to parse history");
+      }
+    }
+    fetchWikiTopics(); // Initial load
+  }, []);
+
+  // --- Save History ---
+  useEffect(() => {
+    localStorage.setItem('thisButThatHistory', JSON.stringify(history));
+  }, [history]);
+
+  // --- Helper: Get Yesterday's Date for Pageviews API ---
+  const getYesterdayDate = () => {
+    const date = new Date();
+    date.setDate(date.getDate() - 1);
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return { yyyy, mm, dd };
+  };
+
+  // --- API / Prompt Logic ---
+  const fetchWikiTopics = async (specificTitle = null) => {
+    setLoading(true);
+    setInputs([]);
+    
+    try {
+      let titlesToFetch = [];
+
+      if (specificTitle) {
+        titlesToFetch = [specificTitle];
+      } else {
+        // --- NEW LOGIC: Try to get Trending/Popular pages ---
+        try {
+          const { yyyy, mm, dd } = getYesterdayDate();
+          // Fetch top viewed articles from yesterday
+          const topViewsRes = await fetch(`https://wikimedia.org/api/rest_v1/metrics/pageviews/top/en.wikipedia/all-access/${yyyy}/${mm}/${dd}`);
+          
+          if (topViewsRes.ok) {
+            const topViewsData = await topViewsRes.json();
+            const articles = topViewsData.items?.[0]?.articles || [];
+            
+            // Filter out utility pages (Main Page, Special, Search, etc.)
+            const validArticles = articles.filter(a => 
+              a.article !== "Main_Page" && 
+              a.article !== "Search" && 
+              !a.article.startsWith("Special:") &&
+              !a.article.startsWith("User:") &&
+              !a.article.startsWith("File:")
+            );
+
+            // Pick 3 random articles from the top 50 valid ones
+            // Using top 50 ensures they are very popular but still gives variety
+            const poolSize = Math.min(validArticles.length, 50);
+            const pool = validArticles.slice(0, poolSize);
+            
+            // Randomly select 3 distinct
+            const selected = [];
+            while (selected.length < 3 && pool.length > 0) {
+              const randomIndex = Math.floor(Math.random() * pool.length);
+              selected.push(pool[randomIndex].article);
+              pool.splice(randomIndex, 1); // remove to avoid duplicates
+            }
+            // Replace underscores with spaces for the next query
+            titlesToFetch = selected.map(t => t.replace(/_/g, ' '));
+          } else {
+            throw new Error("Pageviews API failed");
+          }
+        } catch (e) {
+          console.warn("Falling back to random API due to error:", e);
+          // Fallback to random if trending fails
+          const randomRes = await fetch('https://en.wikipedia.org/w/api.php?origin=*&action=query&format=json&list=random&rnnamespace=0&rnlimit=3');
+          const randomData = await randomRes.json();
+          titlesToFetch = randomData.query.random.map(p => p.title);
+        }
+      }
+
+      // 2. Fetch details (Extracts + Links) for the chosen titles
+      //    We do this for both Trending and Specific fetches to get the summary
+      const titlesParam = titlesToFetch.map(t => encodeURIComponent(t)).join('|');
+      const detailsRes = await fetch(`https://en.wikipedia.org/w/api.php?origin=*&action=query&format=json&prop=extracts|links&titles=${titlesParam}&exintro&explaintext&plnamespace=0&pllimit=15`);
+      const detailsData = await detailsRes.json();
+      
+      const pages = detailsData.query.pages;
+      
+      const newOptions = Object.values(pages).map(page => {
+        const extract = page.extract 
+          ? (page.extract.length > 120 ? page.extract.substring(0, 120) + "..." : page.extract)
+          : "No description available.";
+          
+        const links = page.links 
+          ? page.links.map(l => l.title).filter(t => !t.startsWith("List of")) 
+          : [];
+          
+        const shuffledLinks = links.sort(() => 0.5 - Math.random()).slice(0, 6);
+
+        return {
+          text: page.title,
+          type: "Wiki Article",
+          description: extract,
+          related: shuffledLinks
+        };
+      });
+
+      setTopicOptions(newOptions);
+      setSelectedTopicIndex(0);
+
+    } catch (err) {
+      console.error("Wiki API failed", err);
+      setTopicOptions([{ 
+        text: "The Internet is Down", 
+        type: "Error", 
+        description: "We couldn't reach Wikipedia.", 
+        related: [] 
+      }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSelectTopic = (index) => {
+    if (index !== selectedTopicIndex) {
+      setInputs([]);
+      setSelectedTopicIndex(index);
+    }
+  };
+
+  // --- Game Logic ---
+  const addInput = (e) => {
+    e.preventDefault();
+    if (!currentInput.trim()) return;
+    
+    const newInputs = [...inputs, currentInput];
+    setInputs(newInputs);
+    setCurrentInput("");
+  };
+
+  const removeInput = (index) => {
+    const newInputs = inputs.filter((_, i) => i !== index);
+    setInputs(newInputs);
+  };
+
+  const getMedalStatus = () => {
+    const count = inputs.length;
+    if (count >= 5) return 'gold';
+    if (count >= 4) return 'silver';
+    if (count >= 3) return 'bronze';
+    return null;
+  };
+
+  const saveSession = () => {
+    if (inputs.length === 0 || !currentPrompt) return;
+    
+    const newEntry = {
+      id: Date.now(),
+      date: new Date().toLocaleDateString(),
+      prompt: currentPrompt,
+      twists: inputs,
+      medal: getMedalStatus()
+    };
+
+    setHistory([newEntry, ...history]);
+  };
+
+  const exportToEmail = () => {
+    if (!currentPrompt) return;
+    
+    const subject = encodeURIComponent(`Twists for: ${currentPrompt.text}`);
+    let body = `TOPIC: ${currentPrompt.text}\nCONTEXT: ${currentPrompt.description}\n\nTHE TWISTS:\n`;
+    
+    inputs.forEach((twist, i) => {
+      body += `${i + 1}. BUT ${twist}\n`;
+    });
+    
+    const medal = getMedalStatus();
+    if (medal) {
+      body += `\n🏅 Rank Achieved: ${medal.toUpperCase()}`;
+    }
+
+    window.open(`mailto:?subject=${subject}&body=${encodeURIComponent(body)}`);
+  };
+
+  // --- Render ---
+
+  return (
+    <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-black text-white' : 'bg-white text-black'} font-sans`}>
+      
+      {/* Sticky Header */}
+      <header className={`sticky top-0 z-40 px-6 py-3 flex justify-between items-center max-w-2xl mx-auto border-b-2 ${darkMode ? 'bg-black/90 border-white/20' : 'bg-white/90 border-black/10'} backdrop-blur-md`}>
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded bg-[#fd19c8] text-white flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]">
+             <span className="font-black text-xl leading-none mt-0.5">B</span>
+          </div>
+          <h1 className="font-black text-lg tracking-tight uppercase hidden sm:block">This But That</h1>
+        </div>
+        
+        {/* Compact Medals in Header */}
+        <div className="flex items-center gap-3 px-4 py-1 rounded-full border border-black/5 dark:border-white/10 bg-black/5 dark:bg-white/5">
+           <MiniMedal tier="bronze" active={inputs.length >= 3} />
+           <MiniMedal tier="silver" active={inputs.length >= 4} />
+           <MiniMedal tier="gold" active={inputs.length >= 5} />
+        </div>
+
+        <div className="flex gap-1">
+          <Button variant="ghost" onClick={() => setShowHistory(true)} className="!p-2">
+            <History className="w-5 h-5" />
+          </Button>
+          <Button variant="ghost" onClick={() => setDarkMode(!darkMode)} className="!p-2">
+            {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+          </Button>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-2xl mx-auto px-6 py-8 pb-32">
+        
+        {/* --- TOPIC SELECTION GRID --- */}
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-4">
+             <span className="text-xs font-bold uppercase tracking-widest text-[#da70d6] flex items-center gap-2">
+                <Globe className="w-4 h-4" /> Trending Topics
+             </span>
+             <Button variant="ghost" size="xs" onClick={() => fetchWikiTopics(null)} disabled={loading} className="text-[10px] h-7">
+                <RefreshCw className={`w-3 h-3 mr-1 ${loading ? 'animate-spin' : ''}`} /> Refresh
+             </Button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+             {loading ? (
+                [1,2,3].map(i => (
+                  <div key={i} className="h-24 rounded-lg bg-black/5 dark:bg-white/10 animate-pulse" />
+                ))
+             ) : (
+                topicOptions.map((option, idx) => {
+                  const isSelected = selectedTopicIndex === idx;
+                  return (
+                    <div 
+                      key={idx}
+                      onClick={() => handleSelectTopic(idx)}
+                      className={`cursor-pointer p-3 rounded-lg border-2 transition-all duration-200 relative group
+                        ${isSelected 
+                          ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white shadow-[4px_4px_0px_0px_#fd19c8] translate-y-[-2px] translate-x-[-2px]' 
+                          : 'bg-transparent border-black/20 dark:border-white/20 hover:border-[#da70d6] dark:hover:border-[#da70d6]'
+                        }
+                      `}
+                    >
+                      {isSelected && (
+                        <div className="absolute -top-3 -right-3 bg-[#fae84f] text-black border-2 border-black rounded-full p-0.5 shadow-sm z-10">
+                           <CheckCircle2 className="w-4 h-4" />
+                        </div>
+                      )}
+                      <h3 className={`font-bold text-sm leading-tight mb-2 ${isSelected ? 'line-clamp-2' : 'line-clamp-2'}`}>
+                        {option.text}
+                      </h3>
+                      {!isSelected && (
+                         <p className="text-[10px] opacity-60 line-clamp-2 leading-relaxed font-medium">
+                           {option.description}
+                         </p>
+                      )}
+                    </div>
+                  )
+                })
+             )}
+          </div>
+          
+          {/* Active Topic Detail */}
+          {currentPrompt && !loading && (
+             <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="p-4 border-l-4 border-[#fae84f] bg-[#fae84f]/10 mb-6">
+                   <p className="italic text-sm leading-relaxed">
+                     <span className="font-bold not-italic mr-1 text-[#da70d6] uppercase text-xs">Context //</span> 
+                     {currentPrompt.description}
+                   </p>
+                </div>
+                
+                {/* Related Links */}
+                {currentPrompt.related.length > 0 && (
+                   <div className="flex flex-wrap gap-2 mb-8">
+                      <span className="text-xs font-bold uppercase text-[#da70d6] py-1.5 mr-1">Pivot To:</span>
+                      {currentPrompt.related.slice(0, 4).map((topic, i) => (
+                          <Button 
+                              key={i} 
+                              variant="tag" 
+                              size="sm" 
+                              onClick={() => fetchWikiTopics(topic)}
+                              className="text-xs py-1 h-auto"
+                          >
+                              {topic} <ArrowRight className="w-3 h-3 opacity-50" />
+                          </Button>
+                      ))}
+                   </div>
+                )}
+             </div>
+          )}
+        </div>
+
+        {/* --- INPUT AREA (Top) --- */}
+        <div className="mb-8">
+            <form onSubmit={addInput} className="relative group z-10">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-[#da70d6] text-xl pointer-events-none uppercase">BUT</div>
+            <input
+                type="text"
+                value={currentInput}
+                onChange={(e) => setCurrentInput(e.target.value)}
+                placeholder={`Twist for "${currentPrompt?.text || '...'}"...`}
+                disabled={loading}
+                className="w-full pl-20 pr-12 py-4 text-lg font-medium rounded-xl bg-transparent border-2 border-black/20 dark:border-white/20 focus:border-[#fd19c8] dark:focus:border-[#fd19c8] shadow-sm focus:shadow-[0_0_20px_rgba(253,25,200,0.2)] outline-none transition-all placeholder:text-black/30 dark:placeholder:text-white/30 disabled:opacity-50"
+                autoFocus
+            />
+            <button 
+                type="submit" 
+                disabled={!currentInput.trim()}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-[#fd19c8] text-white disabled:opacity-0 disabled:scale-75 transition-all hover:bg-[#da70d6]"
+            >
+                <Plus className="w-5 h-5" />
+            </button>
+            </form>
+            
+            {/* Infinite Play Status */}
+            {inputs.length >= 5 && (
+                <div className="mt-2 text-center text-xs font-bold uppercase tracking-widest text-[#fae84f] animate-pulse">
+                   Gold Medal Achieved! Infinite Mode Active.
+                </div>
+            )}
+        </div>
+
+        {/* --- LIST AREA (Bottom) --- */}
+        <div className="space-y-4 mb-8">
+          {inputs.length === 0 && (
+             <div className="text-center py-4 opacity-30 select-none pointer-events-none">
+                 <p className="text-sm font-bold uppercase tracking-widest">Add your twists above</p>
+             </div>
+          )}
+          {inputs.map((text, idx) => (
+            <div key={idx} className="group flex items-start gap-4 p-4 rounded-xl bg-black/5 dark:bg-white/5 border-2 border-transparent hover:border-[#da70d6]/50 transition-all animate-in slide-in-from-top-2 fade-in duration-300">
+              <span className="font-black text-[#da70d6] text-xl mt-0.5 select-none uppercase">BUT</span>
+              <p className="flex-1 font-medium text-lg leading-relaxed">{text}</p>
+              <button 
+                onClick={() => removeInput(idx)}
+                className="opacity-0 group-hover:opacity-100 p-2 text-[#fd19c8] hover:bg-[#fd19c8]/10 rounded transition-all"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {/* Action Bar */}
+        <div className="grid grid-cols-2 gap-4 sticky bottom-6 z-20">
+           <Button 
+            variant="secondary" 
+            onClick={() => { saveSession(); fetchWikiTopics(null); }}
+            className="w-full shadow-lg shadow-black/10 dark:shadow-none"
+            disabled={inputs.length === 0}
+          >
+             <Save className="w-4 h-4" /> Save & Next
+           </Button>
+           
+           <Button 
+            variant="primary" 
+            onClick={exportToEmail}
+            className="w-full shadow-lg shadow-[#fd19c8]/20 dark:shadow-none"
+            disabled={inputs.length === 0}
+          >
+             <Send className="w-4 h-4" /> Export Email
+           </Button>
+        </div>
+
+      </main>
+
+      {/* History Sidebar/Modal */}
+      {showHistory && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowHistory(false)} />
+          <div className="relative w-full max-w-md bg-white dark:bg-black border-l-2 border-black dark:border-white h-full shadow-2xl p-6 overflow-y-auto animate-in slide-in-from-right duration-300">
+            <div className="flex justify-between items-center mb-8">
+              <h3 className="text-2xl font-black uppercase tracking-tighter">History</h3>
+              <Button variant="ghost" onClick={() => setShowHistory(false)}><X className="w-6 h-6" /></Button>
+            </div>
+            
+            {history.length === 0 ? (
+              <div className="text-center text-gray-400 mt-20">
+                <History className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No history yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {history.map((session) => (
+                  <div key={session.id} className="p-4 rounded-xl border-2 border-black/10 dark:border-white/10 hover:border-[#da70d6] dark:hover:border-[#da70d6] transition-colors bg-transparent">
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="text-xs font-mono opacity-50">{session.date}</span>
+                      {session.medal && (
+                        <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${
+                          session.medal === 'gold' ? 'bg-[#fae84f]/20 border-[#fae84f] text-[#fae84f]' :
+                          session.medal === 'silver' ? 'bg-gray-200 border-gray-400 text-gray-600' :
+                          'bg-orange-100 border-orange-400 text-orange-600'
+                        }`}>
+                          {session.medal}
+                        </span>
+                      )}
+                    </div>
+                    <h4 className="font-bold text-lg mb-1 leading-tight">{session.prompt.text}</h4>
+                    <ul className="space-y-1 ml-4 mt-3 list-disc marker:text-[#fd19c8]">
+                      {session.twists.map((t, i) => (
+                        <li key={i} className="text-sm opacity-80 pl-1">{t}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      
+    </div>
+  );
+}
