@@ -100,13 +100,16 @@
                 <!-- Skeletons will be injected here dynamically -->
             </div>
             
-            <!-- Active Context -->
+            <!-- Active Context (Updated for expansion) -->
             <div id="active-context" class="animate-in fade-in slide-in-from-top-2 duration-300 hidden">
-                <div class="p-4 border-l-4 border-neonYellow bg-neonYellow/10 mb-6">
-                    <p class="italic text-sm leading-relaxed">
+                <div id="context-box" onclick="toggleContext()" class="cursor-pointer group p-4 border-l-4 border-neonYellow bg-neonYellow/10 mb-6 transition-all duration-200 hover:bg-neonYellow/20 relative">
+                    <p class="italic text-sm leading-relaxed dark:text-white">
                         <span class="font-bold not-italic mr-1 text-neonPurple uppercase text-xs">Context //</span> 
-                        <span id="context-text">Loading...</span>
+                        <span id="context-text" class="line-clamp-2">Loading...</span>
                     </p>
+                    <div id="context-hint" class="text-[10px] text-neonYellow font-bold mt-2 opacity-50 group-hover:opacity-100 transition-opacity uppercase tracking-widest flex items-center gap-1">
+                        <i data-lucide="chevron-down" class="w-3 h-3"></i> Read More
+                    </div>
                 </div>
                 
                 <!-- Related Links -->
@@ -215,7 +218,8 @@
             selectedIndex: 0,
             twists: [],
             history: [],
-            loading: false
+            loading: false,
+            contextExpanded: false // NEW: Track context expansion
         };
 
         // --- Init ---
@@ -314,7 +318,6 @@
                 }
 
                 // Get Details - Parallel requests to avoid link limit starvation
-                // Previously, one large topic (like David Beckham) would consume the entire link limit, leaving others empty.
                 const detailPromises = titlesToFetch.map(async (title) => {
                     const resp = await fetch(`https://en.wikipedia.org/w/api.php?origin=*&action=query&format=json&prop=extracts|links&titles=${encodeURIComponent(title)}&exintro&explaintext&plnamespace=0&pllimit=100`);
                     const data = await resp.json();
@@ -325,9 +328,8 @@
                 const pages = await Promise.all(detailPromises);
 
                 state.topics = pages.map(page => {
-                    const extract = page.extract 
-                        ? (page.extract.length > 120 ? page.extract.substring(0, 120) + "..." : page.extract)
-                        : "No description available.";
+                    // MODIFIED: We store the full extract now, no truncation here
+                    const extract = page.extract || "No description available.";
                     
                     const links = page.links 
                         ? page.links.map(l => l.title).filter(t => !t.startsWith("List of")) 
@@ -344,6 +346,7 @@
                 
                 state.twists = [];
                 state.selectedIndex = 0;
+                state.contextExpanded = false; // Reset expansion on new topics
                 renderTopicGrid();
                 renderTwistList();
                 updateMedals();
@@ -376,7 +379,7 @@
 
         function renderTopicGrid() {
             const grid = document.getElementById('topic-grid');
-            // FIX: Always clear the grid before rendering new topics, regardless of loading state
+            // Always clear the grid before rendering new topics
             grid.innerHTML = '';
 
             state.topics.forEach((topic, idx) => {
@@ -414,7 +417,19 @@
             }
 
             container.classList.remove('hidden');
-            document.getElementById('context-text').textContent = topic.description;
+            
+            // Handle Expanded/Collapsed state
+            const textSpan = document.getElementById('context-text');
+            const hint = document.getElementById('context-hint');
+            textSpan.textContent = topic.description;
+
+            if (state.contextExpanded) {
+                textSpan.classList.remove('line-clamp-2');
+                hint.innerHTML = `<i data-lucide="chevron-up" class="w-3 h-3"></i> Read Less`;
+            } else {
+                textSpan.classList.add('line-clamp-2');
+                hint.innerHTML = `<i data-lucide="chevron-down" class="w-3 h-3"></i> Read More`;
+            }
 
             const linksContainer = document.getElementById('related-links');
             linksContainer.innerHTML = '';
@@ -434,6 +449,12 @@
                  });
             }
             lucide.createIcons();
+        }
+        
+        // NEW: Toggle context expansion
+        function toggleContext() {
+            state.contextExpanded = !state.contextExpanded;
+            renderActiveContext();
         }
 
         function updatePlaceholder() {
@@ -456,7 +477,6 @@
                     const div = document.createElement('div');
                     div.className = "group flex items-start gap-4 p-4 rounded-xl bg-black/5 dark:bg-white/5 border-2 border-transparent hover:border-neonPurple/50 transition-all slide-up";
                     
-                    // Added: Contenteditable paragraph for inline editing
                     div.innerHTML = `
                         <span class="font-black text-neonPurple text-xl mt-0.5 select-none uppercase">BUT</span>
                         <p class="flex-1 font-medium text-lg leading-relaxed dark:text-white outline-none focus:text-neonPink transition-colors border-b border-transparent focus:border-neonPink" 
@@ -471,7 +491,6 @@
                 });
             }
             
-            // Buttons state
             const hasItems = state.twists.length > 0;
             const saveBtn = document.getElementById('btn-save');
             const exportBtn = document.getElementById('btn-export');
@@ -560,6 +579,7 @@
             if (idx !== state.selectedIndex) {
                 state.selectedIndex = idx;
                 state.twists = [];
+                state.contextExpanded = false; // Reset expansion when switching topics
                 renderTopicGrid();
                 renderTwistList();
                 updateMedals();
@@ -601,8 +621,6 @@
             if (trimmed) {
                 state.twists[idx] = trimmed;
             } else {
-                // If user deleted everything, maybe remove? Or revert? 
-                // Let's remove for smooth UX
                 removeTwist(idx);
             }
         }
