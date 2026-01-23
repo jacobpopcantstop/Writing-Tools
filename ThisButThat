@@ -1,519 +1,683 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Moon, 
-  Sun, 
-  Trash2, 
-  Medal, 
-  RefreshCw, 
-  Plus, 
-  Save, 
-  History, 
-  X,
-  Send,
-  Globe,
-  ArrowRight,
-  CheckCircle2
-} from 'lucide-react';
-
-// --- Components ---
-
-const Button = ({ onClick, children, variant = 'primary', className = '', disabled = false, size = 'md' }) => {
-  const baseStyle = "font-bold uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed border-2";
-  
-  const sizes = {
-    xs: "px-2 py-1 text-[10px] rounded",
-    sm: "px-3 py-1.5 text-xs rounded-md",
-    md: "px-4 py-2 text-sm rounded-lg",
-    lg: "px-6 py-3 text-base rounded-xl"
-  };
-
-  // Palette: Pink #fd19c8, Purple #da70d6, Yellow #fae84f
-  const variants = {
-    primary: "bg-[#fd19c8] border-[#fd19c8] text-white hover:bg-black hover:text-[#fd19c8] dark:hover:bg-white dark:hover:text-[#fd19c8]",
-    secondary: "bg-[#fae84f] border-[#fae84f] text-black hover:bg-black hover:text-[#fae84f] hover:border-[#fae84f] dark:hover:bg-white",
-    ghost: "bg-transparent border-transparent text-black dark:text-white hover:bg-[#da70d6]/10 hover:text-[#da70d6]",
-    outline: "bg-transparent border-black dark:border-white text-black dark:text-white hover:bg-[#da70d6] hover:border-[#da70d6] hover:text-white",
-    tag: "bg-transparent border-black/10 dark:border-white/20 text-black/60 dark:text-white/60 hover:border-[#fd19c8] hover:text-[#fd19c8] dark:hover:border-[#fd19c8] dark:hover:text-[#fd19c8]",
-    selected: "bg-black dark:bg-white text-white dark:text-black border-black dark:border-white shadow-[4px_4px_0px_0px_#fd19c8]"
-  };
-
-  return (
-    <button 
-      onClick={onClick} 
-      className={`${baseStyle} ${sizes[size]} ${variants[variant]} ${className}`}
-      disabled={disabled}
-    >
-      {children}
-    </button>
-  );
-};
-
-// Mini Header Medal
-const MiniMedal = ({ tier, active }) => {
-  const colors = {
-    bronze: "text-[#cd7f32]", // Classic Bronze
-    silver: "text-[#c0c0c0]", // Classic Silver
-    gold: "text-[#fae84f]"    // Electric Yellow Gold
-  };
-  
-  return (
-    <div className={`transition-all duration-500 ${active ? 'opacity-100 scale-110' : 'opacity-20 scale-75 grayscale'}`}>
-      <Medal className={`w-5 h-5 ${colors[tier]} ${active ? 'fill-current drop-shadow-[0_0_8px_rgba(253,25,200,0.5)]' : ''}`} />
-    </div>
-  );
-};
-
-// --- Main Application ---
-
-export default function App() {
-  // --- State ---
-  const [darkMode, setDarkMode] = useState(false);
-  
-  // Topic State
-  const [topicOptions, setTopicOptions] = useState([]);
-  const [selectedTopicIndex, setSelectedTopicIndex] = useState(0);
-  const [loading, setLoading] = useState(false);
-
-  // Game State
-  const [inputs, setInputs] = useState([]);
-  const [currentInput, setCurrentInput] = useState("");
-  const [history, setHistory] = useState([]);
-  const [showHistory, setShowHistory] = useState(false);
-
-  // Computed Current Prompt
-  const currentPrompt = topicOptions[selectedTopicIndex] || null;
-
-  // --- Theme Toggle ---
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [darkMode]);
-
-  // --- Load History on Mount ---
-  useEffect(() => {
-    const savedHistory = localStorage.getItem('thisButThatHistory');
-    if (savedHistory) {
-      try {
-        setHistory(JSON.parse(savedHistory));
-      } catch (e) {
-        console.error("Failed to parse history");
-      }
-    }
-    fetchWikiTopics(); // Initial load
-  }, []);
-
-  // --- Save History ---
-  useEffect(() => {
-    localStorage.setItem('thisButThatHistory', JSON.stringify(history));
-  }, [history]);
-
-  // --- Helper: Get Yesterday's Date for Pageviews API ---
-  const getYesterdayDate = () => {
-    const date = new Date();
-    date.setDate(date.getDate() - 1);
-    const yyyy = date.getFullYear();
-    const mm = String(date.getMonth() + 1).padStart(2, '0');
-    const dd = String(date.getDate()).padStart(2, '0');
-    return { yyyy, mm, dd };
-  };
-
-  // --- API / Prompt Logic ---
-  const fetchWikiTopics = async (specificTitle = null) => {
-    setLoading(true);
-    setInputs([]);
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>This But That v3</title>
     
-    try {
-      let titlesToFetch = [];
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
 
-      if (specificTitle) {
-        titlesToFetch = [specificTitle];
-      } else {
-        // --- NEW LOGIC: Try to get Trending/Popular pages ---
-        try {
-          const { yyyy, mm, dd } = getYesterdayDate();
-          // Fetch top viewed articles from yesterday
-          const topViewsRes = await fetch(`https://wikimedia.org/api/rest_v1/metrics/pageviews/top/en.wikipedia/all-access/${yyyy}/${mm}/${dd}`);
-          
-          if (topViewsRes.ok) {
-            const topViewsData = await topViewsRes.json();
-            const articles = topViewsData.items?.[0]?.articles || [];
-            
-            // Filter out utility pages (Main Page, Special, Search, etc.)
-            const validArticles = articles.filter(a => 
-              a.article !== "Main_Page" && 
-              a.article !== "Search" && 
-              !a.article.startsWith("Special:") &&
-              !a.article.startsWith("User:") &&
-              !a.article.startsWith("File:")
-            );
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
 
-            // Pick 3 random articles from the top 50 valid ones
-            // Using top 50 ensures they are very popular but still gives variety
-            const poolSize = Math.min(validArticles.length, 50);
-            const pool = validArticles.slice(0, poolSize);
-            
-            // Randomly select 3 distinct
-            const selected = [];
-            while (selected.length < 3 && pool.length > 0) {
-              const randomIndex = Math.floor(Math.random() * pool.length);
-              selected.push(pool[randomIndex].article);
-              pool.splice(randomIndex, 1); // remove to avoid duplicates
-            }
-            // Replace underscores with spaces for the next query
-            titlesToFetch = selected.map(t => t.replace(/_/g, ' '));
-          } else {
-            throw new Error("Pageviews API failed");
-          }
-        } catch (e) {
-          console.warn("Falling back to random API due to error:", e);
-          // Fallback to random if trending fails
-          const randomRes = await fetch('https://en.wikipedia.org/w/api.php?origin=*&action=query&format=json&list=random&rnnamespace=0&rnlimit=3');
-          const randomData = await randomRes.json();
-          titlesToFetch = randomData.query.random.map(p => p.title);
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #da70d6; border-radius: 3px; }
+
+        /* Animation Utilities */
+        .fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        .slide-up { animation: slideUp 0.3s ease-out forwards; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        /* Noise Texture for Noir feel */
+        .bg-noise {
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
         }
-      }
+    </style>
 
-      // 2. Fetch details (Extracts + Links) for the chosen titles
-      //    We do this for both Trending and Specific fetches to get the summary
-      const titlesParam = titlesToFetch.map(t => encodeURIComponent(t)).join('|');
-      const detailsRes = await fetch(`https://en.wikipedia.org/w/api.php?origin=*&action=query&format=json&prop=extracts|links&titles=${titlesParam}&exintro&explaintext&plnamespace=0&pllimit=15`);
-      const detailsData = await detailsRes.json();
-      
-      const pages = detailsData.query.pages;
-      
-      const newOptions = Object.values(pages).map(page => {
-        const extract = page.extract 
-          ? (page.extract.length > 120 ? page.extract.substring(0, 120) + "..." : page.extract)
-          : "No description available.";
-          
-        const links = page.links 
-          ? page.links.map(l => l.title).filter(t => !t.startsWith("List of")) 
-          : [];
-          
-        const shuffledLinks = links.sort(() => 0.5 - Math.random()).slice(0, 6);
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        neonPink: '#fd19c8',
+                        neonPurple: '#da70d6',
+                        neonYellow: '#fae84f'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-white text-black transition-colors duration-300 min-h-screen relative">
+    <!-- Background Noise Overlay -->
+    <div class="fixed inset-0 pointer-events-none bg-noise z-0"></div>
 
-        return {
-          text: page.title,
-          type: "Wiki Article",
-          description: extract,
-          related: shuffledLinks
-        };
-      });
-
-      setTopicOptions(newOptions);
-      setSelectedTopicIndex(0);
-
-    } catch (err) {
-      console.error("Wiki API failed", err);
-      setTopicOptions([{ 
-        text: "The Internet is Down", 
-        type: "Error", 
-        description: "We couldn't reach Wikipedia.", 
-        related: [] 
-      }]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSelectTopic = (index) => {
-    if (index !== selectedTopicIndex) {
-      setInputs([]);
-      setSelectedTopicIndex(index);
-    }
-  };
-
-  // --- Game Logic ---
-  const addInput = (e) => {
-    e.preventDefault();
-    if (!currentInput.trim()) return;
-    
-    const newInputs = [...inputs, currentInput];
-    setInputs(newInputs);
-    setCurrentInput("");
-  };
-
-  const removeInput = (index) => {
-    const newInputs = inputs.filter((_, i) => i !== index);
-    setInputs(newInputs);
-  };
-
-  const getMedalStatus = () => {
-    const count = inputs.length;
-    if (count >= 5) return 'gold';
-    if (count >= 4) return 'silver';
-    if (count >= 3) return 'bronze';
-    return null;
-  };
-
-  const saveSession = () => {
-    if (inputs.length === 0 || !currentPrompt) return;
-    
-    const newEntry = {
-      id: Date.now(),
-      date: new Date().toLocaleDateString(),
-      prompt: currentPrompt,
-      twists: inputs,
-      medal: getMedalStatus()
-    };
-
-    setHistory([newEntry, ...history]);
-  };
-
-  const exportToEmail = () => {
-    if (!currentPrompt) return;
-    
-    const subject = encodeURIComponent(`Twists for: ${currentPrompt.text}`);
-    let body = `TOPIC: ${currentPrompt.text}\nCONTEXT: ${currentPrompt.description}\n\nTHE TWISTS:\n`;
-    
-    inputs.forEach((twist, i) => {
-      body += `${i + 1}. BUT ${twist}\n`;
-    });
-    
-    const medal = getMedalStatus();
-    if (medal) {
-      body += `\n🏅 Rank Achieved: ${medal.toUpperCase()}`;
-    }
-
-    window.open(`mailto:?subject=${subject}&body=${encodeURIComponent(body)}`);
-  };
-
-  // --- Render ---
-
-  return (
-    <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-black text-white' : 'bg-white text-black'} font-sans`}>
-      
-      {/* Sticky Header */}
-      <header className={`sticky top-0 z-40 px-6 py-3 flex justify-between items-center max-w-2xl mx-auto border-b-2 ${darkMode ? 'bg-black/90 border-white/20' : 'bg-white/90 border-black/10'} backdrop-blur-md`}>
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded bg-[#fd19c8] text-white flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]">
-             <span className="font-black text-xl leading-none mt-0.5">B</span>
-          </div>
-          <h1 className="font-black text-lg tracking-tight uppercase hidden sm:block">This But That</h1>
+    <!-- Sticky Header -->
+    <header class="sticky top-0 z-40 px-6 py-3 flex justify-between items-center max-w-2xl mx-auto border-b-2 bg-white/95 border-black/10 backdrop-blur-md transition-colors duration-300" id="main-header">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded bg-neonPink text-white flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]">
+                <span class="font-black text-xl leading-none mt-0.5">B</span>
+            </div>
+            <h1 class="font-black text-lg tracking-tight uppercase hidden sm:block">This But That <span class="text-[10px] text-neonPurple ml-1">v3</span></h1>
         </div>
         
-        {/* Compact Medals in Header */}
-        <div className="flex items-center gap-3 px-4 py-1 rounded-full border border-black/5 dark:border-white/10 bg-black/5 dark:bg-white/5">
-           <MiniMedal tier="bronze" active={inputs.length >= 3} />
-           <MiniMedal tier="silver" active={inputs.length >= 4} />
-           <MiniMedal tier="gold" active={inputs.length >= 5} />
+        <!-- Compact Medals -->
+        <div class="flex items-center gap-3 px-4 py-1 rounded-full border border-black/5 dark:border-white/10 bg-black/5 dark:bg-white/5">
+            <div id="medal-bronze" class="transition-all duration-500 opacity-20 scale-75 grayscale"><i data-lucide="medal" class="w-5 h-5 text-[#cd7f32]"></i></div>
+            <div id="medal-silver" class="transition-all duration-500 opacity-20 scale-75 grayscale"><i data-lucide="medal" class="w-5 h-5 text-[#c0c0c0]"></i></div>
+            <div id="medal-gold" class="transition-all duration-500 opacity-20 scale-75 grayscale"><i data-lucide="medal" class="w-5 h-5 text-neonYellow"></i></div>
         </div>
 
-        <div className="flex gap-1">
-          <Button variant="ghost" onClick={() => setShowHistory(true)} className="!p-2">
-            <History className="w-5 h-5" />
-          </Button>
-          <Button variant="ghost" onClick={() => setDarkMode(!darkMode)} className="!p-2">
-            {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-          </Button>
+        <div class="flex gap-1">
+            <button onclick="toggleHistory(true)" class="p-2 hover:bg-neonPurple/10 hover:text-neonPurple rounded-lg transition-colors">
+                <i data-lucide="history" class="w-5 h-5"></i>
+            </button>
+            <button onclick="toggleTheme()" class="p-2 hover:bg-neonPurple/10 hover:text-neonPurple rounded-lg transition-colors">
+                <span id="wrapper-moon" class="hidden"><i data-lucide="moon" class="w-5 h-5"></i></span>
+                <span id="wrapper-sun"><i data-lucide="sun" class="w-5 h-5"></i></span>
+            </button>
         </div>
-      </header>
+    </header>
 
-      {/* Main Content */}
-      <main className="max-w-2xl mx-auto px-6 py-8 pb-32">
+    <!-- Main Content -->
+    <main class="max-w-2xl mx-auto px-6 py-8 pb-32 relative z-10">
         
-        {/* --- TOPIC SELECTION GRID --- */}
-        <div className="mb-8">
-          <div className="flex justify-between items-center mb-4">
-             <span className="text-xs font-bold uppercase tracking-widest text-[#da70d6] flex items-center gap-2">
-                <Globe className="w-4 h-4" /> Trending Topics
-             </span>
-             <Button variant="ghost" size="xs" onClick={() => fetchWikiTopics(null)} disabled={loading} className="text-[10px] h-7">
-                <RefreshCw className={`w-3 h-3 mr-1 ${loading ? 'animate-spin' : ''}`} /> Refresh
-             </Button>
-          </div>
+        <!-- Topic Selection -->
+        <div class="mb-8">
+            <div class="flex justify-between items-center mb-4">
+                <span class="text-xs font-bold uppercase tracking-widest text-neonPurple flex items-center gap-2">
+                    <i data-lucide="globe" class="w-4 h-4"></i> Trending Topics
+                </span>
+                <button onclick="fetchTopics()" id="btn-refresh" class="text-[10px] h-7 px-2 py-1 rounded border-2 border-black/10 dark:border-white/20 text-black/60 dark:text-white/60 hover:border-neonPink hover:text-neonPink uppercase font-bold tracking-wider flex items-center gap-1 transition-all">
+                    <i data-lucide="refresh-cw" class="w-3 h-3"></i> Refresh
+                </button>
+            </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-             {loading ? (
-                [1,2,3].map(i => (
-                  <div key={i} className="h-24 rounded-lg bg-black/5 dark:bg-white/10 animate-pulse" />
-                ))
-             ) : (
-                topicOptions.map((option, idx) => {
-                  const isSelected = selectedTopicIndex === idx;
-                  return (
-                    <div 
-                      key={idx}
-                      onClick={() => handleSelectTopic(idx)}
-                      className={`cursor-pointer p-3 rounded-lg border-2 transition-all duration-200 relative group
-                        ${isSelected 
-                          ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white shadow-[4px_4px_0px_0px_#fd19c8] translate-y-[-2px] translate-x-[-2px]' 
-                          : 'bg-transparent border-black/20 dark:border-white/20 hover:border-[#da70d6] dark:hover:border-[#da70d6]'
-                        }
-                      `}
-                    >
-                      {isSelected && (
-                        <div className="absolute -top-3 -right-3 bg-[#fae84f] text-black border-2 border-black rounded-full p-0.5 shadow-sm z-10">
-                           <CheckCircle2 className="w-4 h-4" />
-                        </div>
-                      )}
-                      <h3 className={`font-bold text-sm leading-tight mb-2 ${isSelected ? 'line-clamp-2' : 'line-clamp-2'}`}>
-                        {option.text}
-                      </h3>
-                      {!isSelected && (
-                         <p className="text-[10px] opacity-60 line-clamp-2 leading-relaxed font-medium">
-                           {option.description}
-                         </p>
-                      )}
-                    </div>
-                  )
-                })
-             )}
-          </div>
-          
-          {/* Active Topic Detail */}
-          {currentPrompt && !loading && (
-             <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                <div className="p-4 border-l-4 border-[#fae84f] bg-[#fae84f]/10 mb-6">
-                   <p className="italic text-sm leading-relaxed">
-                     <span className="font-bold not-italic mr-1 text-[#da70d6] uppercase text-xs">Context //</span> 
-                     {currentPrompt.description}
-                   </p>
+            <!-- Grid Container -->
+            <div id="topic-grid" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+                <!-- Skeletons will be injected here dynamically -->
+            </div>
+            
+            <!-- Active Context -->
+            <div id="active-context" class="animate-in fade-in slide-in-from-top-2 duration-300 hidden">
+                <div class="p-4 border-l-4 border-neonYellow bg-neonYellow/10 mb-6">
+                    <p class="italic text-sm leading-relaxed">
+                        <span class="font-bold not-italic mr-1 text-neonPurple uppercase text-xs">Context //</span> 
+                        <span id="context-text">Loading...</span>
+                    </p>
                 </div>
                 
-                {/* Related Links */}
-                {currentPrompt.related.length > 0 && (
-                   <div className="flex flex-wrap gap-2 mb-8">
-                      <span className="text-xs font-bold uppercase text-[#da70d6] py-1.5 mr-1">Pivot To:</span>
-                      {currentPrompt.related.slice(0, 4).map((topic, i) => (
-                          <Button 
-                              key={i} 
-                              variant="tag" 
-                              size="sm" 
-                              onClick={() => fetchWikiTopics(topic)}
-                              className="text-xs py-1 h-auto"
-                          >
-                              {topic} <ArrowRight className="w-3 h-3 opacity-50" />
-                          </Button>
-                      ))}
-                   </div>
-                )}
-             </div>
-          )}
+                <!-- Related Links -->
+                <div id="related-links" class="flex flex-wrap gap-2 mb-8">
+                    <!-- Links injected here -->
+                </div>
+            </div>
         </div>
 
-        {/* --- INPUT AREA (Top) --- */}
-        <div className="mb-8">
-            <form onSubmit={addInput} className="relative group z-10">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-[#da70d6] text-xl pointer-events-none uppercase">BUT</div>
-            <input
-                type="text"
-                value={currentInput}
-                onChange={(e) => setCurrentInput(e.target.value)}
-                placeholder={`Twist for "${currentPrompt?.text || '...'}"...`}
-                disabled={loading}
-                className="w-full pl-20 pr-12 py-4 text-lg font-medium rounded-xl bg-transparent border-2 border-black/20 dark:border-white/20 focus:border-[#fd19c8] dark:focus:border-[#fd19c8] shadow-sm focus:shadow-[0_0_20px_rgba(253,25,200,0.2)] outline-none transition-all placeholder:text-black/30 dark:placeholder:text-white/30 disabled:opacity-50"
-                autoFocus
-            />
-            <button 
-                type="submit" 
-                disabled={!currentInput.trim()}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-[#fd19c8] text-white disabled:opacity-0 disabled:scale-75 transition-all hover:bg-[#da70d6]"
-            >
-                <Plus className="w-5 h-5" />
-            </button>
+        <!-- Input Area -->
+        <div class="mb-8">
+            <form onsubmit="addTwist(event)" class="relative group z-10">
+                <div class="absolute left-4 top-1/2 -translate-y-1/2 font-black text-neonPurple text-xl pointer-events-none uppercase select-none">BUT</div>
+                <input
+                    type="text"
+                    id="twist-input"
+                    placeholder="Twist for..."
+                    class="w-full pl-20 pr-12 py-4 text-lg font-medium rounded-xl bg-transparent border-2 border-black/20 dark:border-white/20 focus:border-neonPink dark:focus:border-neonPink shadow-sm focus:shadow-[0_0_20px_rgba(253,25,200,0.2)] outline-none transition-all placeholder:text-black/30 dark:placeholder:text-white/30 disabled:opacity-50"
+                    autocomplete="off"
+                />
+                <button 
+                    type="submit" 
+                    id="btn-add"
+                    class="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-neonPink text-white disabled:opacity-0 disabled:scale-75 transition-all hover:bg-neonPurple"
+                    disabled
+                >
+                    <i data-lucide="plus" class="w-5 h-5"></i>
+                </button>
             </form>
             
-            {/* Infinite Play Status */}
-            {inputs.length >= 5 && (
-                <div className="mt-2 text-center text-xs font-bold uppercase tracking-widest text-[#fae84f] animate-pulse">
-                   Gold Medal Achieved! Infinite Mode Active.
-                </div>
-            )}
-        </div>
-
-        {/* --- LIST AREA (Bottom) --- */}
-        <div className="space-y-4 mb-8">
-          {inputs.length === 0 && (
-             <div className="text-center py-4 opacity-30 select-none pointer-events-none">
-                 <p className="text-sm font-bold uppercase tracking-widest">Add your twists above</p>
-             </div>
-          )}
-          {inputs.map((text, idx) => (
-            <div key={idx} className="group flex items-start gap-4 p-4 rounded-xl bg-black/5 dark:bg-white/5 border-2 border-transparent hover:border-[#da70d6]/50 transition-all animate-in slide-in-from-top-2 fade-in duration-300">
-              <span className="font-black text-[#da70d6] text-xl mt-0.5 select-none uppercase">BUT</span>
-              <p className="flex-1 font-medium text-lg leading-relaxed">{text}</p>
-              <button 
-                onClick={() => removeInput(idx)}
-                className="opacity-0 group-hover:opacity-100 p-2 text-[#fd19c8] hover:bg-[#fd19c8]/10 rounded transition-all"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+            <!-- Infinite Mode Message -->
+            <div id="gold-message" class="hidden mt-2 text-center text-xs font-bold uppercase tracking-widest text-neonYellow animate-pulse">
+                Gold Medal Achieved! Infinite Mode Active.
             </div>
-          ))}
         </div>
 
-        {/* Action Bar */}
-        <div className="grid grid-cols-2 gap-4 sticky bottom-6 z-20">
-           <Button 
-            variant="secondary" 
-            onClick={() => { saveSession(); fetchWikiTopics(null); }}
-            className="w-full shadow-lg shadow-black/10 dark:shadow-none"
-            disabled={inputs.length === 0}
-          >
-             <Save className="w-4 h-4" /> Save & Next
-           </Button>
-           
-           <Button 
-            variant="primary" 
-            onClick={exportToEmail}
-            className="w-full shadow-lg shadow-[#fd19c8]/20 dark:shadow-none"
-            disabled={inputs.length === 0}
-          >
-             <Send className="w-4 h-4" /> Export Email
-           </Button>
+        <!-- List Area -->
+        <div id="twist-list" class="space-y-4 mb-8 min-h-[100px]">
+            <div class="text-center py-4 opacity-30 select-none pointer-events-none">
+                <p class="text-sm font-bold uppercase tracking-widest">Add your twists above</p>
+            </div>
         </div>
 
-      </main>
+        <!-- Action Bar -->
+        <div class="grid grid-cols-2 gap-4 sticky bottom-6 z-20">
+            <button 
+                onclick="saveAndNext()"
+                id="btn-save"
+                disabled
+                class="col-span-2 sm:col-span-1 w-full shadow-lg shadow-black/10 dark:shadow-none font-bold uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed border-2 px-4 py-3 text-sm rounded-lg bg-neonYellow border-neonYellow text-black hover:bg-black hover:text-neonYellow hover:border-neonYellow dark:hover:bg-white"
+            >
+                <i data-lucide="save" class="w-4 h-4"></i> Save & Next
+            </button>
+            
+            <div class="col-span-2 sm:col-span-1 grid grid-cols-2 gap-2">
+                <button 
+                    onclick="copyToClipboard()"
+                    id="btn-copy"
+                    disabled
+                    class="w-full shadow-lg shadow-neonPurple/20 dark:shadow-none font-bold uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed border-2 px-2 py-3 text-sm rounded-lg bg-neonPurple border-neonPurple text-white hover:bg-black hover:text-neonPurple dark:hover:bg-white dark:hover:text-neonPurple"
+                >
+                    <i data-lucide="copy" class="w-4 h-4"></i> Copy
+                </button>
 
-      {/* History Sidebar/Modal */}
-      {showHistory && (
-        <div className="fixed inset-0 z-50 flex justify-end">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowHistory(false)} />
-          <div className="relative w-full max-w-md bg-white dark:bg-black border-l-2 border-black dark:border-white h-full shadow-2xl p-6 overflow-y-auto animate-in slide-in-from-right duration-300">
-            <div className="flex justify-between items-center mb-8">
-              <h3 className="text-2xl font-black uppercase tracking-tighter">History</h3>
-              <Button variant="ghost" onClick={() => setShowHistory(false)}><X className="w-6 h-6" /></Button>
+                <button 
+                    onclick="exportEmail()"
+                    id="btn-export"
+                    disabled
+                    class="w-full shadow-lg shadow-neonPink/20 dark:shadow-none font-bold uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed border-2 px-2 py-3 text-sm rounded-lg bg-neonPink border-neonPink text-white hover:bg-black hover:text-neonPink dark:hover:bg-white dark:hover:text-neonPink"
+                >
+                    <i data-lucide="send" class="w-4 h-4"></i> Email
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- History Sidebar -->
+    <div id="history-modal" class="fixed inset-0 z-50 flex justify-end hidden">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="toggleHistory(false)"></div>
+        <div class="relative w-full max-w-md bg-white dark:bg-black border-l-2 border-black dark:border-white h-full shadow-2xl p-6 overflow-y-auto animate-in slide-in-from-right duration-300">
+            <div class="flex justify-between items-center mb-8">
+                <h3 class="text-2xl font-black uppercase tracking-tighter dark:text-white">History</h3>
+                <button onclick="toggleHistory(false)" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full dark:text-white">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
             </div>
             
-            {history.length === 0 ? (
-              <div className="text-center text-gray-400 mt-20">
-                <History className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>No history yet.</p>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {history.map((session) => (
-                  <div key={session.id} className="p-4 rounded-xl border-2 border-black/10 dark:border-white/10 hover:border-[#da70d6] dark:hover:border-[#da70d6] transition-colors bg-transparent">
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="text-xs font-mono opacity-50">{session.date}</span>
-                      {session.medal && (
-                        <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${
-                          session.medal === 'gold' ? 'bg-[#fae84f]/20 border-[#fae84f] text-[#fae84f]' :
-                          session.medal === 'silver' ? 'bg-gray-200 border-gray-400 text-gray-600' :
-                          'bg-orange-100 border-orange-400 text-orange-600'
-                        }`}>
-                          {session.medal}
-                        </span>
-                      )}
-                    </div>
-                    <h4 className="font-bold text-lg mb-1 leading-tight">{session.prompt.text}</h4>
-                    <ul className="space-y-1 ml-4 mt-3 list-disc marker:text-[#fd19c8]">
-                      {session.twists.map((t, i) => (
-                        <li key={i} className="text-sm opacity-80 pl-1">{t}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+            <div id="history-content" class="space-y-6">
+                <!-- History Items Injected Here -->
+            </div>
         </div>
-      )}
-      
     </div>
-  );
-}
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 bg-black text-white dark:bg-white dark:text-black px-4 py-2 rounded-full shadow-xl text-sm font-bold opacity-0 pointer-events-none transition-opacity duration-300 z-50">
+        Copied to clipboard!
+    </div>
+
+    <!-- Javascript Logic -->
+    <script>
+        // --- State ---
+        const state = {
+            darkMode: false,
+            topics: [], // Array of { text, description, related }
+            selectedIndex: 0,
+            twists: [],
+            history: [],
+            loading: false
+        };
+
+        // --- Init ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadHistory();
+            fetchTopics();
+            setupInputListener();
+            lucide.createIcons();
+            
+            // Check system preference for dark mode initially
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                toggleTheme(); 
+            }
+        });
+
+        // --- Theme ---
+        function toggleTheme() {
+            state.darkMode = !state.darkMode;
+            const body = document.body;
+            const header = document.getElementById('main-header');
+            const wrapperSun = document.getElementById('wrapper-sun');
+            const wrapperMoon = document.getElementById('wrapper-moon');
+
+            if (state.darkMode) {
+                document.documentElement.classList.add('dark');
+                body.classList.remove('bg-white', 'text-black');
+                body.classList.add('bg-black', 'text-white');
+                header.classList.remove('bg-white/95', 'border-black/10');
+                header.classList.add('bg-black/95', 'border-white/20');
+                if(wrapperSun) wrapperSun.classList.add('hidden');
+                if(wrapperMoon) wrapperMoon.classList.remove('hidden');
+            } else {
+                document.documentElement.classList.remove('dark');
+                body.classList.remove('bg-black', 'text-white');
+                body.classList.add('bg-white', 'text-black');
+                header.classList.remove('bg-black/95', 'border-white/20');
+                header.classList.add('bg-white/95', 'border-black/10');
+                if(wrapperSun) wrapperSun.classList.remove('hidden');
+                if(wrapperMoon) wrapperMoon.classList.add('hidden');
+            }
+        }
+
+        // --- API ---
+        async function fetchTopics(specificTitle = null) {
+            setLoading(true);
+            
+            // Manually inject skeletons
+            const grid = document.getElementById('topic-grid');
+            grid.innerHTML = `
+                <div class="h-24 rounded-lg bg-black/5 dark:bg-white/10 animate-pulse"></div>
+                <div class="h-24 rounded-lg bg-black/5 dark:bg-white/10 animate-pulse"></div>
+                <div class="h-24 rounded-lg bg-black/5 dark:bg-white/10 animate-pulse"></div>
+            `;
+
+            try {
+                let titlesToFetch = [];
+
+                if (specificTitle) {
+                    titlesToFetch = [specificTitle];
+                } else {
+                    // Try Trending
+                    try {
+                        const date = new Date();
+                        date.setDate(date.getDate() - 1); // Yesterday
+                        const yyyy = date.getFullYear();
+                        const mm = String(date.getMonth() + 1).padStart(2, '0');
+                        const dd = String(date.getDate()).padStart(2, '0');
+
+                        const resp = await fetch(`https://wikimedia.org/api/rest_v1/metrics/pageviews/top/en.wikipedia/all-access/${yyyy}/${mm}/${dd}`);
+                        if (resp.ok) {
+                            const data = await resp.json();
+                            const articles = data.items?.[0]?.articles || [];
+                            const valid = articles.filter(a => 
+                                a.article !== "Main_Page" && a.article !== "Search" && 
+                                !a.article.startsWith("Special:") && !a.article.startsWith("User:")
+                            );
+                            
+                            // Pick 3 random
+                            const pool = valid.slice(0, 50);
+                            const selected = [];
+                            while(selected.length < 3 && pool.length > 0) {
+                                const idx = Math.floor(Math.random() * pool.length);
+                                selected.push(pool[idx].article.replace(/_/g, ' '));
+                                pool.splice(idx, 1);
+                            }
+                            titlesToFetch = selected;
+                        } else {
+                            throw new Error("Pageviews API failed");
+                        }
+                    } catch (e) {
+                        console.warn("Fallback to random", e);
+                        const randResp = await fetch('https://en.wikipedia.org/w/api.php?origin=*&action=query&format=json&list=random&rnnamespace=0&rnlimit=3');
+                        const randData = await randResp.json();
+                        titlesToFetch = randData.query.random.map(p => p.title);
+                    }
+                }
+
+                // Get Details - Parallel requests to avoid link limit starvation
+                // Previously, one large topic (like David Beckham) would consume the entire link limit, leaving others empty.
+                const detailPromises = titlesToFetch.map(async (title) => {
+                    const resp = await fetch(`https://en.wikipedia.org/w/api.php?origin=*&action=query&format=json&prop=extracts|links&titles=${encodeURIComponent(title)}&exintro&explaintext&plnamespace=0&pllimit=100`);
+                    const data = await resp.json();
+                    const pageId = Object.keys(data.query.pages)[0];
+                    return data.query.pages[pageId];
+                });
+
+                const pages = await Promise.all(detailPromises);
+
+                state.topics = pages.map(page => {
+                    const extract = page.extract 
+                        ? (page.extract.length > 120 ? page.extract.substring(0, 120) + "..." : page.extract)
+                        : "No description available.";
+                    
+                    const links = page.links 
+                        ? page.links.map(l => l.title).filter(t => !t.startsWith("List of")) 
+                        : [];
+                    
+                    const shuffledLinks = links.sort(() => 0.5 - Math.random()).slice(0, 6);
+
+                    return {
+                        text: page.title,
+                        description: extract,
+                        related: shuffledLinks
+                    };
+                });
+                
+                state.twists = [];
+                state.selectedIndex = 0;
+                renderTopicGrid();
+                renderTwistList();
+                updateMedals();
+
+            } catch (err) {
+                console.error(err);
+                state.topics = [{ text: "API Error", description: "Could not load topics.", related: [] }];
+                renderTopicGrid();
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // --- Rendering ---
+        
+        function setLoading(isLoading) {
+            state.loading = isLoading;
+            const refreshBtn = document.getElementById('btn-refresh');
+            if (!refreshBtn) return;
+            const icon = refreshBtn.querySelector('svg') || refreshBtn.querySelector('i');
+            
+            if(isLoading) {
+                if(icon) icon.classList.add('animate-spin');
+                refreshBtn.disabled = true;
+            } else {
+                if(icon) icon.classList.remove('animate-spin');
+                refreshBtn.disabled = false;
+            }
+        }
+
+        function renderTopicGrid() {
+            const grid = document.getElementById('topic-grid');
+            // FIX: Always clear the grid before rendering new topics, regardless of loading state
+            grid.innerHTML = '';
+
+            state.topics.forEach((topic, idx) => {
+                const isSelected = idx === state.selectedIndex;
+                
+                const div = document.createElement('div');
+                div.className = `cursor-pointer p-3 rounded-lg border-2 transition-all duration-200 relative group ${isSelected 
+                    ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white shadow-[4px_4px_0px_0px_#fd19c8] translate-y-[-2px] translate-x-[-2px]' 
+                    : 'bg-transparent border-black/20 dark:border-white/20 hover:border-neonPurple dark:hover:border-neonPurple'}`;
+                
+                div.onclick = () => selectTopic(idx);
+
+                div.innerHTML = `
+                    ${isSelected ? `
+                    <div class="absolute -top-3 -right-3 bg-neonYellow text-black border-2 border-black rounded-full p-0.5 shadow-sm z-10">
+                        <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                    </div>` : ''}
+                    <h3 class="font-bold text-sm leading-tight mb-2 ${isSelected ? 'line-clamp-2' : 'line-clamp-2'}">${topic.text}</h3>
+                    ${!isSelected ? `<p class="text-[10px] opacity-60 line-clamp-2 leading-relaxed font-medium">${topic.description}</p>` : ''}
+                `;
+                grid.appendChild(div);
+            });
+            lucide.createIcons();
+            renderActiveContext();
+            updatePlaceholder();
+        }
+
+        function renderActiveContext() {
+            const container = document.getElementById('active-context');
+            const topic = state.topics[state.selectedIndex];
+            
+            if (!topic) {
+                container.classList.add('hidden');
+                return;
+            }
+
+            container.classList.remove('hidden');
+            document.getElementById('context-text').textContent = topic.description;
+
+            const linksContainer = document.getElementById('related-links');
+            linksContainer.innerHTML = '';
+            
+            if (topic.related && topic.related.length > 0) {
+                 const label = document.createElement('span');
+                 label.className = "text-xs font-bold uppercase text-neonPurple py-1.5 mr-1";
+                 label.textContent = "Pivot To:";
+                 linksContainer.appendChild(label);
+
+                 topic.related.slice(0, 4).forEach(linkText => {
+                     const btn = document.createElement('button');
+                     btn.className = "bg-transparent border border-black/10 dark:border-white/20 text-black/60 dark:text-white/60 hover:border-neonPink hover:text-neonPink dark:hover:border-neonPink dark:hover:text-neonPink shadow-sm text-xs px-2 py-1 rounded-md flex items-center gap-1 transition-all mt-1";
+                     btn.onclick = () => fetchTopics(linkText);
+                     btn.innerHTML = `${linkText} <i data-lucide="arrow-right" class="w-3 h-3 opacity-50"></i>`;
+                     linksContainer.appendChild(btn);
+                 });
+            }
+            lucide.createIcons();
+        }
+
+        function updatePlaceholder() {
+            const input = document.getElementById('twist-input');
+            const topic = state.topics[state.selectedIndex];
+            input.placeholder = topic ? `Twist for "${topic.text}"...` : "Loading...";
+        }
+
+        function renderTwistList() {
+            const list = document.getElementById('twist-list');
+            list.innerHTML = '';
+
+            if (state.twists.length === 0) {
+                list.innerHTML = `
+                    <div class="text-center py-4 opacity-30 select-none pointer-events-none">
+                        <p class="text-sm font-bold uppercase tracking-widest">Add your twists above</p>
+                    </div>`;
+            } else {
+                state.twists.forEach((twist, idx) => {
+                    const div = document.createElement('div');
+                    div.className = "group flex items-start gap-4 p-4 rounded-xl bg-black/5 dark:bg-white/5 border-2 border-transparent hover:border-neonPurple/50 transition-all slide-up";
+                    
+                    // Added: Contenteditable paragraph for inline editing
+                    div.innerHTML = `
+                        <span class="font-black text-neonPurple text-xl mt-0.5 select-none uppercase">BUT</span>
+                        <p class="flex-1 font-medium text-lg leading-relaxed dark:text-white outline-none focus:text-neonPink transition-colors border-b border-transparent focus:border-neonPink" 
+                           contenteditable="true" 
+                           onblur="editTwist(${idx}, this.innerText)"
+                           onkeydown="if(event.key === 'Enter') { this.blur(); event.preventDefault(); }">${twist}</p>
+                        <button onclick="removeTwist(${idx})" class="opacity-0 group-hover:opacity-100 p-2 text-neonPink hover:bg-neonPink/10 rounded transition-all">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    `;
+                    list.appendChild(div);
+                });
+            }
+            
+            // Buttons state
+            const hasItems = state.twists.length > 0;
+            const saveBtn = document.getElementById('btn-save');
+            const exportBtn = document.getElementById('btn-export');
+            const copyBtn = document.getElementById('btn-copy');
+            
+            saveBtn.disabled = !hasItems;
+            exportBtn.disabled = !hasItems;
+            copyBtn.disabled = !hasItems;
+            
+            lucide.createIcons();
+        }
+
+        function updateMedals() {
+            const count = state.twists.length;
+            const bronze = document.getElementById('medal-bronze');
+            const silver = document.getElementById('medal-silver');
+            const gold = document.getElementById('medal-gold');
+            const msg = document.getElementById('gold-message');
+
+            const activate = (el, active) => {
+                if(!el) return;
+                const icon = el.querySelector('svg') || el.querySelector('i');
+                if(!icon) return;
+
+                if(active) {
+                    el.classList.remove('opacity-20', 'scale-75', 'grayscale');
+                    el.classList.add('opacity-100', 'scale-110');
+                    icon.classList.add('fill-current', 'drop-shadow-[0_0_8px_rgba(253,25,200,0.5)]');
+                } else {
+                    el.classList.add('opacity-20', 'scale-75', 'grayscale');
+                    el.classList.remove('opacity-100', 'scale-110');
+                    icon.classList.remove('fill-current', 'drop-shadow-[0_0_8px_rgba(253,25,200,0.5)]');
+                }
+            };
+
+            activate(bronze, count >= 3);
+            activate(silver, count >= 4);
+            activate(gold, count >= 5);
+
+            if(count >= 5) msg.classList.remove('hidden');
+            else msg.classList.add('hidden');
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('history-content');
+            container.innerHTML = '';
+
+            if (state.history.length === 0) {
+                container.innerHTML = `
+                     <div class="text-center text-gray-400 mt-20">
+                        <i data-lucide="history" class="w-12 h-12 mx-auto mb-4 opacity-50"></i>
+                        <p>No history yet.</p>
+                    </div>
+                `;
+            } else {
+                state.history.forEach(session => {
+                    const div = document.createElement('div');
+                    div.className = "p-4 rounded-xl border-2 border-black/10 dark:border-white/10 hover:border-neonPurple dark:hover:border-neonPurple transition-colors bg-transparent dark:text-white";
+                    
+                    let medalBadge = '';
+                    if (session.medal) {
+                        const style = session.medal === 'gold' ? 'bg-neonYellow/20 border-neonYellow text-neonYellow' :
+                                      session.medal === 'silver' ? 'bg-gray-200 border-gray-400 text-gray-600' :
+                                      'bg-orange-100 border-orange-400 text-orange-600';
+                        medalBadge = `<span class="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${style}">${session.medal}</span>`;
+                    }
+
+                    div.innerHTML = `
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-xs font-mono opacity-50">${session.date}</span>
+                            ${medalBadge}
+                        </div>
+                        <h4 class="font-bold text-lg mb-1 leading-tight">${session.prompt.text}</h4>
+                        <ul class="space-y-1 ml-4 mt-3 list-disc marker:text-neonPink">
+                            ${session.twists.map(t => `<li class="text-sm opacity-80 pl-1">${t}</li>`).join('')}
+                        </ul>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+            lucide.createIcons();
+        }
+
+        // --- Interaction ---
+        function selectTopic(idx) {
+            if (idx !== state.selectedIndex) {
+                state.selectedIndex = idx;
+                state.twists = [];
+                renderTopicGrid();
+                renderTwistList();
+                updateMedals();
+            }
+        }
+
+        function setupInputListener() {
+            const input = document.getElementById('twist-input');
+            const btn = document.getElementById('btn-add');
+            input.addEventListener('input', (e) => {
+                btn.disabled = !e.target.value.trim();
+                btn.classList.toggle('opacity-50', !e.target.value.trim());
+            });
+        }
+
+        function addTwist(e) {
+            e.preventDefault();
+            const input = document.getElementById('twist-input');
+            const val = input.value.trim();
+            if (!val) return;
+
+            state.twists.push(val);
+            input.value = '';
+            document.getElementById('btn-add').disabled = true;
+            document.getElementById('btn-add').classList.add('opacity-50');
+            
+            renderTwistList();
+            updateMedals();
+        }
+
+        function removeTwist(idx) {
+            state.twists.splice(idx, 1);
+            renderTwistList();
+            updateMedals();
+        }
+
+        function editTwist(idx, newText) {
+            const trimmed = newText.trim();
+            if (trimmed) {
+                state.twists[idx] = trimmed;
+            } else {
+                // If user deleted everything, maybe remove? Or revert? 
+                // Let's remove for smooth UX
+                removeTwist(idx);
+            }
+        }
+
+        function toggleHistory(show) {
+            const modal = document.getElementById('history-modal');
+            if (show) {
+                modal.classList.remove('hidden');
+                renderHistory();
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        function saveAndNext() {
+            if (state.twists.length === 0) return;
+            
+            const currentTopic = state.topics[state.selectedIndex];
+            const medalCount = state.twists.length;
+            const medal = medalCount >= 5 ? 'gold' : medalCount >= 4 ? 'silver' : medalCount >= 3 ? 'bronze' : null;
+
+            const entry = {
+                id: Date.now(),
+                date: new Date().toLocaleDateString(),
+                prompt: currentTopic,
+                twists: [...state.twists],
+                medal: medal
+            };
+
+            state.history.unshift(entry);
+            localStorage.setItem('thisButThatHistory', JSON.stringify(state.history));
+            
+            // Refresh
+            fetchTopics();
+        }
+
+        function loadHistory() {
+            const saved = localStorage.getItem('thisButThatHistory');
+            if (saved) {
+                try {
+                    state.history = JSON.parse(saved);
+                } catch(e) { console.error("History parse fail"); }
+            }
+        }
+
+        function formatExport() {
+            const currentTopic = state.topics[state.selectedIndex];
+            if (!currentTopic) return null;
+            
+            let body = `TOPIC: ${currentTopic.text}\nCONTEXT: ${currentTopic.description}\n\nTHE TWISTS:\n`;
+            state.twists.forEach((t, i) => {
+                body += `${i + 1}. BUT ${t}\n`;
+            });
+            const count = state.twists.length;
+            const medal = count >= 5 ? 'GOLD' : count >= 4 ? 'SILVER' : count >= 3 ? 'BRONZE' : null;
+            if(medal) body += `\n🏅 Rank Achieved: ${medal}`;
+            return { subject: `Twists for: ${currentTopic.text}`, body };
+        }
+
+        function exportEmail() {
+            const data = formatExport();
+            if(!data) return;
+            window.open(`mailto:?subject=${encodeURIComponent(data.subject)}&body=${encodeURIComponent(data.body)}`);
+        }
+
+        function copyToClipboard() {
+            const data = formatExport();
+            if(!data) return;
+            navigator.clipboard.writeText(data.body).then(() => {
+                const toast = document.getElementById('toast');
+                toast.classList.remove('opacity-0');
+                setTimeout(() => toast.classList.add('opacity-0'), 2000);
+            });
+        }
+
+    </script>
+</body>
+</html>
