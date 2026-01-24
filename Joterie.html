@@ -14,25 +14,26 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;900&family=Newsreader:ital,opsz,wght@1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        :root {
-            /* Dad Skeleton Theme - Dark Mode Default */
-            --bg-color: #000000;
-            --text-color: #ffffff;
-            --accent-color: #fd19c8;
-            --accent-secondary: #da70d6;
-            --accent-yellow: #fae84f;
-            --accent-opacity: rgba(253, 25, 200, 0.25);
-            --input-placeholder: rgba(253, 25, 200, 0.5);
-            --card-bg: rgba(253, 25, 200, 0.08);
-        }
+:root {
+    /* Change these to Light Mode colors */
+    --bg-color: #ffffff;       /* White background */
+    --text-color: #000000;     /* Black text */
+    --accent-color: #fd19c8;
+    --accent-secondary: #da70d6;
+    --accent-yellow: #fae84f;
+    --accent-opacity: rgba(253, 25, 200, 0.15); /* Lower opacity for light mode */
+    --input-placeholder: rgba(0, 0, 0, 0.4);    /* Darker placeholder for contrast */
+    --card-bg: rgba(253, 25, 200, 0.05);
+}
 
-        .dark {
-            --bg-color: #000000;
-            --text-color: #ffffff;
-            --accent-opacity: rgba(253, 25, 200, 0.2);
-            --input-placeholder: rgba(253, 25, 200, 0.4);
-            --card-bg: rgba(253, 25, 200, 0.05);
-        }
+.dark {
+    /* Keep these as Dark Mode overrides */
+    --bg-color: #000000;
+    --text-color: #ffffff;
+    --accent-opacity: rgba(253, 25, 200, 0.2);
+    --input-placeholder: rgba(253, 25, 200, 0.4);
+    --card-bg: rgba(253, 25, 200, 0.05);
+}
 
         body {
             font-family: 'Inter', sans-serif;
