@@ -6,11 +6,13 @@
     <title>Writing Tools Suite</title>
     <meta name="description" content="A curated collection of specialized writing tools.">
 
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
 
-    <script src="https://unpkg.com/lucide@0.263.1"></script>
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
         /* =========================================
@@ -40,7 +42,7 @@
             --bg: var(--wt-black);
             --bg-hover: #121212;
             
-            /* SWAPPED COLORS HERE */
+            /* COLOR ASSIGNMENTS */
             --text-heading: var(--wt-accent);    /* Yellow Headers */
             --text-body: var(--wt-secondary);    /* Purple Body */
             
@@ -49,7 +51,7 @@
             --divider: rgba(218, 112, 214, 0.2);
         }
 
-        /* LIGHT THEME - Brutalist Highlighter */
+        /* LIGHT THEME */
         [data-wt-theme="light"] {
             /* Yellow Background */
             --bg: var(--wt-accent); 
@@ -117,7 +119,7 @@
             font-weight: 500;
             max-width: 480px;
             line-height: 1.4;
-            opacity: 1; /* Full opacity for the color to pop */
+            opacity: 1; 
         }
 
         /* Stats Bar */
@@ -134,14 +136,13 @@
         }
 
         .stat-value {
-            /* Pink numbers to stand out from Purple text and Yellow headers */
+            /* Pink numbers to stand out */
             color: var(--wt-primary);
             font-weight: 700;
             font-family: var(--wt-font-mono);
             margin-left: 0.25rem;
         }
 
-        /* In light mode, keep contrast */
         [data-wt-theme="light"] .stat-value {
             color: var(--wt-primary);
         }
@@ -197,7 +198,7 @@
             justify-content: flex-start;
         }
 
-        /* Icon Hover: Snap to Yellow to match the header */
+        /* Icon Hover: Snap to Yellow */
         .tool-item:hover .tool-icon {
             color: var(--wt-accent);
             transform: scale(1.1);
@@ -312,7 +313,8 @@
         </header>
 
         <nav class="tool-list">
-            <a href="Joterie.html" class="tool-item">
+            <!-- IDEATION -->
+            <a href="Joterie.html" class="tool-item" target="_blank">
                 <div class="tool-icon"><i data-lucide="zap" size="24"></i></div>
                 <div class="tool-content">
                     <h2>Joterie</h2>
@@ -321,7 +323,7 @@
                 <div class="tool-arrow"><i data-lucide="arrow-right"></i></div>
             </a>
 
-            <a href="Synax.html" class="tool-item">
+            <a href="Synax.html" class="tool-item" target="_blank">
                 <div class="tool-icon"><i data-lucide="sparkles" size="24"></i></div>
                 <div class="tool-content">
                     <h2>Synax</h2>
@@ -330,7 +332,7 @@
                 <div class="tool-arrow"><i data-lucide="arrow-right"></i></div>
             </a>
 
-            <a href="ThisButThat.html" class="tool-item">
+            <a href="ThisButThat.html" class="tool-item" target="_blank">
                 <div class="tool-icon"><i data-lucide="git-branch" size="24"></i></div>
                 <div class="tool-content">
                     <h2>ThisButThat</h2>
@@ -339,7 +341,8 @@
                 <div class="tool-arrow"><i data-lucide="arrow-right"></i></div>
             </a>
 
-            <a href="BeatHive.html" class="tool-item">
+            <!-- STRUCTURE -->
+            <a href="BeatHive.html" class="tool-item" target="_blank">
                 <div class="tool-icon"><i data-lucide="hexagon" size="24"></i></div>
                 <div class="tool-content">
                     <h2>BeatHive</h2>
@@ -348,7 +351,8 @@
                 <div class="tool-arrow"><i data-lucide="arrow-right"></i></div>
             </a>
 
-            <a href="Wribbon.html" class="tool-item">
+            <!-- DRAFTING -->
+            <a href="Wribbon.html" class="tool-item" target="_blank">
                 <div class="tool-icon"><i data-lucide="feather" size="24"></i></div>
                 <div class="tool-content">
                     <h2>Wribbon</h2>
@@ -357,16 +361,7 @@
                 <div class="tool-arrow"><i data-lucide="arrow-right"></i></div>
             </a>
 
-            <a href="FlowState.html" class="tool-item">
-                <div class="tool-icon"><i data-lucide="flame" size="24"></i></div>
-                <div class="tool-content">
-                    <h2>FlowState</h2>
-                    <p>Gamified writing sessions to build momentum.</p>
-                </div>
-                <div class="tool-arrow"><i data-lucide="arrow-right"></i></div>
-            </a>
-
-            <a href="WitherNaught.html" class="tool-item">
+            <a href="WitherNaught.html" class="tool-item" target="_blank">
                 <div class="tool-icon"><i data-lucide="leaf" size="24"></i></div>
                 <div class="tool-content">
                     <h2>WitherNaught</h2>
@@ -375,20 +370,12 @@
                 <div class="tool-arrow"><i data-lucide="arrow-right"></i></div>
             </a>
 
-            <a href="Courius.html" class="tool-item">
+            <!-- OUTPUT -->
+            <a href="Courius.html" class="tool-item" target="_blank">
                 <div class="tool-icon"><i data-lucide="clapperboard" size="24"></i></div>
                 <div class="tool-content">
                     <h2>Courius</h2>
                     <p>Standard screenplay formatting and FDX export.</p>
-                </div>
-                <div class="tool-arrow"><i data-lucide="arrow-right"></i></div>
-            </a>
-
-            <a href="PDFconvert.html" class="tool-item">
-                <div class="tool-icon"><i data-lucide="file-text" size="24"></i></div>
-                <div class="tool-content">
-                    <h2>PDFconvert</h2>
-                    <p>Format manuscripts into print-ready PDF files.</p>
                 </div>
                 <div class="tool-arrow"><i data-lucide="arrow-right"></i></div>
             </a>
@@ -400,7 +387,15 @@
     </div>
 
     <script>
-        lucide.createIcons();
+        // Check for Lucide availability before using
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        } else {
+            // Retry once after short delay if loaded asynchronously
+            setTimeout(() => {
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            }, 500);
+        }
 
         // --- Theme Logic ---
         function toggleTheme() {
@@ -411,8 +406,10 @@
             localStorage.setItem('writingtools_theme', next);
             
             const icon = document.getElementById('theme-icon');
-            icon.setAttribute('data-lucide', next === 'dark' ? 'sun' : 'moon');
-            lucide.createIcons();
+            if (icon && typeof lucide !== 'undefined') {
+                icon.setAttribute('data-lucide', next === 'dark' ? 'sun' : 'moon');
+                lucide.createIcons();
+            }
         }
 
         // --- Stats Worker ---
@@ -421,8 +418,10 @@
             const savedTheme = localStorage.getItem('writingtools_theme') || 'dark';
             document.documentElement.setAttribute('data-wt-theme', savedTheme);
             const icon = document.getElementById('theme-icon');
-            icon.setAttribute('data-lucide', savedTheme === 'dark' ? 'sun' : 'moon');
-            lucide.createIcons();
+            if (icon && typeof lucide !== 'undefined') {
+                icon.setAttribute('data-lucide', savedTheme === 'dark' ? 'sun' : 'moon');
+                lucide.createIcons();
+            }
 
             // Stats Data Collection
             const data = {
