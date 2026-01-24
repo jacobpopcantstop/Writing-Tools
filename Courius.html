@@ -6,51 +6,37 @@
     <title>Courius Screenwriter</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect x=%225%22 y=%2230%22 width=%2290%22 height=%2265%22 rx=%225%22 fill=%22%23000000%22/><rect x=%225%22 y=%2210%22 width=%2290%22 height=%2225%22 fill=%22%23000000%22/><rect x=%225%22 y=%2210%22 width=%2218%22 height=%2225%22 fill=%22%23fd19c8%22 transform=%22skewX(-15)%22/><rect x=%2228%22 y=%2210%22 width=%2218%22 height=%2225%22 fill=%22%23fd19c8%22 transform=%22skewX(-15)%22/><rect x=%2251%22 y=%2210%22 width=%2218%22 height=%2225%22 fill=%22%23fd19c8%22 transform=%22skewX(-15)%22/><rect x=%2274%22 y=%2210%22 width=%2218%22 height=%2225%22 fill=%22%23fd19c8%22 transform=%22skewX(-15)%22/><line x1=%2215%22 y1=%2250%22 x2=%2285%22 y2=%2250%22 stroke=%22%23fd19c8%22 stroke-width=%223%22/><line x1=%2215%22 y1=%2265%22 x2=%2270%22 y2=%2265%22 stroke=%22%23fd19c8%22 stroke-width=%222%22/><line x1=%2215%22 y1=%2280%22 x2=%2255%22 y2=%2280%22 stroke=%22%23fd19c8%22 stroke-width=%222%22/></svg>">
     <style>
-       :root {
-    /* LIGHT MODE (Default) */
-    --bg-color: #e5e5e5;      /* Light gray background for the desk */
-    --paper-color: #ffffff;   /* White paper */
-    --text-color: #000000;    /* Black text */
-    --ui-bg: rgba(255, 255, 255, 0.95); /* Light UI */
-    --ui-text: #000000;       /* Black UI text */
-    --shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-    --caret: #fd19c8;
-    --suggestion: rgba(0, 0, 0, 0.4);
-    --accent: #fd19c8;
-    --accent-gold: #fae84f;
-    --courier: "Courier New", Courier, monospace;
-    --line-height: 1.15;
-    --font-size: 12pt;
-    
-    /* Page Break Guide Color */
-    --guide-color: rgba(0, 0, 0, 0.15);
-}
-
-/* Keep your existing .night-mode block exactly as it is */
-body.night-mode {
-    --bg-color: #000000;
-    --paper-color: #0d0d0d;
-    --text-color: #ffffff;
-    --ui-bg: rgba(5, 5, 5, 0.95);
-    --ui-text: #ffffff;
-    --shadow: 0 10px 40px rgba(253, 25, 200, 0.2);
-    --caret: #fd19c8;
-    --suggestion: rgba(253, 25, 200, 0.3);
-    --accent-gold: #fae84f;
-    --guide-color: rgba(253, 25, 200, 0.1);
-}
-
-        body.night-mode {
-            --bg-color: #000000;
-            --paper-color: #0d0d0d; /* Pure black paper */
-            --text-color: #ffffff; /* White text */
-            --ui-bg: rgba(5, 5, 5, 0.95);
+        :root {
+            /* DEFAULT THEME (Dark Mode) */
+            --bg-color: #0a0a0a;
+            --paper-color: #121212;
+            --text-color: #ffffff;
+            --ui-bg: rgba(10, 10, 10, 0.95);
             --ui-text: #ffffff;
-            --shadow: 0 10px 40px rgba(253, 25, 200, 0.2);
+            --shadow: 0 12px 40px rgba(253, 25, 200, 0.15);
             --caret: #fd19c8;
-            --suggestion: rgba(253, 25, 200, 0.3);
-            --accent-gold: #fae84f;
-            --guide-color: rgba(253, 25, 200, 0.1);
+            --suggestion: rgba(253, 25, 200, 0.4);
+            --accent: #fd19c8; 
+            --accent-gold: #fae84f; 
+            --guide-color: rgba(253, 25, 200, 0.15);
+            
+            /* Font Settings */
+            --courier: "Courier New", Courier, monospace;
+            --line-height: 1.15;
+            --font-size: 12pt;
+        }
+
+        /* LIGHT MODE OVERRIDES */
+        body.day-mode {
+            --bg-color: #e5e5e5;      /* Light Grey Desk */
+            --paper-color: #ffffff;   /* White Paper */
+            --text-color: #000000;    /* Black Text */
+            --ui-bg: rgba(255, 255, 255, 0.95);
+            --ui-text: #000000;
+            --shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+            --caret: #d600a4;         /* Darker pink for contrast */
+            --suggestion: rgba(0, 0, 0, 0.4);
+            --guide-color: rgba(0, 0, 0, 0.15);
         }
 
         * { box-sizing: border-box; }
@@ -121,7 +107,7 @@ body.night-mode {
 
         .side-btn:hover {
             background: rgba(255,255,255,0.1);
-            color: #fff;
+            color: var(--ui-text);
         }
 
         .side-btn.active {
@@ -191,7 +177,7 @@ body.night-mode {
             background: var(--ui-bg);
             padding: 4px 10px;
             border-radius: 4px;
-            color: #fff;
+            color: var(--ui-text);
         }
 
         /* --- Screenplay Elements --- */
@@ -405,7 +391,6 @@ body.night-mode {
     <button class="side-btn" style="color: #fca5a5;" data-label="Clear All" onclick="resetScript()">🗑️</button>
 </div>
 
-<!-- Scene Navigator -->
 <div id="scene-nav" class="scene-nav">
     <div class="scene-nav-header">
         <span>Scenes</span>
@@ -414,7 +399,6 @@ body.night-mode {
     <div id="scene-nav-list" class="scene-nav-list"></div>
 </div>
 
-<!-- Help Modal -->
 <div id="help-modal" class="help-modal" onclick="if(event.target===this)toggleHelp()">
     <div class="help-content">
         <h3>⌨️ Keyboard Shortcuts</h3>
@@ -439,7 +423,6 @@ body.night-mode {
     <button class="side-btn" data-type="transition" data-label="Transition" onclick="changeElementType('transition')">CUT</button>
 </div>
 
-<!-- Hidden File Input -->
 <input type="file" id="file-input" accept=".fdx" style="display: none;" onchange="importFDX(this)">
 
 <main id="editor-container" onclick="focusEditor(event)" onscroll="updatePageCount()">
@@ -450,7 +433,6 @@ body.night-mode {
     <span id="page-count">Pg 1</span> | <span id="save-status">Ready</span>
 </div>
 
-<!-- Suite Footer -->
 <a href="index.html" style="position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%); z-index: 10; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.15; color: var(--text-color); text-decoration: none; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.5'" onmouseout="this.style.opacity='0.15'">Writing Tools Suite</a>
 
 <script>
@@ -489,11 +471,13 @@ body.night-mode {
             if (EDITOR.innerHTML.trim() === "") createLine('scene-heading');
         }
         updateSuggestions();
-        // Theme: Check suite-wide first, then app-specific
-        const suiteTheme = localStorage.getItem('writingtools_theme');
-        if (suiteTheme === 'dark' || localStorage.getItem('writingtools_courius_nightmode') === 'true') {
-            document.body.classList.add('night-mode');
+        
+        // Theme: Default is Dark. Check for 'light'.
+        const savedTheme = localStorage.getItem('writingtools_theme');
+        if (savedTheme === 'light') {
+            document.body.classList.add('day-mode');
         }
+        
         updateSelectorUI();
         updatePageCount();
     });
@@ -511,10 +495,9 @@ body.night-mode {
     }
 
     function toggleTheme() {
-        document.body.classList.toggle('night-mode');
-        const isDark = document.body.classList.contains('night-mode');
-        localStorage.setItem('writingtools_courius_nightmode', isDark);
-        localStorage.setItem('writingtools_theme', isDark ? 'dark' : 'light'); // Suite-wide sync
+        document.body.classList.toggle('day-mode');
+        const isLight = document.body.classList.contains('day-mode');
+        localStorage.setItem('writingtools_theme', isLight ? 'light' : 'dark');
     }
 
     // --- Title Page Logic ---
