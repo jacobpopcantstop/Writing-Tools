@@ -275,7 +275,10 @@
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <span>Files</span>
-                <button class="icon-btn" id="add-file-small" title="Add File" style="padding: 2px;"><i data-lucide="plus" style="width: 14px; height: 14px;"></i></button>
+                <div style="display: flex; gap: 4px;">
+                    <button class="icon-btn" id="merge-all-btn" title="Merge All & Download" style="padding: 2px;"><i data-lucide="file-stack" style="width: 14px; height: 14px;"></i></button>
+                    <button class="icon-btn" id="add-file-small" title="Add File" style="padding: 2px;"><i data-lucide="plus" style="width: 14px; height: 14px;"></i></button>
+                </div>
             </div>
             <div class="file-list" id="file-list">
                 <!-- File items injected here -->
@@ -479,6 +482,7 @@
             document.getElementById('open-file-btn').addEventListener('click', () => dom.fileInput.click());
             // Add file button in sidebar
             document.getElementById('add-file-small').addEventListener('click', () => dom.fileInput.click());
+            document.getElementById('merge-all-btn').addEventListener('click', downloadAllAsMerged);
             
             dom.fileInput.addEventListener('change', handleFileSelect);
 
@@ -962,103 +966,117 @@
             alert('Page deletion requires the document to be re-exported. Use Convert to Images to export individual pages.');
         }
 
-        // --- UPDATED DOWNLOAD FUNCTION USING PDF-LIB ---
-        async function downloadPDF() {
-            const doc = getActiveDoc();
-            if (!doc) return;
+        // --- HELPER TO BAKE ANNOTATIONS (SHARED) ---
+        async function bakeAnnotationsToPdf(docState, pdfDoc) {
+            const pages = pdfDoc.getPages();
             
-            showLoading(true);
-            
-            try {
-                // Load original PDF
-                const arrayBuffer = await doc.file.arrayBuffer();
-                const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
-                const pages = pdfDoc.getPages();
+            for (let i = 0; i < pages.length; i++) {
+                const pageNum = i + 1;
+                const pageAnnotations = docState.annotations[pageNum] || [];
+                const page = pages[i];
+                const { width, height } = page.getSize();
                 
-                // Process each page
-                for (let i = 0; i < pages.length; i++) {
-                    const pageNum = i + 1;
-                    const pageAnnotations = doc.annotations[pageNum] || [];
-                    const page = pages[i];
-                    const { width, height } = page.getSize();
-                    
-                    for (const ann of pageAnnotations) {
-                        if (ann.type === 'highlight') {
-                            const rectWidth = ann.w * width;
-                            const rectHeight = ann.h * height;
-                            const rectX = ann.x * width;
-                            // PDF coordinates start from bottom-left
-                            const rectY = height - (ann.y * height) - rectHeight;
-                            
-                            let color = parseColor(ann.color);
-
-                            page.drawRectangle({
-                                x: rectX,
-                                y: rectY,
-                                width: rectWidth,
-                                height: rectHeight,
-                                color: color,
-                                opacity: 0.5,
-                            });
-                        } else if (ann.type === 'shape') {
-                            const rectWidth = ann.w * width;
-                            const rectHeight = ann.h * height;
-                            const rectX = ann.x * width;
-                            const rectY = height - (ann.y * height) - rectHeight;
-                            
-                            page.drawRectangle({
-                                x: rectX,
-                                y: rectY,
-                                width: rectWidth,
-                                height: rectHeight,
-                                borderColor: PDFLib.rgb(0.99, 0.1, 0.78),
-                                borderWidth: 2,
-                                color: undefined,
-                            });
-                        } else if (ann.type === 'text') {
-                            const textX = ann.x * width;
-                            const fontSize = 12;
-                            const textY = height - (ann.y * height) - fontSize;
-                            
-                            page.drawText(ann.text, {
-                                x: textX,
-                                y: textY,
-                                size: fontSize,
-                                color: PDFLib.rgb(0, 0, 0),
-                            });
-                        }
-                    }
-                    
-                    // Apply Rotation
-                    if (doc.pageRotations[pageNum]) {
-                        page.setRotation(PDFLib.degrees(doc.pageRotations[pageNum]));
+                for (const ann of pageAnnotations) {
+                    if (ann.type === 'highlight') {
+                        const rectWidth = ann.w * width;
+                        const rectHeight = ann.h * height;
+                        const rectX = ann.x * width;
+                        // PDF coords are bottom-left, DOM is top-left
+                        const rectY = height - (ann.y * height) - rectHeight;
+                        
+                        let color = parseColor(ann.color);
+                        page.drawRectangle({
+                            x: rectX, y: rectY, width: rectWidth, height: rectHeight,
+                            color: color, opacity: 0.5,
+                        });
+                    } else if (ann.type === 'shape') {
+                        const rectWidth = ann.w * width;
+                        const rectHeight = ann.h * height;
+                        const rectX = ann.x * width;
+                        const rectY = height - (ann.y * height) - rectHeight;
+                        
+                        page.drawRectangle({
+                            x: rectX, y: rectY, width: rectWidth, height: rectHeight,
+                            borderColor: PDFLib.rgb(0.99, 0.1, 0.78), borderWidth: 2, color: undefined,
+                        });
+                    } else if (ann.type === 'text') {
+                        const textX = ann.x * width;
+                        const fontSize = 12;
+                        const textY = height - (ann.y * height) - fontSize;
+                        
+                        page.drawText(ann.text, {
+                            x: textX, y: textY, size: fontSize, color: PDFLib.rgb(0, 0, 0),
+                        });
                     }
                 }
                 
-                // Save and Download
+                // Rotation
+                if (docState.pageRotations[pageNum]) {
+                    page.setRotation(PDFLib.degrees(docState.pageRotations[pageNum]));
+                }
+            }
+        }
+
+        // --- SINGLE PDF DOWNLOAD ---
+        async function downloadPDF() {
+            const doc = getActiveDoc();
+            if (!doc) return;
+            showLoading(true);
+            try {
+                const arrayBuffer = await doc.file.arrayBuffer();
+                const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+                await bakeAnnotationsToPdf(doc, pdfDoc);
                 const pdfBytes = await pdfDoc.save();
-                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `edited_${doc.fileName}`;
-                link.click();
-                URL.revokeObjectURL(url);
+                downloadBlob(pdfBytes, `edited_${doc.fileName}`);
+            } catch (err) { console.error(err); alert("Failed to generate PDF."); }
+            finally { showLoading(false); }
+        }
+
+        // --- MERGE & DOWNLOAD ALL ---
+        async function downloadAllAsMerged() {
+            if (state.documents.length === 0) return;
+            showLoading(true);
+            try {
+                const mergedPdf = await PDFLib.PDFDocument.create();
                 
-            } catch (err) {
-                console.error(err);
-                alert("Failed to generate PDF. Please ensure the file isn't corrupted.");
+                for (const docState of state.documents) {
+                    const arrayBuffer = await docState.file.arrayBuffer();
+                    const srcPdf = await PDFLib.PDFDocument.load(arrayBuffer);
+                    
+                    // Apply annotations to in-memory srcPdf
+                    await bakeAnnotationsToPdf(docState, srcPdf);
+                    
+                    // Copy all pages
+                    const copiedPages = await mergedPdf.copyPages(srcPdf, srcPdf.getPageIndices());
+                    copiedPages.forEach((page) => mergedPdf.addPage(page));
+                }
+                
+                const pdfBytes = await mergedPdf.save();
+                downloadBlob(pdfBytes, 'merged_documents.pdf');
+            } catch (e) {
+                console.error(e);
+                alert('Merge failed. Ensure files are valid PDFs.');
             } finally {
                 showLoading(false);
             }
         }
 
+        function downloadBlob(data, filename) {
+            const blob = new Blob([data], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
         function parseColor(cssColor) {
-            if (cssColor.includes('250, 232, 79')) return PDFLib.rgb(0.98, 0.91, 0.31); // Yellow
-            if (cssColor.includes('253, 25, 200')) return PDFLib.rgb(0.99, 0.1, 0.78); // Pink
-            if (cssColor.includes('218, 112, 214')) return PDFLib.rgb(0.85, 0.44, 0.84); // Purple
-            if (cssColor.includes('0, 255, 0')) return PDFLib.rgb(0, 1, 0); // Green
-            if (cssColor.includes('0, 255, 255')) return PDFLib.rgb(0, 1, 1); // Blue
+            if (cssColor.includes('250, 232, 79')) return PDFLib.rgb(0.98, 0.91, 0.31);
+            if (cssColor.includes('253, 25, 200')) return PDFLib.rgb(0.99, 0.1, 0.78);
+            if (cssColor.includes('218, 112, 214')) return PDFLib.rgb(0.85, 0.44, 0.84);
+            if (cssColor.includes('0, 255, 0')) return PDFLib.rgb(0, 1, 0);
+            if (cssColor.includes('0, 255, 255')) return PDFLib.rgb(0, 1, 1);
             return PDFLib.rgb(1, 1, 0); 
         }
 
