@@ -27,6 +27,8 @@
             --wt-accent: #fae84f;        /* Electric Yellow */
             --wt-accent-glow: rgba(250, 232, 79, 0.3);
 
+            --wt-black: #050505;         /* Deep Black */
+
             /* TYPOGRAPHY */
             --wt-font-ui: 'Inter', system-ui, sans-serif;
             --wt-font-display: 'Playfair Display', serif;
@@ -34,20 +36,32 @@
             --wt-transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* DARK THEME (Default) */
+        /* DARK THEME (Default) - Neon Noir */
         [data-wt-theme="dark"] {
-            --bg: #050505;
+            --bg: var(--wt-black);
             --bg-hover: #121212;
-            --text-body: #ffffff;
+            
+            /* Replaced White with Orchid Purple */
+            --text-body: var(--wt-secondary); 
+            --text-heading: var(--wt-primary);
+            
             --border: #333333;
+            --icon-color: var(--wt-accent);
+            --divider: rgba(218, 112, 214, 0.2);
         }
 
-        /* LIGHT THEME (Inverted Logic) */
+        /* LIGHT THEME - Brutalist Highlighter */
         [data-wt-theme="light"] {
-            --bg: #ffffff;
-            --bg-hover: #f9f9f9;
-            --text-body: #111111;
-            --border: #e4e4e7;
+            /* Replaced White Background with Electric Yellow */
+            --bg: var(--wt-accent); 
+            --bg-hover: var(--wt-accent-glow);
+            
+            --text-body: #000000;
+            --text-heading: #000000;
+            
+            --border: rgba(0,0,0,0.1);
+            --icon-color: var(--wt-primary);
+            --divider: rgba(0,0,0,0.1);
         }
 
         /* =========================================
@@ -55,7 +69,7 @@
            ========================================= */
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        /* Custom Selection Highlight */
+        /* Selection: Pink Background, Yellow Text */
         ::selection {
             background: var(--wt-primary);
             color: var(--wt-accent);
@@ -67,7 +81,7 @@
             font-family: var(--wt-font-ui);
             line-height: 1.6;
             min-height: 100vh;
-            transition: background 0.3s ease;
+            transition: background 0.3s ease, color 0.3s ease;
         }
 
         .container {
@@ -90,25 +104,24 @@
             font-weight: 700;
             margin-bottom: 0.25rem;
             letter-spacing: -0.03em;
-            /* HOT PINK Text */
-            color: var(--wt-primary);
+            color: var(--text-heading);
             text-shadow: 0 0 20px var(--wt-primary-glow);
         }
 
         .subtitle {
-            /* ORCHID PURPLE Text */
-            color: var(--wt-secondary);
+            color: var(--text-body);
             font-size: 1.15rem;
             font-weight: 500;
             max-width: 480px;
             line-height: 1.4;
+            opacity: 0.9;
         }
 
         /* Stats Bar */
         .stats-wrapper {
             margin-top: 1.5rem;
             font-size: 0.9rem;
-            color: var(--wt-secondary); /* Purple labels */
+            color: var(--text-body);
             font-weight: 600;
             opacity: 0;
             transition: opacity 0.5s ease;
@@ -118,16 +131,21 @@
         }
 
         .stat-value {
-            /* ELECTRIC YELLOW Numbers */
+            /* Numbers always pop */
             color: var(--wt-accent);
             font-weight: 700;
             font-family: var(--wt-font-mono);
             margin-left: 0.25rem;
         }
 
+        /* In light mode, make stats pink for contrast against yellow bg */
+        [data-wt-theme="light"] .stat-value {
+            color: var(--wt-primary);
+        }
+
         .stat-divider { 
             color: var(--text-body);
-            opacity: 0.2; 
+            opacity: 0.3; 
         }
 
         /* =========================================
@@ -154,60 +172,66 @@
 
         /* Hover State */
         .tool-item:hover {
-            background: var(--bg-hover);
+            background: var(--bg-hover); /* Subtle change */
             padding-left: 1.5rem;
             padding-right: 1.5rem;
             border-color: transparent;
+        }
+
+        [data-wt-theme="light"] .tool-item:hover {
+            background: rgba(255, 255, 255, 0.4); /* Lighten yellow on hover */
         }
 
         .tool-item:hover + .tool-item {
             border-top-color: transparent;
         }
 
-        /* Icon: ORCHID PURPLE */
+        /* Icon: Electric Yellow (Dark Mode) / Pink (Light Mode) */
         .tool-icon {
-            color: var(--wt-secondary);
+            color: var(--icon-color);
             transition: all var(--wt-transition);
             display: flex;
             justify-content: flex-start;
         }
 
         .tool-item:hover .tool-icon {
-            color: var(--wt-primary); /* Shift to Pink on hover */
             transform: scale(1.1);
-            filter: drop-shadow(0 0 8px var(--wt-primary-glow));
+            filter: drop-shadow(0 0 8px var(--wt-accent-glow));
         }
 
-        /* Title: HOT PINK */
+        /* Title: Hot Pink (Dark Mode) / Black (Light Mode) */
         .tool-content h2 {
             font-size: 1.35rem;
             font-weight: 700;
             margin-bottom: 0.25rem;
             letter-spacing: -0.02em;
-            color: var(--wt-primary);
+            color: var(--text-heading);
             transition: color var(--wt-transition);
         }
 
-        /* Description: White (for contrast against color headers) */
+        /* Description: Orchid Purple (Dark Mode) / Black (Light Mode) */
         .tool-content p {
             color: var(--text-body);
             font-size: 0.95rem;
-            opacity: 0.8;
+            opacity: 0.85; /* Slight transparency for hierarchy */
             line-height: 1.5;
         }
 
-        /* Arrow: ELECTRIC YELLOW */
+        /* Arrow: Electric Yellow */
         .tool-arrow {
             color: var(--wt-accent);
             opacity: 0;
             transform: translateX(-20px);
             transition: all var(--wt-transition);
         }
+        
+        [data-wt-theme="light"] .tool-arrow {
+            color: var(--wt-primary);
+        }
 
         .tool-item:hover .tool-arrow {
             opacity: 1;
             transform: translateX(0);
-            filter: drop-shadow(0 0 8px var(--wt-accent-glow));
         }
 
         /* =========================================
@@ -219,20 +243,26 @@
             right: 0;
             background: none;
             border: none;
-            color: var(--wt-secondary);
+            color: var(--text-body);
             cursor: pointer;
             padding: 0.5rem;
             transition: color 0.2s, transform 0.2s;
+            opacity: 0.7;
         }
         
         .theme-toggle:hover { 
             color: var(--wt-accent);
             transform: rotate(15deg);
+            opacity: 1;
+        }
+        
+        [data-wt-theme="light"] .theme-toggle:hover {
+            color: var(--wt-primary);
         }
 
         footer {
             margin-top: 6rem;
-            color: var(--wt-secondary);
+            color: var(--text-body);
             font-size: 0.875rem;
             text-align: center;
             opacity: 0.6;
@@ -249,7 +279,6 @@
             }
             .tool-icon { display: none; }
             
-            /* On mobile, arrow is always visible but dim */
             .tool-arrow { 
                 opacity: 0.5; 
                 transform: translateX(0);
