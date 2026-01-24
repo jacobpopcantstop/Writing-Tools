@@ -440,6 +440,8 @@
     const STATUS = document.getElementById('save-status');
     const PAGE_COUNT = document.getElementById('page-count');
     const STORAGE_KEY = 'writingtools_courius_storage';
+    // NEW KEY to avoid conflict with previous Light Mode settings
+    const THEME_STORAGE_KEY = 'courius_theme_v2'; 
     
     const ELEMENT_CYCLE = ['scene-heading', 'action', 'character', 'parenthetical', 'dialogue', 'transition'];
     const NEXT_ELEMENT = {
@@ -472,8 +474,8 @@
         }
         updateSuggestions();
         
-        // Theme: Default is Dark. Check for 'light'.
-        const savedTheme = localStorage.getItem('writingtools_theme');
+        // Theme Logic: Default is Dark (no class). Check if user specifically saved 'light'.
+        const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
         if (savedTheme === 'light') {
             document.body.classList.add('day-mode');
         }
@@ -497,7 +499,7 @@
     function toggleTheme() {
         document.body.classList.toggle('day-mode');
         const isLight = document.body.classList.contains('day-mode');
-        localStorage.setItem('writingtools_theme', isLight ? 'light' : 'dark');
+        localStorage.setItem(THEME_STORAGE_KEY, isLight ? 'light' : 'dark');
     }
 
     // --- Title Page Logic ---
