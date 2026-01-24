@@ -8,60 +8,46 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:ital,wght@0,600;1,600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
 
     <script src="https://unpkg.com/lucide@0.263.1"></script>
 
     <style>
         /* =========================================
-           1. COLOR PALETTE & TOKENS
+           1. COLOR PALETTE
            ========================================= */
         :root {
-            /* Primary - Hot Pink */
-            --wt-primary: #fd19c8;
-            --wt-primary-light: #ff4dd8;
-            --wt-primary-dark: #c9149f;
+            /* BRAND COLORS */
+            --wt-primary: #fd19c8;       /* Hot Pink */
+            --wt-primary-glow: rgba(253, 25, 200, 0.3);
+            
+            --wt-secondary: #da70d6;     /* Orchid Purple */
+            --wt-secondary-glow: rgba(218, 112, 214, 0.3);
 
-            /* Secondary - Orchid Purple */
-            --wt-secondary: #da70d6;
-            --wt-secondary-light: #e896e4;
-            --wt-secondary-dark: #b84db4;
+            --wt-accent: #fae84f;        /* Electric Yellow */
+            --wt-accent-glow: rgba(250, 232, 79, 0.3);
 
-            /* Accent - Electric Yellow */
-            --wt-accent: #fae84f;
-            --wt-accent-light: #fcf07a;
-            --wt-accent-dark: #e6d42e;
-
-            /* Typography */
+            /* TYPOGRAPHY */
             --wt-font-ui: 'Inter', system-ui, sans-serif;
             --wt-font-display: 'Playfair Display', serif;
             
-            /* Animation */
             --wt-transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* Dark Theme (Default) */
+        /* DARK THEME (Default) */
         [data-wt-theme="dark"] {
-            --bg: #050505;          /* Deep Black */
-            --bg-hover: #121212;    /* Slightly lighter for hover */
-            --text: #ffffff;
-            --text-muted: #a1a1aa;
-            --border: #27272a;
-            --stat-color: var(--wt-primary);
-            --icon-hover: var(--wt-primary);
-            --arrow-hover: var(--wt-accent);
+            --bg: #050505;
+            --bg-hover: #121212;
+            --text-body: #ffffff;
+            --border: #333333;
         }
 
-        /* Light Theme */
+        /* LIGHT THEME (Inverted Logic) */
         [data-wt-theme="light"] {
             --bg: #ffffff;
             --bg-hover: #f9f9f9;
-            --text: #18181b;
-            --text-muted: #71717a;
+            --text-body: #111111;
             --border: #e4e4e7;
-            --stat-color: var(--wt-primary-dark); /* Darker pink for readability on white */
-            --icon-hover: var(--wt-primary-dark);
-            --arrow-hover: #d4b600; /* Darker yellow for contrast on white */
         }
 
         /* =========================================
@@ -69,13 +55,19 @@
            ========================================= */
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
+        /* Custom Selection Highlight */
+        ::selection {
+            background: var(--wt-primary);
+            color: var(--wt-accent);
+        }
+
         body {
             background: var(--bg);
-            color: var(--text);
+            color: var(--text-body);
             font-family: var(--wt-font-ui);
             line-height: 1.6;
             min-height: 100vh;
-            transition: background 0.3s ease, color 0.3s ease;
+            transition: background 0.3s ease;
         }
 
         .container {
@@ -85,7 +77,7 @@
         }
 
         /* =========================================
-           3. HEADER COMPONENTS
+           3. HEADER
            ========================================= */
         header {
             margin-bottom: 4rem;
@@ -94,23 +86,29 @@
 
         h1 {
             font-family: var(--wt-font-display);
-            font-size: 2.5rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            letter-spacing: -0.02em;
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+            letter-spacing: -0.03em;
+            /* HOT PINK Text */
+            color: var(--wt-primary);
+            text-shadow: 0 0 20px var(--wt-primary-glow);
         }
 
         .subtitle {
-            color: var(--text-muted);
-            font-size: 1.1rem;
-            max-width: 420px;
+            /* ORCHID PURPLE Text */
+            color: var(--wt-secondary);
+            font-size: 1.15rem;
+            font-weight: 500;
+            max-width: 480px;
+            line-height: 1.4;
         }
 
-        /* Stats Bar - Uses Primary Pink */
+        /* Stats Bar */
         .stats-wrapper {
             margin-top: 1.5rem;
-            font-size: 0.875rem;
-            color: var(--stat-color);
+            font-size: 0.9rem;
+            color: var(--wt-secondary); /* Purple labels */
             font-weight: 600;
             opacity: 0;
             transition: opacity 0.5s ease;
@@ -119,13 +117,21 @@
             align-items: center;
         }
 
+        .stat-value {
+            /* ELECTRIC YELLOW Numbers */
+            color: var(--wt-accent);
+            font-weight: 700;
+            font-family: var(--wt-font-mono);
+            margin-left: 0.25rem;
+        }
+
         .stat-divider { 
-            opacity: 0.3; 
-            color: var(--text);
+            color: var(--text-body);
+            opacity: 0.2; 
         }
 
         /* =========================================
-           4. TOOL LIST (The Core UI)
+           4. TOOL LIST
            ========================================= */
         .tool-list {
             display: flex;
@@ -137,123 +143,118 @@
         .tool-item {
             text-decoration: none;
             color: inherit;
-            padding: 2rem 0.5rem;
+            padding: 2rem 1rem;
             border-bottom: 1px solid var(--border);
             display: grid;
-            grid-template-columns: 3.5rem 1fr auto; /* Icon | Content | Arrow */
-            align-items: baseline;
+            grid-template-columns: 3.5rem 1fr auto;
+            align-items: center;
             transition: all var(--wt-transition);
             position: relative;
         }
 
-        /* Hover Interaction */
+        /* Hover State */
         .tool-item:hover {
             background: var(--bg-hover);
             padding-left: 1.5rem;
             padding-right: 1.5rem;
             border-color: transparent;
         }
-        
-        /* Remove border from the next item when hovering strictly for visual cleanliness */
+
         .tool-item:hover + .tool-item {
             border-top-color: transparent;
         }
 
-        /* Icon Styling */
+        /* Icon: ORCHID PURPLE */
         .tool-icon {
-            color: var(--text-muted);
-            transition: color var(--wt-transition), transform var(--wt-transition);
-            transform: translateY(4px);
+            color: var(--wt-secondary);
+            transition: all var(--wt-transition);
             display: flex;
             justify-content: flex-start;
         }
 
         .tool-item:hover .tool-icon {
-            color: var(--icon-hover); /* Hot Pink on Dark */
-            transform: translateY(4px) scale(1.1);
+            color: var(--wt-primary); /* Shift to Pink on hover */
+            transform: scale(1.1);
+            filter: drop-shadow(0 0 8px var(--wt-primary-glow));
         }
 
-        /* Text Content */
+        /* Title: HOT PINK */
         .tool-content h2 {
-            font-size: 1.25rem;
+            font-size: 1.35rem;
             font-weight: 700;
             margin-bottom: 0.25rem;
-            letter-spacing: -0.01em;
+            letter-spacing: -0.02em;
+            color: var(--wt-primary);
             transition: color var(--wt-transition);
         }
 
-        .tool-item:hover h2 {
-            /* Optional: Make title pink on hover? 
-               Currently kept white/black for contrast, relying on icon/arrow for color. */
-        }
-
+        /* Description: White (for contrast against color headers) */
         .tool-content p {
-            color: var(--text-muted);
+            color: var(--text-body);
             font-size: 0.95rem;
+            opacity: 0.8;
             line-height: 1.5;
-            transition: color var(--wt-transition);
         }
 
-        .tool-item:hover p {
-            color: var(--text); /* Darken/Lighten description on hover for readability */
-        }
-
-        /* Arrow Styling - The "Electric" Pop */
+        /* Arrow: ELECTRIC YELLOW */
         .tool-arrow {
+            color: var(--wt-accent);
             opacity: 0;
             transform: translateX(-20px);
             transition: all var(--wt-transition);
-            color: var(--arrow-hover); /* Electric Yellow on Dark */
-            display: flex;
-            align-items: center;
         }
 
         .tool-item:hover .tool-arrow {
             opacity: 1;
             transform: translateX(0);
+            filter: drop-shadow(0 0 8px var(--wt-accent-glow));
         }
 
         /* =========================================
-           5. UTILITIES & MOBILE
+           5. UTILITIES
            ========================================= */
         .theme-toggle {
             position: absolute;
-            top: 0;
+            top: 1rem;
             right: 0;
             background: none;
             border: none;
-            color: var(--text-muted);
+            color: var(--wt-secondary);
             cursor: pointer;
             padding: 0.5rem;
-            transition: color 0.2s;
+            transition: color 0.2s, transform 0.2s;
         }
-        .theme-toggle:hover { color: var(--wt-primary); }
+        
+        .theme-toggle:hover { 
+            color: var(--wt-accent);
+            transform: rotate(15deg);
+        }
 
         footer {
             margin-top: 6rem;
-            color: var(--text-muted);
+            color: var(--wt-secondary);
             font-size: 0.875rem;
             text-align: center;
-            opacity: 0.5;
+            opacity: 0.6;
         }
 
+        /* Mobile Adjustments */
         @media (max-width: 600px) {
             .container { padding-top: 3rem; }
+            h1 { font-size: 2.25rem; }
             .tool-item { 
-                grid-template-columns: 1fr; 
-                gap: 0.75rem; 
-                padding: 1.5rem 0;
+                grid-template-columns: 1fr auto; 
+                gap: 0.5rem; 
+                padding: 1.5rem 0.5rem;
             }
             .tool-icon { display: none; }
-            .tool-arrow { display: none; }
             
-            /* Mobile Hover State (Active) */
-            .tool-item:active {
-                background: transparent;
-                padding-left: 0;
-                padding-right: 0;
+            /* On mobile, arrow is always visible but dim */
+            .tool-arrow { 
+                opacity: 0.5; 
+                transform: translateX(0);
+                display: block;
             }
-            .tool-item:active h2 { color: var(--wt-primary); }
         }
     </style>
 </head>
@@ -262,12 +263,12 @@
     <div class="container">
         <header>
             <h1>Writing Tools</h1>
-            <p class="subtitle">A specialized suite for the creative process. Local, private, and distraction-free.</p>
+            <p class="subtitle">A specialized suite for the creative process.</p>
             
             <div id="stats-bar" class="stats-wrapper">
-                <span>Streak: <span id="stat-streak">0</span> Days</span>
+                <span>Streak: <span id="stat-streak" class="stat-value">0</span></span>
                 <span class="stat-divider">/</span>
-                <span>Total Words: <span id="stat-words">0</span></span>
+                <span>Words: <span id="stat-words" class="stat-value">0</span></span>
             </div>
 
             <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
@@ -277,7 +278,7 @@
 
         <nav class="tool-list">
             <a href="Joterie.html" class="tool-item">
-                <div class="tool-icon"><i data-lucide="zap" size="22"></i></div>
+                <div class="tool-icon"><i data-lucide="zap" size="24"></i></div>
                 <div class="tool-content">
                     <h2>Joterie</h2>
                     <p>Timed sprint brainstorming to capture raw ideas.</p>
@@ -286,7 +287,7 @@
             </a>
 
             <a href="Synax.html" class="tool-item">
-                <div class="tool-icon"><i data-lucide="sparkles" size="22"></i></div>
+                <div class="tool-icon"><i data-lucide="sparkles" size="24"></i></div>
                 <div class="tool-content">
                     <h2>Synax</h2>
                     <p>AI-powered prompt engine for creative sparks.</p>
@@ -295,7 +296,7 @@
             </a>
 
             <a href="ThisButThat.html" class="tool-item">
-                <div class="tool-icon"><i data-lucide="git-branch" size="22"></i></div>
+                <div class="tool-icon"><i data-lucide="git-branch" size="24"></i></div>
                 <div class="tool-content">
                     <h2>ThisButThat</h2>
                     <p>Pivot engine for breaking narrative blocks.</p>
@@ -304,7 +305,7 @@
             </a>
 
             <a href="BeatHive.html" class="tool-item">
-                <div class="tool-icon"><i data-lucide="hexagon" size="22"></i></div>
+                <div class="tool-icon"><i data-lucide="hexagon" size="24"></i></div>
                 <div class="tool-content">
                     <h2>BeatHive</h2>
                     <p>Hexagonal story mapping and non-linear plotting.</p>
@@ -313,7 +314,7 @@
             </a>
 
             <a href="Wribbon.html" class="tool-item">
-                <div class="tool-icon"><i data-lucide="feather" size="22"></i></div>
+                <div class="tool-icon"><i data-lucide="feather" size="24"></i></div>
                 <div class="tool-content">
                     <h2>Wribbon</h2>
                     <p>Minimalist, distraction-free drafting environment.</p>
@@ -322,7 +323,7 @@
             </a>
 
             <a href="FlowState.html" class="tool-item">
-                <div class="tool-icon"><i data-lucide="flame" size="22"></i></div>
+                <div class="tool-icon"><i data-lucide="flame" size="24"></i></div>
                 <div class="tool-content">
                     <h2>FlowState</h2>
                     <p>Gamified writing sessions to build momentum.</p>
@@ -331,7 +332,7 @@
             </a>
 
             <a href="WitherNaught.html" class="tool-item">
-                <div class="tool-icon"><i data-lucide="leaf" size="22"></i></div>
+                <div class="tool-icon"><i data-lucide="leaf" size="24"></i></div>
                 <div class="tool-content">
                     <h2>WitherNaught</h2>
                     <p>A writing garden that grows (or dies) based on activity.</p>
@@ -340,7 +341,7 @@
             </a>
 
             <a href="Courius.html" class="tool-item">
-                <div class="tool-icon"><i data-lucide="clapperboard" size="22"></i></div>
+                <div class="tool-icon"><i data-lucide="clapperboard" size="24"></i></div>
                 <div class="tool-content">
                     <h2>Courius</h2>
                     <p>Standard screenplay formatting and FDX export.</p>
@@ -349,7 +350,7 @@
             </a>
 
             <a href="PDFconvert.html" class="tool-item">
-                <div class="tool-icon"><i data-lucide="file-text" size="22"></i></div>
+                <div class="tool-icon"><i data-lucide="file-text" size="24"></i></div>
                 <div class="tool-content">
                     <h2>PDFconvert</h2>
                     <p>Format manuscripts into print-ready PDF files.</p>
