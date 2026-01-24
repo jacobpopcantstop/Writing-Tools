@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Papercut | PDF Editor & Converter</title>
+    <title>PaperCut | PDF Editor & Converter</title>
 
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%23fd19c8%22/><path d=%22M25 20h50c3 0 5 2 5 5v50c0 3-2 5-5 5H25c-3 0-5-2-5-5V25c0-3 2-5 5-5z%22 fill=%22%23050505%22/><path d=%22M35 35h30M35 50h20M35 65h25%22 stroke=%22%23fae84f%22 stroke-width=%224%22 stroke-linecap=%22round%22/></svg>">
 
-    <!-- PDF.js Library -->
+    <!-- PDF Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -146,7 +147,25 @@
         .tool-btn { background: none; border: none; cursor: pointer; padding: 0.5rem; color: var(--icon-color); border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; position: relative; }
         .tool-btn:hover { background: var(--btn-hover); transform: scale(1.1); filter: drop-shadow(0 0 5px var(--wt-primary-glow)); }
         .tool-btn.active { color: var(--wt-accent); background: rgba(253, 25, 200, 0.1); }
-        .tool-btn[title]:hover::after { content: attr(title); position: absolute; bottom: -32px; left: 50%; transform: translateX(-50%); background: var(--wt-primary); color: var(--wt-black); font-size: 0.7rem; font-weight: 600; padding: 4px 8px; border-radius: 4px; white-space: nowrap; z-index: 200; pointer-events: none; }
+        
+        /* Updated Tooltip Style: Solid Black Text */
+        .tool-btn[title]:hover::after { 
+            content: attr(title); 
+            position: absolute; 
+            bottom: -32px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            background: var(--wt-primary); 
+            color: #000000; /* Force Solid Black */
+            font-size: 0.7rem; 
+            font-weight: 700; 
+            padding: 4px 8px; 
+            border-radius: 4px; 
+            white-space: nowrap; 
+            z-index: 1000; /* Higher z-index to avoid conflict */
+            pointer-events: none; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
 
         .zoom-value { font-size: 0.8rem; font-weight: 600; min-width: 50px; text-align: center; color: var(--text-body); font-family: monospace; }
         .page-input { width: 50px; padding: 0.25rem 0.5rem; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-surface); color: var(--wt-primary); font-size: 0.8rem; font-weight: 700; text-align: center; font-family: monospace; }
@@ -243,7 +262,7 @@
     <header>
         <a href="index.html" class="logo">
             <div class="logo-icon"><i data-lucide="file-text" style="width: 20px; height: 20px;"></i></div>
-            <span class="logo-text">Papercut</span>
+            <span class="logo-text">PaperCut</span>
         </a>
         <div class="header-actions">
             <button class="icon-btn" id="sidebar-toggle" title="Toggle Pages"><i data-lucide="panel-left" style="width: 20px; height: 20px;"></i></button>
@@ -943,7 +962,106 @@
             alert('Page deletion requires the document to be re-exported. Use Convert to Images to export individual pages.');
         }
 
-        function downloadPDF() { alert('Download functionality would save the annotated PDF. For full editing, convert to another format.'); }
+        // --- UPDATED DOWNLOAD FUNCTION USING PDF-LIB ---
+        async function downloadPDF() {
+            const doc = getActiveDoc();
+            if (!doc) return;
+            
+            showLoading(true);
+            
+            try {
+                // Load original PDF
+                const arrayBuffer = await doc.file.arrayBuffer();
+                const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+                const pages = pdfDoc.getPages();
+                
+                // Process each page
+                for (let i = 0; i < pages.length; i++) {
+                    const pageNum = i + 1;
+                    const pageAnnotations = doc.annotations[pageNum] || [];
+                    const page = pages[i];
+                    const { width, height } = page.getSize();
+                    
+                    for (const ann of pageAnnotations) {
+                        if (ann.type === 'highlight') {
+                            const rectWidth = ann.w * width;
+                            const rectHeight = ann.h * height;
+                            const rectX = ann.x * width;
+                            // PDF coordinates start from bottom-left
+                            const rectY = height - (ann.y * height) - rectHeight;
+                            
+                            let color = parseColor(ann.color);
+
+                            page.drawRectangle({
+                                x: rectX,
+                                y: rectY,
+                                width: rectWidth,
+                                height: rectHeight,
+                                color: color,
+                                opacity: 0.5,
+                            });
+                        } else if (ann.type === 'shape') {
+                            const rectWidth = ann.w * width;
+                            const rectHeight = ann.h * height;
+                            const rectX = ann.x * width;
+                            const rectY = height - (ann.y * height) - rectHeight;
+                            
+                            page.drawRectangle({
+                                x: rectX,
+                                y: rectY,
+                                width: rectWidth,
+                                height: rectHeight,
+                                borderColor: PDFLib.rgb(0.99, 0.1, 0.78),
+                                borderWidth: 2,
+                                color: undefined,
+                            });
+                        } else if (ann.type === 'text') {
+                            const textX = ann.x * width;
+                            const fontSize = 12;
+                            const textY = height - (ann.y * height) - fontSize;
+                            
+                            page.drawText(ann.text, {
+                                x: textX,
+                                y: textY,
+                                size: fontSize,
+                                color: PDFLib.rgb(0, 0, 0),
+                            });
+                        }
+                    }
+                    
+                    // Apply Rotation
+                    if (doc.pageRotations[pageNum]) {
+                        page.setRotation(PDFLib.degrees(doc.pageRotations[pageNum]));
+                    }
+                }
+                
+                // Save and Download
+                const pdfBytes = await pdfDoc.save();
+                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `edited_${doc.fileName}`;
+                link.click();
+                URL.revokeObjectURL(url);
+                
+            } catch (err) {
+                console.error(err);
+                alert("Failed to generate PDF. Please ensure the file isn't corrupted.");
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function parseColor(cssColor) {
+            if (cssColor.includes('250, 232, 79')) return PDFLib.rgb(0.98, 0.91, 0.31); // Yellow
+            if (cssColor.includes('253, 25, 200')) return PDFLib.rgb(0.99, 0.1, 0.78); // Pink
+            if (cssColor.includes('218, 112, 214')) return PDFLib.rgb(0.85, 0.44, 0.84); // Purple
+            if (cssColor.includes('0, 255, 0')) return PDFLib.rgb(0, 1, 0); // Green
+            if (cssColor.includes('0, 255, 255')) return PDFLib.rgb(0, 1, 1); // Blue
+            return PDFLib.rgb(1, 1, 0); 
+        }
+
         function openConvertModal() { dom.convertModal.classList.add('open'); }
         function closeConvertModal() { dom.convertModal.classList.remove('open'); }
 
