@@ -14,36 +14,40 @@
 
     <style>
         /* =========================================
-           1. CRITICAL TOKENS (From Shared Design)
+           1. CRITICAL TOKENS (Dad Skeleton Theme)
            ========================================= */
         :root {
+            /* Brand Colors */
             --wt-primary: #fd19c8;
             --wt-secondary: #da70d6;
             --wt-accent: #fae84f;
-            --wt-black: #000000;
-            --wt-white: #ffffff;
             
+            /* Typography */
             --wt-font-ui: 'Inter', system-ui, sans-serif;
             --wt-font-display: 'Playfair Display', serif;
             
+            /* Transitions */
             --wt-transition-normal: 300ms cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* Theme Variables */
-        [data-wt-theme="light"] {
-            --bg: #fafafa;
-            --bg-hover: #f4f4f5;
-            --text: #18181b;
-            --text-muted: #71717a;
-            --border: #e4e4e7;
-        }
-
+        /* Dark Theme (DEFAULT) */
         [data-wt-theme="dark"] {
             --bg: #000000;
             --bg-hover: #121212;
             --text: #ffffff;
             --text-muted: #a1a1aa;
             --border: #27272a;
+            --icon-color: #ffffff;
+        }
+
+        /* Light Theme */
+        [data-wt-theme="light"] {
+            --bg: #fafafa;
+            --bg-hover: #f4f4f5;
+            --text: #18181b;
+            --text-muted: #71717a;
+            --border: #e4e4e7;
+            --icon-color: #18181b;
         }
 
         /* =========================================
@@ -127,7 +131,6 @@
             padding-left: 1rem;
             padding-right: 1rem;
             border-color: transparent;
-            /* Remove standard border on hover */
         }
         
         .tool-item:hover + .tool-item {
@@ -137,7 +140,7 @@
         .tool-icon {
             color: var(--text-muted);
             transition: color 0.2s;
-            transform: translateY(4px); /* Optical alignment */
+            transform: translateY(4px);
         }
 
         .tool-item:hover .tool-icon {
@@ -179,7 +182,7 @@
             cursor: pointer;
             padding: 0.5rem;
         }
-        .theme-toggle:hover { color: var(--wt-white); }
+        .theme-toggle:hover { color: var(--text); }
 
         /* Footer */
         footer {
@@ -214,7 +217,7 @@
             </div>
 
             <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
-                <i data-lucide="moon" id="theme-icon"></i>
+                <i data-lucide="sun" id="theme-icon"></i>
             </button>
         </header>
 
@@ -313,7 +316,7 @@
         function toggleTheme() {
             const html = document.documentElement;
             const current = html.getAttribute('data-wt-theme');
-            const next = current === 'light' ? 'dark' : 'light';
+            const next = current === 'dark' ? 'light' : 'dark';
             html.setAttribute('data-wt-theme', next);
             localStorage.setItem('writingtools_theme', next);
             
@@ -322,12 +325,14 @@
             lucide.createIcons();
         }
 
-        // --- Stats Worker (Preserved & Cleaned) ---
+        // --- Stats Worker ---
         document.addEventListener('DOMContentLoaded', () => {
-            // Restore Theme
+            // Restore Theme (Default to DARK if not found)
             const savedTheme = localStorage.getItem('writingtools_theme') || 'dark';
             document.documentElement.setAttribute('data-wt-theme', savedTheme);
             const icon = document.getElementById('theme-icon');
+            
+            // Set icon based on loaded theme
             icon.setAttribute('data-lucide', savedTheme === 'dark' ? 'sun' : 'moon');
             lucide.createIcons();
 
