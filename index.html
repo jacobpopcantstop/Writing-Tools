@@ -14,44 +14,58 @@
 
     <style>
         /* =========================================
-           1. CRITICAL TOKENS (Dad Skeleton Theme)
+           1. COLOR PALETTE & TOKENS
            ========================================= */
         :root {
-            /* Brand Colors */
+            /* Primary - Hot Pink */
             --wt-primary: #fd19c8;
+            --wt-primary-light: #ff4dd8;
+            --wt-primary-dark: #c9149f;
+
+            /* Secondary - Orchid Purple */
             --wt-secondary: #da70d6;
+            --wt-secondary-light: #e896e4;
+            --wt-secondary-dark: #b84db4;
+
+            /* Accent - Electric Yellow */
             --wt-accent: #fae84f;
-            
+            --wt-accent-light: #fcf07a;
+            --wt-accent-dark: #e6d42e;
+
             /* Typography */
             --wt-font-ui: 'Inter', system-ui, sans-serif;
             --wt-font-display: 'Playfair Display', serif;
             
-            /* Transitions */
-            --wt-transition-normal: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+            /* Animation */
+            --wt-transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* Dark Theme (DEFAULT) */
+        /* Dark Theme (Default) */
         [data-wt-theme="dark"] {
-            --bg: #000000;
-            --bg-hover: #121212;
+            --bg: #050505;          /* Deep Black */
+            --bg-hover: #121212;    /* Slightly lighter for hover */
             --text: #ffffff;
             --text-muted: #a1a1aa;
             --border: #27272a;
-            --icon-color: #ffffff;
+            --stat-color: var(--wt-primary);
+            --icon-hover: var(--wt-primary);
+            --arrow-hover: var(--wt-accent);
         }
 
         /* Light Theme */
         [data-wt-theme="light"] {
-            --bg: #fafafa;
-            --bg-hover: #f4f4f5;
+            --bg: #ffffff;
+            --bg-hover: #f9f9f9;
             --text: #18181b;
             --text-muted: #71717a;
             --border: #e4e4e7;
-            --icon-color: #18181b;
+            --stat-color: var(--wt-primary-dark); /* Darker pink for readability on white */
+            --icon-hover: var(--wt-primary-dark);
+            --arrow-hover: #d4b600; /* Darker yellow for contrast on white */
         }
 
         /* =========================================
-           2. LAYOUT STYLES
+           2. GLOBAL STYLES
            ========================================= */
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -67,10 +81,12 @@
         .container {
             max-width: 720px;
             margin: 0 auto;
-            padding: 4rem 1.5rem;
+            padding: 5rem 1.5rem;
         }
 
-        /* Header */
+        /* =========================================
+           3. HEADER COMPONENTS
+           ========================================= */
         header {
             margin-bottom: 4rem;
             position: relative;
@@ -87,83 +103,109 @@
         .subtitle {
             color: var(--text-muted);
             font-size: 1.1rem;
-            max-width: 400px;
+            max-width: 420px;
         }
 
-        /* Stats Line */
+        /* Stats Bar - Uses Primary Pink */
         .stats-wrapper {
-            margin-top: 1rem;
+            margin-top: 1.5rem;
             font-size: 0.875rem;
-            color: var(--wt-primary);
-            font-weight: 500;
+            color: var(--stat-color);
+            font-weight: 600;
             opacity: 0;
             transition: opacity 0.5s ease;
             display: flex;
             gap: 1.5rem;
+            align-items: center;
         }
 
-        .stat-divider { opacity: 0.3; }
+        .stat-divider { 
+            opacity: 0.3; 
+            color: var(--text);
+        }
 
-        /* Tools List */
+        /* =========================================
+           4. TOOL LIST (The Core UI)
+           ========================================= */
         .tool-list {
             display: flex;
             flex-direction: column;
             gap: 0;
+            border-top: 1px solid var(--border);
         }
 
         .tool-item {
             text-decoration: none;
             color: inherit;
-            padding: 1.75rem 0;
+            padding: 2rem 0.5rem;
             border-bottom: 1px solid var(--border);
             display: grid;
-            grid-template-columns: 3rem 1fr auto;
+            grid-template-columns: 3.5rem 1fr auto; /* Icon | Content | Arrow */
             align-items: baseline;
-            transition: all 0.2s ease;
+            transition: all var(--wt-transition);
             position: relative;
         }
 
-        .tool-item:first-child { border-top: 1px solid var(--border); }
-
-        /* Hover Effects */
+        /* Hover Interaction */
         .tool-item:hover {
             background: var(--bg-hover);
-            padding-left: 1rem;
-            padding-right: 1rem;
+            padding-left: 1.5rem;
+            padding-right: 1.5rem;
             border-color: transparent;
         }
         
+        /* Remove border from the next item when hovering strictly for visual cleanliness */
         .tool-item:hover + .tool-item {
             border-top-color: transparent;
         }
 
+        /* Icon Styling */
         .tool-icon {
             color: var(--text-muted);
-            transition: color 0.2s;
+            transition: color var(--wt-transition), transform var(--wt-transition);
             transform: translateY(4px);
+            display: flex;
+            justify-content: flex-start;
         }
 
         .tool-item:hover .tool-icon {
-            color: var(--wt-primary);
+            color: var(--icon-hover); /* Hot Pink on Dark */
+            transform: translateY(4px) scale(1.1);
         }
 
+        /* Text Content */
         .tool-content h2 {
-            font-size: 1.125rem;
-            font-weight: 600;
+            font-size: 1.25rem;
+            font-weight: 700;
             margin-bottom: 0.25rem;
+            letter-spacing: -0.01em;
+            transition: color var(--wt-transition);
+        }
+
+        .tool-item:hover h2 {
+            /* Optional: Make title pink on hover? 
+               Currently kept white/black for contrast, relying on icon/arrow for color. */
         }
 
         .tool-content p {
             color: var(--text-muted);
             font-size: 0.95rem;
             line-height: 1.5;
+            transition: color var(--wt-transition);
         }
 
+        .tool-item:hover p {
+            color: var(--text); /* Darken/Lighten description on hover for readability */
+        }
+
+        /* Arrow Styling - The "Electric" Pop */
         .tool-arrow {
             opacity: 0;
-            transform: translateX(-10px);
-            transition: all 0.2s ease;
-            color: var(--wt-primary);
+            transform: translateX(-20px);
+            transition: all var(--wt-transition);
+            color: var(--arrow-hover); /* Electric Yellow on Dark */
+            display: flex;
+            align-items: center;
         }
 
         .tool-item:hover .tool-arrow {
@@ -171,7 +213,9 @@
             transform: translateX(0);
         }
 
-        /* Theme Toggle */
+        /* =========================================
+           5. UTILITIES & MOBILE
+           ========================================= */
         .theme-toggle {
             position: absolute;
             top: 0;
@@ -181,10 +225,10 @@
             color: var(--text-muted);
             cursor: pointer;
             padding: 0.5rem;
+            transition: color 0.2s;
         }
-        .theme-toggle:hover { color: var(--text); }
+        .theme-toggle:hover { color: var(--wt-primary); }
 
-        /* Footer */
         footer {
             margin-top: 6rem;
             color: var(--text-muted);
@@ -193,13 +237,23 @@
             opacity: 0.5;
         }
 
-        /* Mobile */
         @media (max-width: 600px) {
-            .tool-item { grid-template-columns: 1fr; gap: 0.5rem; }
+            .container { padding-top: 3rem; }
+            .tool-item { 
+                grid-template-columns: 1fr; 
+                gap: 0.75rem; 
+                padding: 1.5rem 0;
+            }
             .tool-icon { display: none; }
             .tool-arrow { display: none; }
-            .tool-item:hover { padding-left: 0; padding-right: 0; background: transparent; }
-            .tool-item:hover h2 { color: var(--wt-primary); }
+            
+            /* Mobile Hover State (Active) */
+            .tool-item:active {
+                background: transparent;
+                padding-left: 0;
+                padding-right: 0;
+            }
+            .tool-item:active h2 { color: var(--wt-primary); }
         }
     </style>
 </head>
@@ -211,7 +265,7 @@
             <p class="subtitle">A specialized suite for the creative process. Local, private, and distraction-free.</p>
             
             <div id="stats-bar" class="stats-wrapper">
-                <span>Writing Streak: <span id="stat-streak">0</span> Days</span>
+                <span>Streak: <span id="stat-streak">0</span> Days</span>
                 <span class="stat-divider">/</span>
                 <span>Total Words: <span id="stat-words">0</span></span>
             </div>
@@ -223,7 +277,7 @@
 
         <nav class="tool-list">
             <a href="Joterie.html" class="tool-item">
-                <div class="tool-icon"><i data-lucide="zap" size="20"></i></div>
+                <div class="tool-icon"><i data-lucide="zap" size="22"></i></div>
                 <div class="tool-content">
                     <h2>Joterie</h2>
                     <p>Timed sprint brainstorming to capture raw ideas.</p>
@@ -232,7 +286,7 @@
             </a>
 
             <a href="Synax.html" class="tool-item">
-                <div class="tool-icon"><i data-lucide="sparkles" size="20"></i></div>
+                <div class="tool-icon"><i data-lucide="sparkles" size="22"></i></div>
                 <div class="tool-content">
                     <h2>Synax</h2>
                     <p>AI-powered prompt engine for creative sparks.</p>
@@ -241,7 +295,7 @@
             </a>
 
             <a href="ThisButThat.html" class="tool-item">
-                <div class="tool-icon"><i data-lucide="git-branch" size="20"></i></div>
+                <div class="tool-icon"><i data-lucide="git-branch" size="22"></i></div>
                 <div class="tool-content">
                     <h2>ThisButThat</h2>
                     <p>Pivot engine for breaking narrative blocks.</p>
@@ -250,7 +304,7 @@
             </a>
 
             <a href="BeatHive.html" class="tool-item">
-                <div class="tool-icon"><i data-lucide="hexagon" size="20"></i></div>
+                <div class="tool-icon"><i data-lucide="hexagon" size="22"></i></div>
                 <div class="tool-content">
                     <h2>BeatHive</h2>
                     <p>Hexagonal story mapping and non-linear plotting.</p>
@@ -259,7 +313,7 @@
             </a>
 
             <a href="Wribbon.html" class="tool-item">
-                <div class="tool-icon"><i data-lucide="feather" size="20"></i></div>
+                <div class="tool-icon"><i data-lucide="feather" size="22"></i></div>
                 <div class="tool-content">
                     <h2>Wribbon</h2>
                     <p>Minimalist, distraction-free drafting environment.</p>
@@ -268,7 +322,7 @@
             </a>
 
             <a href="FlowState.html" class="tool-item">
-                <div class="tool-icon"><i data-lucide="flame" size="20"></i></div>
+                <div class="tool-icon"><i data-lucide="flame" size="22"></i></div>
                 <div class="tool-content">
                     <h2>FlowState</h2>
                     <p>Gamified writing sessions to build momentum.</p>
@@ -277,7 +331,7 @@
             </a>
 
             <a href="WitherNaught.html" class="tool-item">
-                <div class="tool-icon"><i data-lucide="leaf" size="20"></i></div>
+                <div class="tool-icon"><i data-lucide="leaf" size="22"></i></div>
                 <div class="tool-content">
                     <h2>WitherNaught</h2>
                     <p>A writing garden that grows (or dies) based on activity.</p>
@@ -286,7 +340,7 @@
             </a>
 
             <a href="Courius.html" class="tool-item">
-                <div class="tool-icon"><i data-lucide="clapperboard" size="20"></i></div>
+                <div class="tool-icon"><i data-lucide="clapperboard" size="22"></i></div>
                 <div class="tool-content">
                     <h2>Courius</h2>
                     <p>Standard screenplay formatting and FDX export.</p>
@@ -295,7 +349,7 @@
             </a>
 
             <a href="PDFconvert.html" class="tool-item">
-                <div class="tool-icon"><i data-lucide="file-text" size="20"></i></div>
+                <div class="tool-icon"><i data-lucide="file-text" size="22"></i></div>
                 <div class="tool-content">
                     <h2>PDFconvert</h2>
                     <p>Format manuscripts into print-ready PDF files.</p>
@@ -327,12 +381,10 @@
 
         // --- Stats Worker ---
         document.addEventListener('DOMContentLoaded', () => {
-            // Restore Theme (Default to DARK if not found)
+            // Restore Theme (Default to DARK)
             const savedTheme = localStorage.getItem('writingtools_theme') || 'dark';
             document.documentElement.setAttribute('data-wt-theme', savedTheme);
             const icon = document.getElementById('theme-icon');
-            
-            // Set icon based on loaded theme
             icon.setAttribute('data-lucide', savedTheme === 'dark' ? 'sun' : 'moon');
             lucide.createIcons();
 
