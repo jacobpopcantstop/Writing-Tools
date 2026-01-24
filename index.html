@@ -217,6 +217,17 @@
             opacity: 1;
         }
 
+        .tool-card:hover::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            height: 15px;
+            background: transparent;
+            z-index: -1;
+        }
+
         .tool-icon {
             width: 48px;
             height: 48px;
@@ -290,6 +301,7 @@
         .tool-card[data-tool="wribbon"] { --card-accent: #3A574C; }
         .tool-card[data-tool="courius"] { --card-accent: #1a2f23; }
         .tool-card[data-tool="withernaught"] { --card-accent: #0d9488; }
+        .tool-card[data-tool="docurift"] { --card-accent: #dc2626; }
 
         /* Workflow Section */
         .workflow-section {
@@ -421,7 +433,7 @@
     <main id="main">
         <section class="hero">
             <h1>Your complete <em>writer's</em> toolkit</h1>
-            <p>Six specialized tools for every stage of the creative process. Brainstorm, structure, draft, and format your work in one cohesive suite.</p>
+            <p>Seven specialized tools for every stage of the creative process. Brainstorm, structure, draft, format, and manage your work in one cohesive suite.</p>
         </section>
 
         <!-- Stats Dashboard -->
@@ -532,6 +544,21 @@
                         <span class="tool-feature">Frost System</span>
                         <span class="tool-feature">Zone Progression</span>
                         <span class="tool-feature">Ambient Audio</span>
+                    </div>
+                </a>
+
+                <a href="Docurift.html" class="tool-card" data-tool="docurift">
+                    <div class="tool-icon">
+                        <i data-lucide="file-text"></i>
+                    </div>
+                    <i data-lucide="arrow-right" class="tool-arrow"></i>
+                    <h2 class="tool-name">Docurift</h2>
+                    <p class="tool-tagline">PDF Power</p>
+                    <p class="tool-description">View, annotate, and convert PDF documents. Add highlights, text notes, and export to multiple formats.</p>
+                    <div class="tool-features">
+                        <span class="tool-feature">Annotations</span>
+                        <span class="tool-feature">Convert</span>
+                        <span class="tool-feature">Extract Text</span>
                     </div>
                 </a>
 
