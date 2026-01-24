@@ -19,13 +19,12 @@
         :root {
             /* BRAND COLORS */
             --wt-primary: #fd19c8;       /* Hot Pink */
-            --wt-primary-glow: rgba(253, 25, 200, 0.3);
+            --wt-primary-glow: rgba(253, 25, 200, 0.4);
             
             --wt-secondary: #da70d6;     /* Orchid Purple */
-            --wt-secondary-glow: rgba(218, 112, 214, 0.3);
-
+            
             --wt-accent: #fae84f;        /* Electric Yellow */
-            --wt-accent-glow: rgba(250, 232, 79, 0.3);
+            --wt-accent-glow: rgba(250, 232, 79, 0.4);
 
             --wt-black: #050505;         /* Deep Black */
 
@@ -36,28 +35,29 @@
             --wt-transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* DARK THEME (Default) - Neon Noir */
+        /* DARK THEME (Default) */
         [data-wt-theme="dark"] {
             --bg: var(--wt-black);
             --bg-hover: #121212;
             
-            /* Replaced White with Orchid Purple */
-            --text-body: var(--wt-secondary); 
-            --text-heading: var(--wt-primary);
+            /* SWAPPED COLORS HERE */
+            --text-heading: var(--wt-accent);    /* Yellow Headers */
+            --text-body: var(--wt-secondary);    /* Purple Body */
             
             --border: #333333;
-            --icon-color: var(--wt-accent);
+            --icon-color: var(--wt-primary);     /* Pink Icons (Balance) */
             --divider: rgba(218, 112, 214, 0.2);
         }
 
         /* LIGHT THEME - Brutalist Highlighter */
         [data-wt-theme="light"] {
-            /* Replaced White Background with Electric Yellow */
+            /* Yellow Background */
             --bg: var(--wt-accent); 
             --bg-hover: var(--wt-accent-glow);
             
-            --text-body: #000000;
+            /* Black Text for legibility on Yellow */
             --text-heading: #000000;
+            --text-body: #000000;
             
             --border: rgba(0,0,0,0.1);
             --icon-color: var(--wt-primary);
@@ -104,17 +104,20 @@
             font-weight: 700;
             margin-bottom: 0.25rem;
             letter-spacing: -0.03em;
+            
+            /* ELECTRIC YELLOW Title */
             color: var(--text-heading);
-            text-shadow: 0 0 20px var(--wt-primary-glow);
+            text-shadow: 0 0 25px var(--wt-accent-glow);
         }
 
         .subtitle {
+            /* ORCHID PURPLE Subtitle */
             color: var(--text-body);
             font-size: 1.15rem;
             font-weight: 500;
             max-width: 480px;
             line-height: 1.4;
-            opacity: 0.9;
+            opacity: 1; /* Full opacity for the color to pop */
         }
 
         /* Stats Bar */
@@ -131,21 +134,21 @@
         }
 
         .stat-value {
-            /* Numbers always pop */
-            color: var(--wt-accent);
+            /* Pink numbers to stand out from Purple text and Yellow headers */
+            color: var(--wt-primary);
             font-weight: 700;
             font-family: var(--wt-font-mono);
             margin-left: 0.25rem;
         }
 
-        /* In light mode, make stats pink for contrast against yellow bg */
+        /* In light mode, keep contrast */
         [data-wt-theme="light"] .stat-value {
             color: var(--wt-primary);
         }
 
         .stat-divider { 
             color: var(--text-body);
-            opacity: 0.3; 
+            opacity: 0.4; 
         }
 
         /* =========================================
@@ -172,21 +175,21 @@
 
         /* Hover State */
         .tool-item:hover {
-            background: var(--bg-hover); /* Subtle change */
+            background: var(--bg-hover);
             padding-left: 1.5rem;
             padding-right: 1.5rem;
             border-color: transparent;
         }
 
         [data-wt-theme="light"] .tool-item:hover {
-            background: rgba(255, 255, 255, 0.4); /* Lighten yellow on hover */
+            background: rgba(255, 255, 255, 0.4);
         }
 
         .tool-item:hover + .tool-item {
             border-top-color: transparent;
         }
 
-        /* Icon: Electric Yellow (Dark Mode) / Pink (Light Mode) */
+        /* Icon: HOT PINK (Default) */
         .tool-icon {
             color: var(--icon-color);
             transition: all var(--wt-transition);
@@ -194,12 +197,18 @@
             justify-content: flex-start;
         }
 
+        /* Icon Hover: Snap to Yellow to match the header */
         .tool-item:hover .tool-icon {
+            color: var(--wt-accent);
             transform: scale(1.1);
-            filter: drop-shadow(0 0 8px var(--wt-accent-glow));
+            filter: drop-shadow(0 0 10px var(--wt-accent-glow));
+        }
+        
+        [data-wt-theme="light"] .tool-item:hover .tool-icon {
+            color: #000000;
         }
 
-        /* Title: Hot Pink (Dark Mode) / Black (Light Mode) */
+        /* Title: ELECTRIC YELLOW */
         .tool-content h2 {
             font-size: 1.35rem;
             font-weight: 700;
@@ -209,29 +218,26 @@
             transition: color var(--wt-transition);
         }
 
-        /* Description: Orchid Purple (Dark Mode) / Black (Light Mode) */
+        /* Description: ORCHID PURPLE */
         .tool-content p {
             color: var(--text-body);
             font-size: 0.95rem;
-            opacity: 0.85; /* Slight transparency for hierarchy */
+            opacity: 0.9;
             line-height: 1.5;
         }
 
-        /* Arrow: Electric Yellow */
+        /* Arrow: HOT PINK */
         .tool-arrow {
-            color: var(--wt-accent);
+            color: var(--wt-primary);
             opacity: 0;
             transform: translateX(-20px);
             transition: all var(--wt-transition);
         }
         
-        [data-wt-theme="light"] .tool-arrow {
-            color: var(--wt-primary);
-        }
-
         .tool-item:hover .tool-arrow {
             opacity: 1;
             transform: translateX(0);
+            filter: drop-shadow(0 0 8px var(--wt-primary-glow));
         }
 
         /* =========================================
@@ -265,7 +271,7 @@
             color: var(--text-body);
             font-size: 0.875rem;
             text-align: center;
-            opacity: 0.6;
+            opacity: 0.5;
         }
 
         /* Mobile Adjustments */
