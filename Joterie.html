@@ -265,7 +265,7 @@
             sessionCards: [],
             focusPrompt: '',
             timerInterval: null,
-            isDarkMode: false,
+            isDarkMode: localStorage.getItem('writingtools_theme') === 'dark' || localStorage.getItem('writingtools_theme') === null,
             archives: JSON.parse(localStorage.getItem('joterie_archives')) || []
         };
 
@@ -302,6 +302,11 @@
         // Theme Logic
         function toggleTheme() {
             state.isDarkMode = !state.isDarkMode;
+            applyTheme();
+            localStorage.setItem('writingtools_theme', state.isDarkMode ? 'dark' : 'light');
+        }
+
+        function applyTheme() {
             if (state.isDarkMode) {
                 elements.html.classList.add('dark');
                 elements.themeIcon.setAttribute('data-lucide', 'sun');
@@ -606,7 +611,7 @@
         };
 
         // Init
-        lucide.createIcons();
+        applyTheme();
         elements.homePrompt.focus();
     </script>
 </body>

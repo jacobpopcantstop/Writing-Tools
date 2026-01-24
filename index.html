@@ -1,18 +1,23 @@
 <!DOCTYPE html>
 <html lang="en" data-wt-theme="dark">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Writing Tools Suite | Your Complete Writer's Toolkit</title>
-    <meta name="description" content="A curated collection of specialized writing tools for brainstorming, drafting, structuring, and formatting your creative work.">
+    <meta name="description"
+        content="A curated collection of specialized writing tools for brainstorming, drafting, structuring, and formatting your creative work.">
 
     <!-- Favicon -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231a365d'/><text y='.9em' x='50' text-anchor='middle' font-size='60' fill='%23f7f3e9'>W</text></svg>">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231a365d'/><text y='.9em' x='50' text-anchor='middle' font-size='60' fill='%23f7f3e9'>W</text></svg>">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap"
+        rel="stylesheet">
 
     <!-- Icons -->
     <script src="https://unpkg.com/lucide@0.263.1"></script>
@@ -88,7 +93,10 @@
             z-index: 9999;
             transition: top 0.2s;
         }
-        .skip-link:focus { top: 1rem; }
+
+        .skip-link:focus {
+            top: 1rem;
+        }
 
         /* Header */
         header {
@@ -211,7 +219,7 @@
 
         .tool-card:hover {
             transform: translateY(-4px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
             border-color: var(--card-accent, var(--wt-accent));
         }
 
@@ -286,13 +294,41 @@
         }
 
         /* Tool-specific accent colors - Dad Skeleton Theme */
-        .tool-card[data-tool="beathive"] { --card-accent: #fd19c8; }
-        .tool-card[data-tool="joterie"] { --card-accent: #fae84f; }
-        .tool-card[data-tool="synax"] { --card-accent: #da70d6; }
-        .tool-card[data-tool="wribbon"] { --card-accent: #fd19c8; }
-        .tool-card[data-tool="courius"] { --card-accent: #fae84f; }
-        .tool-card[data-tool="withernaught"] { --card-accent: #da70d6; }
-        .tool-card[data-tool="flowstate"] { --card-accent: #fd19c8; }
+        .tool-card[data-tool="beathive"] {
+            --card-accent: #fd19c8;
+        }
+
+        .tool-card[data-tool="joterie"] {
+            --card-accent: #fae84f;
+        }
+
+        .tool-card[data-tool="synax"] {
+            --card-accent: #da70d6;
+        }
+
+        .tool-card[data-tool="wribbon"] {
+            --card-accent: #fd19c8;
+        }
+
+        .tool-card[data-tool="courius"] {
+            --card-accent: #fae84f;
+        }
+
+        .tool-card[data-tool="withernaught"] {
+            --card-accent: #da70d6;
+        }
+
+        .tool-card[data-tool="flowstate"] {
+            --card-accent: #fd19c8;
+        }
+
+        .tool-card[data-tool="thisbutthat"] {
+            --card-accent: #fae84f;
+        }
+
+        .tool-card[data-tool="pdfconvert"] {
+            --card-accent: #da70d6;
+        }
 
         /* Workflow Section */
         .workflow-section {
@@ -357,6 +393,7 @@
             margin: 0 auto 3rem;
             padding: 0 2rem;
         }
+
         .stats-content {
             display: flex;
             justify-content: center;
@@ -367,15 +404,18 @@
             border-radius: 16px;
             border: 1px solid var(--border);
         }
+
         .stat-item {
             text-align: center;
         }
+
         .stat-value {
             font-size: 2rem;
             font-weight: 800;
             color: var(--wt-primary);
             display: block;
         }
+
         .stat-label {
             font-size: 0.75rem;
             text-transform: uppercase;
@@ -402,12 +442,22 @@
 
         /* Responsive */
         @media (max-width: 768px) {
-            .workflow-arrow { display: none; }
-            .workflow-steps { flex-direction: column; align-items: center; }
-            .tools-grid { grid-template-columns: 1fr; }
+            .workflow-arrow {
+                display: none;
+            }
+
+            .workflow-steps {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .tools-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
+
 <body>
     <a href="#main" class="skip-link">Skip to main content</a>
 
@@ -424,7 +474,8 @@
     <main id="main">
         <section class="hero">
             <h1>Your complete <em>writer's</em> toolkit</h1>
-            <p>Six specialized tools for every stage of the creative process. Brainstorm, structure, draft, and format your work in one cohesive suite.</p>
+            <p>Six specialized tools for every stage of the creative process. Brainstorm, structure, draft, and format
+                your work in one cohesive suite.</p>
         </section>
 
         <!-- Stats Dashboard -->
@@ -455,7 +506,8 @@
                     <i data-lucide="arrow-right" class="tool-arrow"></i>
                     <h2 class="tool-name">Joterie</h2>
                     <p class="tool-tagline">Think Fast</p>
-                    <p class="tool-description">Rapid brainstorming with timed sprints. Capture raw ideas before they escape, then curate the best ones.</p>
+                    <p class="tool-description">Rapid brainstorming with timed sprints. Capture raw ideas before they
+                        escape, then curate the best ones.</p>
                     <div class="tool-features">
                         <span class="tool-feature">Timed Sprints</span>
                         <span class="tool-feature">Curation</span>
@@ -470,7 +522,8 @@
                     <i data-lucide="arrow-right" class="tool-arrow"></i>
                     <h2 class="tool-name">Synax</h2>
                     <p class="tool-tagline">Creative Engine</p>
-                    <p class="tool-description">AI-powered prompt generation. Discover unexpected word combinations to spark new creative directions.</p>
+                    <p class="tool-description">AI-powered prompt generation. Discover unexpected word combinations to
+                        spark new creative directions.</p>
                     <div class="tool-features">
                         <span class="tool-feature">Random Prompts</span>
                         <span class="tool-feature">Rhyme Finder</span>
@@ -485,7 +538,8 @@
                     <i data-lucide="arrow-right" class="tool-arrow"></i>
                     <h2 class="tool-name">BeatHive</h2>
                     <p class="tool-tagline">Story Architect</p>
-                    <p class="tool-description">Map your narrative on an infinite hexagonal canvas. Visualize story beats and their connections.</p>
+                    <p class="tool-description">Map your narrative on an infinite hexagonal canvas. Visualize story
+                        beats and their connections.</p>
                     <div class="tool-features">
                         <span class="tool-feature">Hex Canvas</span>
                         <span class="tool-feature">Beat Types</span>
@@ -500,7 +554,8 @@
                     <i data-lucide="arrow-right" class="tool-arrow"></i>
                     <h2 class="tool-name">Wribbon</h2>
                     <p class="tool-tagline">Flow State Writing</p>
-                    <p class="tool-description">Minimalist, distraction-free drafting. Zen mode hides the UI while you write, keeping focus on the words.</p>
+                    <p class="tool-description">Minimalist, distraction-free drafting. Zen mode hides the UI while you
+                        write, keeping focus on the words.</p>
                     <div class="tool-features">
                         <span class="tool-feature">Zen Mode</span>
                         <span class="tool-feature">Word Goals</span>
@@ -515,7 +570,8 @@
                     <i data-lucide="arrow-right" class="tool-arrow"></i>
                     <h2 class="tool-name">Courius</h2>
                     <p class="tool-tagline">Screenwriter</p>
-                    <p class="tool-description">Professional screenplay formatting. Industry-standard elements with automatic styling and FDX export.</p>
+                    <p class="tool-description">Professional screenplay formatting. Industry-standard elements with
+                        automatic styling and FDX export.</p>
                     <div class="tool-features">
                         <span class="tool-feature">FDX Export</span>
                         <span class="tool-feature">Auto Format</span>
@@ -530,7 +586,8 @@
                     <i data-lucide="arrow-right" class="tool-arrow"></i>
                     <h2 class="tool-name">FlowState</h2>
                     <p class="tool-tagline">Writing Game</p>
-                    <p class="tool-description">Gamified writing sessions with flow mechanics. Build combos, earn sparks, and maintain your writing momentum.</p>
+                    <p class="tool-description">Gamified writing sessions with flow mechanics. Build combos, earn
+                        sparks, and maintain your writing momentum.</p>
                     <div class="tool-features">
                         <span class="tool-feature">Flow Meter</span>
                         <span class="tool-feature">Combos</span>
@@ -545,7 +602,8 @@
                     <i data-lucide="arrow-right" class="tool-arrow"></i>
                     <h2 class="tool-name">WitherNaught</h2>
                     <p class="tool-tagline">Cultivate Your Mind</p>
-                    <p class="tool-description">A gamified writing garden where your words bloom into a living ecosystem. Keep writing or watch your garden freeze.</p>
+                    <p class="tool-description">A gamified writing garden where your words bloom into a living
+                        ecosystem. Keep writing or watch your garden freeze.</p>
                     <div class="tool-features">
                         <span class="tool-feature">Frost System</span>
                         <span class="tool-feature">Zone Progression</span>
@@ -553,7 +611,37 @@
                     </div>
                 </a>
 
-            </div>
+                <a href="ThisButThat.html" class="tool-card" data-tool="thisbutthat">
+                    <div class="tool-icon">
+                        <i data-lucide="help-circle"></i>
+                    </div>
+                    <i data-lucide="arrow-right" class="tool-arrow"></i>
+                    <h2 class="tool-name">ThisButThat</h2>
+                    <p class="tool-tagline">Ideation Engine</p>
+                    <p class="tool-description">Generate unexpected narrative twists by pivoting from trending
+                        global topics. Perfect for breaking story stalls.</p>
+                    <div class="tool-features">
+                        <span class="tool-feature">Wiki Trending</span>
+                        <span class="tool-feature">Twist Stacks</span>
+                        <span class="tool-feature">Context Mode</span>
+                    </div>
+                </a>
+
+                <a href="PDFconvert.html" class="tool-card" data-tool="pdfconvert">
+                    <div class="tool-icon">
+                        <i data-lucide="file-text"></i>
+                    </div>
+                    <i data-lucide="arrow-right" class="tool-arrow"></i>
+                    <h2 class="tool-name">PDFconvert</h2>
+                    <p class="tool-tagline">Manuscript to PDF</p>
+                    <p class="tool-description">Professional formatting engine. Convert your raw text into
+                        beautiful, print-ready PDF manuscripts with one click.</p>
+                    <div class="tool-features">
+                        <span class="tool-feature">Live Preview</span>
+                        <span class="tool-feature">Style Presets</span>
+                        <span class="tool-feature">PDF Export</span>
+                    </div>
+                </a>
         </section>
 
         <section class="workflow-section" aria-label="Suggested Workflow">
@@ -595,6 +683,11 @@
                     <span class="step-icon"><i data-lucide="film" style="width:16px;height:16px"></i></span>
                     <span>Courius</span>
                 </div>
+                <i data-lucide="arrow-right" class="workflow-arrow"></i>
+                <div class="workflow-step">
+                    <span class="step-icon"><i data-lucide="file-text" style="width:16px;height:16px"></i></span>
+                    <span>PDFconvert</span>
+                </div>
             </div>
         </section>
     </main>
@@ -632,99 +725,144 @@
                 lucide.createIcons();
             }
 
-            // Calculate stats from all tools
-            calculateStats();
+            // Collect data for the worker
+            const data = {
+                wribbonText: localStorage.getItem('writingtools_wribbon_text') || '',
+                withernaughtSave: localStorage.getItem('withernaught_save') || '{}',
+                joterieArchives: localStorage.getItem('writingtools_joterie_archives') || '[]',
+                beathiveSketches: localStorage.getItem('writingtools_beathive_sketches') || '[]',
+                couriusHtml: localStorage.getItem('writingtools_courius_storage') || '',
+                lastVisit: localStorage.getItem('writingtools_last_visit'),
+                streak: localStorage.getItem('writingtools_streak'),
+                today: new Date().toDateString(),
+                yesterday: new Date(Date.now() - 86400000).toDateString()
+            };
+
+            // Initialize Web Worker
+            if (window.Worker) {
+                const workerCode = `
+                    self.onmessage = function(e) {
+                        const data = e.data;
+                        let totalWords = 0;
+                        let projects = 0;
+                        let streak = 0;
+
+                        // Wribbon words
+                        const wribbonWords = data.wribbonText.match(/\\S+/g);
+                        if (wribbonWords && wribbonWords.length > 0) {
+                            totalWords += wribbonWords.length;
+                            projects++;
+                        }
+
+                        // WitherNaught words
+                        try {
+                            const wnSave = JSON.parse(data.withernaughtSave);
+                            if (wnSave.stats && wnSave.stats.totalWords) {
+                                totalWords += wnSave.stats.totalWords;
+                                projects++;
+                            }
+                        } catch(e) {}
+
+                        // Joterie archived sessions
+                        try {
+                            const jArchives = JSON.parse(data.joterieArchives);
+                            if (jArchives.length > 0) {
+                                jArchives.forEach(session => {
+                                    if (session.kept) {
+                                        session.kept.forEach(jot => {
+                                            const words = jot.match(/\\S+/g);
+                                            if (words) totalWords += words.length;
+                                        });
+                                    }
+                                });
+                                projects += jArchives.length;
+                            }
+                        } catch(e) {}
+
+                        // BeatHive sketches
+                        try {
+                            const bhSketches = JSON.parse(data.beathiveSketches);
+                            if (bhSketches.length > 0) {
+                                bhSketches.forEach(sketch => {
+                                    if (sketch.cells) {
+                                        sketch.cells.forEach(cell => {
+                                            if (cell.content) {
+                                                const words = cell.content.match(/\\S+/g);
+                                                if (words) totalWords += words.length;
+                                            }
+                                        });
+                                    }
+                                });
+                                projects += bhSketches.length;
+                            }
+                        } catch(e) {}
+
+                        // Courius words
+                        const couriusText = data.couriusHtml.replace(/<[^>]*>/g, ' ');
+                        const couriusWords = couriusText.match(/\\S+/g);
+                        if (couriusWords && couriusWords.length > 0) {
+                            totalWords += couriusWords.length;
+                            projects++;
+                        }
+
+                        // Calculate streak
+                        if (data.lastVisit === data.today) {
+                            streak = parseInt(data.streak || '1');
+                        } else {
+                            if (data.lastVisit === data.yesterday) {
+                                streak = parseInt(data.streak || '0') + 1;
+                            } else {
+                                streak = 1;
+                            }
+                        }
+
+                        // Send results back
+                        self.postMessage({
+                            totalWords, 
+                            projects, 
+                            streak,
+                            updateStreak: {
+                                lastVisit: data.today,
+                                streak: streak
+                            }
+                        });
+                    };
+                `;
+
+                const blob = new Blob([workerCode], { type: 'application/javascript' });
+                const worker = new Worker(URL.createObjectURL(blob));
+
+                worker.onmessage = function (e) {
+                    const { totalWords, projects, streak, updateStreak } = e.data;
+
+                    // Update UI
+                    if (totalWords > 0 || projects > 0) {
+                        document.getElementById('stats-bar').style.display = 'block';
+                        document.getElementById('stat-words').innerText = totalWords.toLocaleString();
+                        document.getElementById('stat-projects').innerText = projects;
+                        document.getElementById('stat-streak').innerText = streak;
+                    }
+
+                    // Update local storage for streak if needed
+                    if (updateStreak) {
+                        localStorage.setItem('writingtools_last_visit', updateStreak.lastVisit);
+                        localStorage.setItem('writingtools_streak', updateStreak.streak);
+                    }
+
+                    // Clean up
+                    worker.terminate();
+                };
+
+                // Send data to worker
+                worker.postMessage(data);
+
+            } else {
+                console.warn("Web Workers not supported. Skipping stats calculation.");
+            }
         });
 
-        function calculateStats() {
-            let totalWords = 0;
-            let projects = 0;
-
-            // Wribbon words
-            const wribbonText = localStorage.getItem('writingtools_wribbon_text') || '';
-            const wribbonWords = wribbonText.match(/\S+/g);
-            if (wribbonWords && wribbonWords.length > 0) {
-                totalWords += wribbonWords.length;
-                projects++;
-            }
-
-            // WitherNaught words
-            try {
-                const wnSave = JSON.parse(localStorage.getItem('withernaught_save') || '{}');
-                if (wnSave.stats && wnSave.stats.totalWords) {
-                    totalWords += wnSave.stats.totalWords;
-                    projects++;
-                }
-            } catch(e) {}
-
-            // Joterie archived sessions
-            try {
-                const jArchives = JSON.parse(localStorage.getItem('writingtools_joterie_archives') || '[]');
-                if (jArchives.length > 0) {
-                    jArchives.forEach(session => {
-                        if (session.kept) {
-                            session.kept.forEach(jot => {
-                                const words = jot.match(/\S+/g);
-                                if (words) totalWords += words.length;
-                            });
-                        }
-                    });
-                    projects += jArchives.length;
-                }
-            } catch(e) {}
-
-            // BeatHive sketches
-            try {
-                const bhSketches = JSON.parse(localStorage.getItem('writingtools_beathive_sketches') || '[]');
-                if (bhSketches.length > 0) {
-                    bhSketches.forEach(sketch => {
-                        if (sketch.cells) {
-                            sketch.cells.forEach(cell => {
-                                if (cell.content) {
-                                    const words = cell.content.match(/\S+/g);
-                                    if (words) totalWords += words.length;
-                                }
-                            });
-                        }
-                    });
-                    projects += bhSketches.length;
-                }
-            } catch(e) {}
-
-            // Courius words
-            const couriusHtml = localStorage.getItem('writingtools_courius_storage') || '';
-            const couriusText = couriusHtml.replace(/<[^>]*>/g, ' ');
-            const couriusWords = couriusText.match(/\S+/g);
-            if (couriusWords && couriusWords.length > 0) {
-                totalWords += couriusWords.length;
-                projects++;
-            }
-
-            // Calculate streak (simplified - based on when data was last updated)
-            let streak = 0;
-            const lastVisit = localStorage.getItem('writingtools_last_visit');
-            const today = new Date().toDateString();
-            if (lastVisit === today) {
-                streak = parseInt(localStorage.getItem('writingtools_streak') || '1');
-            } else {
-                const yesterday = new Date(Date.now() - 86400000).toDateString();
-                if (lastVisit === yesterday) {
-                    streak = parseInt(localStorage.getItem('writingtools_streak') || '0') + 1;
-                } else {
-                    streak = 1;
-                }
-                localStorage.setItem('writingtools_last_visit', today);
-                localStorage.setItem('writingtools_streak', streak);
-            }
-
-            // Only show stats bar if there's activity
-            if (totalWords > 0 || projects > 0) {
-                document.getElementById('stats-bar').style.display = 'block';
-                document.getElementById('stat-words').innerText = totalWords.toLocaleString();
-                document.getElementById('stat-projects').innerText = projects;
-                document.getElementById('stat-streak').innerText = streak;
-            }
-        }
+        // Removed old calculateStats function
     </script>
 </body>
+
 </html>

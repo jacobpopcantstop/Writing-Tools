@@ -112,7 +112,8 @@
 
         .side-btn.active {
             background: var(--accent-gold);
-            color: #fff;
+            color: #000;
+            text-shadow: none;
         }
 
         /* Tooltips */
@@ -812,8 +813,10 @@
                 else if (fdxType === 'Transition') type = 'transition';
 
                 let text = '';
-                const textNode = paragraphs[i].getElementsByTagName('Text')[0];
-                if (textNode) text = textNode.textContent;
+                const textNodes = paragraphs[i].getElementsByTagName('Text');
+                for (let j = 0; j < textNodes.length; j++) {
+                    text += textNodes[j].textContent;
+                }
 
                 const div = document.createElement('div');
                 setBlockType(div, type);
