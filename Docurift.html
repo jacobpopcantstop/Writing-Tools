@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="en" id="main-html">
+<html lang="en" id="main-html" data-wt-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Docurift | PDF Editor & Converter</title>
 
     <!-- Favicon -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%23dc2626%22/><path d=%22M25 20h50c3 0 5 2 5 5v50c0 3-2 5-5 5H25c-3 0-5-2-5-5V25c0-3 2-5 5-5z%22 fill=%22white%22/><path d=%22M35 35h30M35 50h20M35 65h25%22 stroke=%22%23dc2626%22 stroke-width=%224%22 stroke-linecap=%22round%22/></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%23fd19c8%22/><path d=%22M25 20h50c3 0 5 2 5 5v50c0 3-2 5-5 5H25c-3 0-5-2-5-5V25c0-3 2-5 5-5z%22 fill=%22%23050505%22/><path d=%22M35 35h30M35 50h20M35 65h25%22 stroke=%22%23fae84f%22 stroke-width=%224%22 stroke-linecap=%22round%22/></svg>">
 
     <!-- PDF.js Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -14,52 +14,93 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Newsreader:ital,opsz,wght@1,6..72,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
 
     <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@0.263.1"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
+        /* =========================================
+           1. COLOR PALETTE (From Index)
+           ========================================= */
         :root {
-            --bg-color: #fafafa;
-            --bg-secondary: #f4f4f5;
-            --text-color: #18181b;
-            --text-muted: #71717a;
-            --accent-color: #dc2626;
-            --accent-hover: #b91c1c;
-            --border-color: rgba(0,0,0,0.08);
-            --card-bg: white;
-            --sidebar-bg: #f4f4f5;
-            --toolbar-bg: white;
-            --shadow: 0 4px 20px rgba(0,0,0,0.08);
-            --shadow-lg: 0 10px 40px rgba(0,0,0,0.12);
+            /* BRAND COLORS */
+            --wt-primary: #fd19c8;       /* Hot Pink */
+            --wt-primary-glow: rgba(253, 25, 200, 0.4);
+            
+            --wt-secondary: #da70d6;     /* Orchid Purple */
+            
+            --wt-accent: #fae84f;        /* Electric Yellow */
+            --wt-accent-glow: rgba(250, 232, 79, 0.4);
+
+            --wt-black: #050505;         /* Deep Black */
+
+            /* TYPOGRAPHY */
+            --wt-font-ui: 'Inter', system-ui, sans-serif;
+            --wt-font-display: 'Playfair Display', serif;
+            
+            --wt-transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .dark {
-            --bg-color: #09090b;
-            --bg-secondary: #18181b;
-            --text-color: #fafafa;
-            --text-muted: #a1a1aa;
-            --accent-color: #ef4444;
-            --accent-hover: #dc2626;
-            --border-color: rgba(255,255,255,0.08);
-            --card-bg: #18181b;
-            --sidebar-bg: #0f0f10;
-            --toolbar-bg: #18181b;
-            --shadow: 0 4px 20px rgba(0,0,0,0.3);
-            --shadow-lg: 0 10px 40px rgba(0,0,0,0.4);
+        /* DARK THEME (Default) */
+        [data-wt-theme="dark"] {
+            --bg-app: var(--wt-black);
+            --bg-panel: #0a0a0a;
+            --bg-surface: #121212;
+            
+            /* Text Colors */
+            --text-heading: var(--wt-accent);    /* Yellow Headers */
+            --text-body: var(--wt-secondary);    /* Purple Body */
+            --text-muted: rgba(218, 112, 214, 0.6);
+            
+            /* UI Elements */
+            --border: #333333;
+            --icon-color: var(--wt-primary);     /* Pink Icons */
+            --btn-hover: #1a1a1a;
+            
+            --pdf-bg: #2a2a2a; /* Canvas background */
+            --scrollbar-track: #0a0a0a;
+            --scrollbar-thumb: #333;
+            --scrollbar-thumb-hover: var(--wt-secondary);
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
+        /* LIGHT THEME */
+        [data-wt-theme="light"] {
+            /* Yellow Background */
+            --bg-app: var(--wt-accent); 
+            --bg-panel: #fdfceb; /* Very light yellow/white for panels to be readable */
+            --bg-surface: #ffffff;
+            
+            /* Black Text for legibility */
+            --text-heading: #000000;
+            --text-body: #000000;
+            --text-muted: rgba(0,0,0,0.6);
+            
+            /* UI Elements */
+            --border: rgba(0,0,0,0.1);
+            --icon-color: var(--wt-primary);
+            --btn-hover: rgba(0,0,0,0.05);
+            
+            --pdf-bg: #e5e5e5;
+            --scrollbar-track: rgba(0,0,0,0.05);
+            --scrollbar-thumb: rgba(0,0,0,0.2);
+            --scrollbar-thumb-hover: var(--wt-primary);
+        }
+
+        /* =========================================
+           2. RESET & BASE
+           ========================================= */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        ::selection {
+            background: var(--wt-primary);
+            color: var(--wt-accent);
         }
 
         body {
-            font-family: 'Inter', system-ui, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
+            font-family: var(--wt-font-ui);
+            background-color: var(--bg-app);
+            color: var(--text-body);
             height: 100vh;
             display: flex;
             flex-direction: column;
@@ -67,26 +108,32 @@
             transition: background-color 0.3s, color 0.3s;
         }
 
-        .font-serif-italic {
-            font-family: 'Newsreader', serif;
-            font-style: italic;
+        /* Footer Hiding State */
+        body.has-doc .suite-link {
+            display: none;
         }
 
-        /* Header */
+        h1, h2, h3, .logo-text, .sidebar-header, .property-label {
+            font-family: var(--wt-font-ui); 
+        }
+
+        /* =========================================
+           3. HEADER
+           ========================================= */
         header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 0.75rem 1.5rem;
-            background: var(--toolbar-bg);
-            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border);
             z-index: 100;
         }
 
         .logo {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.75rem;
             cursor: pointer;
             text-decoration: none;
             color: inherit;
@@ -95,18 +142,18 @@
         .logo-icon {
             width: 32px;
             height: 32px;
-            background: var(--accent-color);
-            border-radius: 8px;
+            color: var(--wt-primary);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
         }
 
         .logo-text {
             font-weight: 800;
-            font-size: 1rem;
+            font-size: 1.25rem;
             letter-spacing: -0.02em;
+            color: var(--text-heading); 
+            font-family: var(--wt-font-display);
         }
 
         .header-actions {
@@ -129,16 +176,18 @@
         }
 
         .icon-btn:hover {
-            background: var(--bg-secondary);
-            color: var(--text-color);
+            background: var(--btn-hover);
+            color: var(--wt-primary); 
         }
 
         .icon-btn.active {
-            background: var(--accent-color);
-            color: white;
+            background: var(--wt-primary);
+            color: var(--wt-accent);
         }
 
-        /* Main Layout */
+        /* =========================================
+           4. MAIN LAYOUT
+           ========================================= */
         .main-container {
             flex: 1;
             display: flex;
@@ -147,9 +196,9 @@
 
         /* Sidebar */
         .sidebar {
-            width: 200px;
-            background: var(--sidebar-bg);
-            border-right: 1px solid var(--border-color);
+            width: 240px;
+            background: var(--bg-panel);
+            border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -163,12 +212,12 @@
 
         .sidebar-header {
             padding: 1rem;
-            border-bottom: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border);
             font-size: 0.75rem;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--text-muted);
+            letter-spacing: 0.1em;
+            color: var(--text-heading);
         }
 
         .thumbnails {
@@ -177,26 +226,28 @@
             padding: 1rem;
             display: flex;
             flex-direction: column;
-            gap: 0.75rem;
+            gap: 1rem;
         }
 
         .thumbnail {
             position: relative;
-            background: var(--card-bg);
-            border: 2px solid transparent;
-            border-radius: 8px;
+            background: #ffffff; /* Must be white for PDF to look correct */
+            border: 1px solid var(--border);
+            border-radius: 4px;
             overflow: hidden;
             cursor: pointer;
             transition: all 0.2s;
-            box-shadow: var(--shadow);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
         .thumbnail:hover {
-            border-color: var(--accent-color);
+            border-color: var(--wt-primary);
+            box-shadow: 0 0 10px var(--wt-primary-glow);
         }
 
         .thumbnail.active {
-            border-color: var(--accent-color);
+            border-color: var(--wt-accent);
+            box-shadow: 0 0 15px var(--wt-accent-glow);
         }
 
         .thumbnail canvas {
@@ -208,12 +259,12 @@
             position: absolute;
             bottom: 4px;
             right: 4px;
-            background: rgba(0,0,0,0.7);
-            color: white;
+            background: var(--wt-primary);
+            color: var(--wt-black);
             font-size: 0.65rem;
-            font-weight: 600;
+            font-weight: 700;
             padding: 2px 6px;
-            border-radius: 4px;
+            border-radius: 2px;
         }
 
         .thumbnail-actions {
@@ -233,27 +284,30 @@
         .thumb-btn {
             width: 24px;
             height: 24px;
-            background: rgba(0,0,0,0.7);
-            border: none;
+            background: var(--wt-black);
+            border: 1px solid var(--wt-primary);
             border-radius: 4px;
-            color: white;
+            color: var(--wt-primary);
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.7rem;
         }
 
         .thumb-btn:hover {
-            background: var(--accent-color);
+            background: var(--wt-primary);
+            color: var(--wt-black);
         }
 
-        /* Viewer Area */
+        /* =========================================
+           5. VIEWER AREA & TOOLBAR
+           ========================================= */
         .viewer-area {
             flex: 1;
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            background: var(--pdf-bg);
         }
 
         /* Toolbar */
@@ -262,8 +316,8 @@
             align-items: center;
             gap: 0.5rem;
             padding: 0.5rem 1rem;
-            background: var(--toolbar-bg);
-            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border);
             flex-wrap: wrap;
         }
 
@@ -272,7 +326,7 @@
             align-items: center;
             gap: 0.25rem;
             padding: 0 0.5rem;
-            border-right: 1px solid var(--border-color);
+            border-right: 1px solid var(--border);
         }
 
         .toolbar-group:last-child {
@@ -284,7 +338,7 @@
             border: none;
             cursor: pointer;
             padding: 0.5rem;
-            color: var(--text-muted);
+            color: var(--icon-color);
             border-radius: 6px;
             display: flex;
             align-items: center;
@@ -294,63 +348,59 @@
         }
 
         .tool-btn:hover {
-            background: var(--bg-secondary);
-            color: var(--text-color);
+            background: var(--btn-hover);
+            transform: scale(1.1);
+            filter: drop-shadow(0 0 5px var(--wt-primary-glow));
         }
 
         .tool-btn.active {
-            background: var(--accent-color);
-            color: white;
+            color: var(--wt-accent);
+            background: rgba(253, 25, 200, 0.1);
         }
 
         .tool-btn[title]:hover::after {
             content: attr(title);
             position: absolute;
-            bottom: -28px;
+            bottom: -32px;
             left: 50%;
             transform: translateX(-50%);
-            background: var(--text-color);
-            color: var(--bg-color);
-            font-size: 0.65rem;
+            background: var(--wt-primary);
+            color: var(--wt-black);
+            font-size: 0.7rem;
+            font-weight: 600;
             padding: 4px 8px;
             border-radius: 4px;
             white-space: nowrap;
-            z-index: 100;
-        }
-
-        .zoom-controls {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+            z-index: 200;
+            pointer-events: none;
         }
 
         .zoom-value {
-            font-size: 0.75rem;
+            font-size: 0.8rem;
             font-weight: 600;
             min-width: 50px;
             text-align: center;
-        }
-
-        .page-nav {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+            color: var(--text-body);
+            font-family: monospace;
         }
 
         .page-input {
             width: 50px;
             padding: 0.25rem 0.5rem;
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--border);
             border-radius: 4px;
-            background: var(--bg-secondary);
-            color: var(--text-color);
-            font-size: 0.75rem;
+            background: var(--bg-surface);
+            color: var(--wt-primary);
+            font-size: 0.8rem;
+            font-weight: 700;
             text-align: center;
+            font-family: monospace;
         }
 
         .page-total {
-            font-size: 0.75rem;
+            font-size: 0.8rem;
             color: var(--text-muted);
+            margin-left: 0.25rem;
         }
 
         /* Canvas Container */
@@ -360,14 +410,13 @@
             display: flex;
             justify-content: center;
             align-items: flex-start;
-            padding: 2rem;
-            background: var(--bg-secondary);
+            padding: 3rem;
         }
 
         .page-wrapper {
             position: relative;
-            box-shadow: var(--shadow-lg);
-            background: white;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            background: white; 
         }
 
         .page-wrapper canvas {
@@ -395,22 +444,118 @@
         }
 
         .annotation.highlight {
-            background: rgba(255, 255, 0, 0.4);
+            background: var(--wt-accent);
             mix-blend-mode: multiply;
+            opacity: 0.5;
         }
 
         .annotation.text {
             background: rgba(255, 255, 255, 0.9);
-            border: 1px solid var(--accent-color);
+            border: 1px solid var(--wt-primary);
             padding: 4px 8px;
             font-size: 12px;
             min-width: 100px;
             border-radius: 4px;
+            color: black;
         }
 
         .annotation.shape {
-            border: 2px solid var(--accent-color);
+            border: 2px solid var(--wt-primary);
             background: transparent;
+        }
+
+        /* =========================================
+           6. RIGHT PANEL & MODALS
+           ========================================= */
+        .right-panel {
+            width: 280px;
+            background: var(--bg-panel);
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: width 0.3s;
+        }
+
+        .right-panel.collapsed {
+            width: 0;
+            border-left: none;
+        }
+
+        .panel-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .panel-tab {
+            flex: 1;
+            padding: 1rem 0.5rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+
+        .panel-tab.active {
+            color: var(--wt-primary);
+            border-bottom-color: var(--wt-primary);
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+        }
+
+        .property-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .property-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-heading); 
+            margin-bottom: 0.5rem;
+        }
+
+        .property-value {
+            font-size: 0.9rem;
+            word-break: break-all;
+            color: var(--text-body);
+            font-family: monospace;
+        }
+
+        .color-picker {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .color-swatch {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .color-swatch:hover {
+            transform: scale(1.2);
+            border-color: var(--wt-primary);
+        }
+
+        .color-swatch.active {
+            border-color: var(--wt-accent);
+            box-shadow: 0 0 0 2px var(--bg-panel), 0 0 0 4px var(--wt-accent);
         }
 
         /* Empty State */
@@ -425,83 +570,91 @@
         }
 
         .empty-icon {
-            width: 120px;
-            height: 120px;
-            background: var(--bg-secondary);
+            width: 100px;
+            height: 100px;
+            background: transparent;
+            border: 2px dashed var(--wt-secondary);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             margin-bottom: 2rem;
-            color: var(--text-muted);
+            color: var(--wt-primary);
         }
 
         .empty-state h2 {
-            font-size: 1.5rem;
+            font-family: var(--wt-font-display);
+            font-size: 2.5rem;
             font-weight: 700;
             margin-bottom: 0.5rem;
+            color: var(--text-heading);
         }
 
         .empty-state p {
-            color: var(--text-muted);
-            margin-bottom: 2rem;
+            color: var(--text-body);
+            margin-bottom: 3rem;
             max-width: 400px;
+            line-height: 1.6;
         }
 
         .upload-zone {
             width: 100%;
-            max-width: 500px;
-            padding: 3rem 2rem;
-            border: 2px dashed var(--border-color);
-            border-radius: 16px;
-            background: var(--card-bg);
+            max-width: 400px;
+            padding: 2rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-surface);
             cursor: pointer;
             transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
         }
 
         .upload-zone:hover {
-            border-color: var(--accent-color);
-            background: var(--bg-secondary);
-        }
-
-        .upload-zone.dragover {
-            border-color: var(--accent-color);
-            background: rgba(220, 38, 38, 0.05);
+            border-color: var(--wt-primary);
+            box-shadow: 0 0 20px var(--wt-primary-glow);
         }
 
         .upload-btn {
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 0.5rem;
-            background: var(--accent-color);
-            color: white;
+            background: var(--wt-primary);
+            color: var(--wt-black);
             border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
-            font-weight: 600;
+            padding: 1rem 2rem;
+            border-radius: 4px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
             cursor: pointer;
-            transition: background 0.2s;
+            width: 100%;
+            transition: background 0.2s, transform 0.2s;
         }
 
         .upload-btn:hover {
-            background: var(--accent-hover);
+            background: var(--wt-accent);
+            transform: translateY(-2px);
         }
 
         .upload-formats {
             margin-top: 1rem;
             font-size: 0.75rem;
             color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
-        /* Convert Modal */
+        /* Modal */
         .modal-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(4px);
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(8px);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -517,186 +670,106 @@
         }
 
         .modal {
-            background: var(--card-bg);
-            border-radius: 16px;
-            padding: 2rem;
+            background: var(--bg-surface);
+            border: 1px solid var(--wt-primary);
+            padding: 2.5rem;
             max-width: 500px;
             width: 90%;
-            box-shadow: var(--shadow-lg);
+            box-shadow: 0 0 40px var(--wt-primary-glow);
         }
 
         .modal h3 {
-            font-size: 1.25rem;
+            font-family: var(--wt-font-display);
+            font-size: 2rem;
             margin-bottom: 0.5rem;
+            color: var(--text-heading);
         }
 
         .modal p {
-            color: var(--text-muted);
-            font-size: 0.875rem;
-            margin-bottom: 1.5rem;
+            color: var(--text-body);
+            font-size: 1rem;
+            margin-bottom: 2rem;
         }
 
         .convert-options {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 0.75rem;
-            margin-bottom: 1.5rem;
+            gap: 1rem;
+            margin-bottom: 2rem;
         }
 
         .convert-option {
-            padding: 1rem;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
             cursor: pointer;
             transition: all 0.2s;
             text-align: center;
+            background: var(--bg-panel);
         }
 
         .convert-option:hover {
-            border-color: var(--accent-color);
-            background: var(--bg-secondary);
+            border-color: var(--wt-primary);
+            transform: translateY(-2px);
         }
 
         .convert-option.selected {
-            border-color: var(--accent-color);
-            background: rgba(220, 38, 38, 0.1);
+            border-color: var(--wt-accent);
+            background: rgba(250, 232, 79, 0.05);
         }
 
         .convert-option-icon {
-            font-size: 1.5rem;
-            margin-bottom: 0.5rem;
+            color: var(--wt-primary);
+            margin-bottom: 0.75rem;
         }
 
         .convert-option-label {
-            font-weight: 600;
-            font-size: 0.875rem;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--text-body);
         }
 
         .convert-option-desc {
-            font-size: 0.7rem;
+            font-size: 0.75rem;
             color: var(--text-muted);
             margin-top: 0.25rem;
         }
 
         .modal-actions {
             display: flex;
-            gap: 0.75rem;
+            gap: 1rem;
             justify-content: flex-end;
         }
 
         .btn-secondary {
-            background: var(--bg-secondary);
-            color: var(--text-color);
-            border: none;
-            padding: 0.625rem 1.25rem;
-            border-radius: 8px;
+            background: transparent;
+            color: var(--text-body);
+            border: 1px solid var(--border);
+            padding: 0.75rem 1.5rem;
             font-weight: 600;
             cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .btn-secondary:hover {
-            background: var(--border-color);
-        }
-
-        .btn-primary {
-            background: var(--accent-color);
-            color: white;
-            border: none;
-            padding: 0.625rem 1.25rem;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .btn-primary:hover {
-            background: var(--accent-hover);
-        }
-
-        /* Right Panel */
-        .right-panel {
-            width: 280px;
-            background: var(--sidebar-bg);
-            border-left: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            transition: width 0.3s;
-        }
-
-        .right-panel.collapsed {
-            width: 0;
-            border-left: none;
-        }
-
-        .panel-tabs {
-            display: flex;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .panel-tab {
-            flex: 1;
-            padding: 0.75rem;
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--text-muted);
             transition: all 0.2s;
         }
 
-        .panel-tab.active {
-            color: var(--accent-color);
-            border-bottom: 2px solid var(--accent-color);
+        .btn-secondary:hover {
+            border-color: var(--wt-secondary);
+            color: var(--wt-secondary);
         }
 
-        .panel-content {
-            flex: 1;
-            overflow-y: auto;
-            padding: 1rem;
-        }
-
-        .property-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .property-label {
-            font-size: 0.7rem;
+        .btn-primary {
+            background: var(--wt-primary);
+            color: var(--wt-black);
+            border: none;
+            padding: 0.75rem 1.5rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            color: var(--text-muted);
-            margin-bottom: 0.5rem;
-        }
-
-        .property-value {
-            font-size: 0.875rem;
-            word-break: break-all;
-        }
-
-        .color-picker {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-
-        .color-swatch {
-            width: 28px;
-            height: 28px;
-            border-radius: 6px;
-            border: 2px solid transparent;
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: all 0.2s;
         }
 
-        .color-swatch:hover {
-            transform: scale(1.1);
-        }
-
-        .color-swatch.active {
-            border-color: var(--text-color);
+        .btn-primary:hover {
+            background: var(--wt-accent);
+            box-shadow: 0 0 10px var(--wt-accent-glow);
         }
 
         /* Loading */
@@ -706,7 +779,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.5);
+            background: var(--bg-app);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -722,10 +795,10 @@
         }
 
         .loading-spinner {
-            width: 48px;
-            height: 48px;
-            border: 4px solid var(--bg-secondary);
-            border-top-color: var(--accent-color);
+            width: 60px;
+            height: 60px;
+            border: 4px solid var(--border);
+            border-top-color: var(--wt-primary);
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -734,54 +807,42 @@
             to { transform: rotate(360deg); }
         }
 
-        /* Footer */
-        .suite-link {
-            position: fixed;
-            bottom: 8px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 9px;
-            font-weight: 700;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            opacity: 0.15;
-            color: inherit;
-            text-decoration: none;
-            transition: opacity 0.2s;
-            z-index: 10;
-        }
-
-        .suite-link:hover {
-            opacity: 0.5;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .sidebar, .right-panel {
-                display: none;
-            }
-            .toolbar {
-                overflow-x: auto;
-            }
-        }
-
         /* Scrollbar */
         ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
+            width: 8px;
+            height: 8px;
         }
-
         ::-webkit-scrollbar-track {
-            background: transparent;
+            background: var(--scrollbar-track);
         }
-
         ::-webkit-scrollbar-thumb {
-            background: var(--border-color);
-            border-radius: 3px;
+            background: var(--scrollbar-thumb);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--scrollbar-thumb-hover);
         }
 
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--text-muted);
+        /* Footer Link */
+        .suite-link {
+            position: fixed;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            text-decoration: none;
+            z-index: 50;
+            transition: color 0.2s;
+        }
+        .suite-link:hover { color: var(--wt-primary); }
+
+        @media (max-width: 768px) {
+            .sidebar, .right-panel { display: none; }
+            .toolbar { overflow-x: auto; }
         }
     </style>
 </head>
@@ -795,19 +856,19 @@
     <header>
         <a href="index.html" class="logo">
             <div class="logo-icon">
-                <i data-lucide="file-text" style="width: 18px; height: 18px;"></i>
+                <i data-lucide="file-text" style="width: 20px; height: 20px;"></i>
             </div>
             <span class="logo-text">Docurift</span>
         </a>
         <div class="header-actions">
             <button class="icon-btn" id="sidebar-toggle" title="Toggle Pages">
-                <i data-lucide="panel-left" style="width: 18px; height: 18px;"></i>
+                <i data-lucide="panel-left" style="width: 20px; height: 20px;"></i>
             </button>
             <button class="icon-btn" id="right-panel-toggle" title="Toggle Properties">
-                <i data-lucide="panel-right" style="width: 18px; height: 18px;"></i>
+                <i data-lucide="panel-right" style="width: 20px; height: 20px;"></i>
             </button>
             <button class="icon-btn" id="theme-toggle" title="Toggle Theme">
-                <i data-lucide="moon" id="theme-icon" style="width: 18px; height: 18px;"></i>
+                <i data-lucide="sun" id="theme-icon" style="width: 20px; height: 20px;"></i>
             </button>
         </div>
     </header>
@@ -826,70 +887,70 @@
             <div class="toolbar" id="toolbar" style="display: none;">
                 <div class="toolbar-group">
                     <button class="tool-btn" id="open-file-btn" title="Open File">
-                        <i data-lucide="folder-open" style="width: 18px; height: 18px;"></i>
+                        <i data-lucide="folder-open" style="width: 20px; height: 20px;"></i>
                     </button>
                     <button class="tool-btn" id="save-btn" title="Download PDF">
-                        <i data-lucide="download" style="width: 18px; height: 18px;"></i>
+                        <i data-lucide="download" style="width: 20px; height: 20px;"></i>
                     </button>
                 </div>
 
                 <div class="toolbar-group zoom-controls">
                     <button class="tool-btn" id="zoom-out-btn" title="Zoom Out">
-                        <i data-lucide="zoom-out" style="width: 18px; height: 18px;"></i>
+                        <i data-lucide="zoom-out" style="width: 20px; height: 20px;"></i>
                     </button>
                     <span class="zoom-value" id="zoom-value">100%</span>
                     <button class="tool-btn" id="zoom-in-btn" title="Zoom In">
-                        <i data-lucide="zoom-in" style="width: 18px; height: 18px;"></i>
+                        <i data-lucide="zoom-in" style="width: 20px; height: 20px;"></i>
                     </button>
                     <button class="tool-btn" id="fit-width-btn" title="Fit Width">
-                        <i data-lucide="move-horizontal" style="width: 18px; height: 18px;"></i>
+                        <i data-lucide="move-horizontal" style="width: 20px; height: 20px;"></i>
                     </button>
                 </div>
 
                 <div class="toolbar-group page-nav">
                     <button class="tool-btn" id="prev-page-btn" title="Previous Page">
-                        <i data-lucide="chevron-left" style="width: 18px; height: 18px;"></i>
+                        <i data-lucide="chevron-left" style="width: 20px; height: 20px;"></i>
                     </button>
                     <input type="number" class="page-input" id="page-input" value="1" min="1">
                     <span class="page-total">/ <span id="page-total">1</span></span>
                     <button class="tool-btn" id="next-page-btn" title="Next Page">
-                        <i data-lucide="chevron-right" style="width: 18px; height: 18px;"></i>
+                        <i data-lucide="chevron-right" style="width: 20px; height: 20px;"></i>
                     </button>
                 </div>
 
                 <div class="toolbar-group">
                     <button class="tool-btn" id="select-tool" title="Select">
-                        <i data-lucide="mouse-pointer" style="width: 18px; height: 18px;"></i>
+                        <i data-lucide="mouse-pointer" style="width: 20px; height: 20px;"></i>
                     </button>
                     <button class="tool-btn" id="highlight-tool" title="Highlight">
-                        <i data-lucide="highlighter" style="width: 18px; height: 18px;"></i>
+                        <i data-lucide="highlighter" style="width: 20px; height: 20px;"></i>
                     </button>
                     <button class="tool-btn" id="text-tool" title="Add Text">
-                        <i data-lucide="type" style="width: 18px; height: 18px;"></i>
+                        <i data-lucide="type" style="width: 20px; height: 20px;"></i>
                     </button>
                     <button class="tool-btn" id="shape-tool" title="Add Shape">
-                        <i data-lucide="square" style="width: 18px; height: 18px;"></i>
+                        <i data-lucide="square" style="width: 20px; height: 20px;"></i>
                     </button>
                 </div>
 
                 <div class="toolbar-group">
                     <button class="tool-btn" id="rotate-left-btn" title="Rotate Left">
-                        <i data-lucide="rotate-ccw" style="width: 18px; height: 18px;"></i>
+                        <i data-lucide="rotate-ccw" style="width: 20px; height: 20px;"></i>
                     </button>
                     <button class="tool-btn" id="rotate-right-btn" title="Rotate Right">
-                        <i data-lucide="rotate-cw" style="width: 18px; height: 18px;"></i>
+                        <i data-lucide="rotate-cw" style="width: 20px; height: 20px;"></i>
                     </button>
                     <button class="tool-btn" id="delete-page-btn" title="Delete Page">
-                        <i data-lucide="trash-2" style="width: 18px; height: 18px;"></i>
+                        <i data-lucide="trash-2" style="width: 20px; height: 20px;"></i>
                     </button>
                 </div>
 
                 <div class="toolbar-group">
                     <button class="tool-btn" id="convert-btn" title="Convert">
-                        <i data-lucide="refresh-cw" style="width: 18px; height: 18px;"></i>
+                        <i data-lucide="refresh-cw" style="width: 20px; height: 20px;"></i>
                     </button>
                     <button class="tool-btn" id="extract-text-btn" title="Extract Text">
-                        <i data-lucide="file-text" style="width: 18px; height: 18px;"></i>
+                        <i data-lucide="file-text" style="width: 20px; height: 20px;"></i>
                     </button>
                 </div>
             </div>
@@ -901,7 +962,7 @@
                         <i data-lucide="file-plus" style="width: 48px; height: 48px;"></i>
                     </div>
                     <h2>No PDF Loaded</h2>
-                    <p class="font-serif-italic">Upload a PDF to view, edit, annotate, and convert it to different formats.</p>
+                    <p>Upload a PDF to view, edit, annotate, and convert it to different formats.</p>
                     <div class="upload-zone" id="upload-zone">
                         <button class="upload-btn" id="upload-btn">
                             <i data-lucide="upload" style="width: 18px; height: 18px;"></i>
@@ -947,11 +1008,12 @@
                     <div class="property-group">
                         <div class="property-label">Highlight Color</div>
                         <div class="color-picker" id="highlight-colors">
-                            <div class="color-swatch active" style="background: rgba(255, 255, 0, 0.6);" data-color="rgba(255, 255, 0, 0.4)"></div>
-                            <div class="color-swatch" style="background: rgba(0, 255, 0, 0.6);" data-color="rgba(0, 255, 0, 0.4)"></div>
-                            <div class="color-swatch" style="background: rgba(0, 200, 255, 0.6);" data-color="rgba(0, 200, 255, 0.4)"></div>
-                            <div class="color-swatch" style="background: rgba(255, 100, 100, 0.6);" data-color="rgba(255, 100, 100, 0.4)"></div>
-                            <div class="color-swatch" style="background: rgba(200, 100, 255, 0.6);" data-color="rgba(200, 100, 255, 0.4)"></div>
+                            <!-- Neon Palette Colors -->
+                            <div class="color-swatch active" style="background: #fae84f;" data-color="rgba(250, 232, 79, 0.5)"></div>
+                            <div class="color-swatch" style="background: #fd19c8;" data-color="rgba(253, 25, 200, 0.5)"></div>
+                            <div class="color-swatch" style="background: #da70d6;" data-color="rgba(218, 112, 214, 0.5)"></div>
+                            <div class="color-swatch" style="background: #00ff00;" data-color="rgba(0, 255, 0, 0.5)"></div>
+                            <div class="color-swatch" style="background: #00ffff;" data-color="rgba(0, 255, 255, 0.5)"></div>
                         </div>
                     </div>
                     <div class="property-group">
@@ -1030,7 +1092,7 @@
             fileSize: 0,
             annotations: {},
             currentTool: 'select',
-            highlightColor: 'rgba(255, 255, 0, 0.4)',
+            highlightColor: 'rgba(250, 232, 79, 0.5)', /* Default to electric yellow */
             isDarkMode: false,
             isDrawing: false,
             drawStart: null
@@ -1063,26 +1125,37 @@
         function init() {
             loadTheme();
             setupEventListeners();
-            lucide.createIcons();
+            
+            // Safe Lucide initialization
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            } else {
+                setTimeout(() => {
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
+                }, 500);
+            }
         }
 
         // Theme Management
         function loadTheme() {
-            const saved = localStorage.getItem('writingtools_theme');
-            if (saved === 'dark') {
-                state.isDarkMode = true;
-                document.getElementById('main-html').classList.add('dark');
-                dom.themeIcon.setAttribute('data-lucide', 'sun');
-            }
-            lucide.createIcons();
+            const saved = localStorage.getItem('writingtools_theme') || 'dark'; // Default to dark
+            setTheme(saved);
         }
 
         function toggleTheme() {
-            state.isDarkMode = !state.isDarkMode;
-            document.getElementById('main-html').classList.toggle('dark', state.isDarkMode);
-            dom.themeIcon.setAttribute('data-lucide', state.isDarkMode ? 'sun' : 'moon');
-            localStorage.setItem('writingtools_theme', state.isDarkMode ? 'dark' : 'light');
-            lucide.createIcons();
+            const current = document.documentElement.getAttribute('data-wt-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            setTheme(next);
+        }
+
+        function setTheme(theme) {
+            state.isDarkMode = theme === 'dark';
+            document.documentElement.setAttribute('data-wt-theme', theme);
+            if(dom.themeIcon) {
+                dom.themeIcon.setAttribute('data-lucide', theme === 'dark' ? 'sun' : 'moon');
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            }
+            localStorage.setItem('writingtools_theme', theme);
         }
 
         // Event Listeners
@@ -1215,6 +1288,7 @@
                 dom.pageWrapper.style.display = 'block';
                 dom.toolbar.style.display = 'flex';
                 dom.pageTotal.textContent = state.totalPages;
+                document.body.classList.add('has-doc'); // Hide footer
 
                 // Update Properties
                 document.getElementById('prop-filename').textContent = state.fileName;
@@ -1287,6 +1361,11 @@
                 canvas.height = viewport.height;
 
                 const ctx = canvas.getContext('2d');
+                
+                // IMPORTANT: Fill white background first
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
                 await page.render({
                     canvasContext: ctx,
                     viewport: viewport
@@ -1309,8 +1388,8 @@
                 thumbDiv.appendChild(actions);
                 dom.thumbnails.appendChild(thumbDiv);
             }
-
-            lucide.createIcons();
+            
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         }
 
         // Navigation
