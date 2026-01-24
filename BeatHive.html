@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BeatHive - Story Structure Architect</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5' fill='%234361ee'/><polygon points='50,20 80,37.5 80,62.5 50,80 20,62.5 20,37.5' fill='%23818cf8' opacity='0.6'/></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5' fill='%23fd19c8'/><polygon points='50,20 80,37.5 80,62.5 50,80 20,62.5 20,37.5' fill='%23da70d6' opacity='0.6'/></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -13,35 +13,39 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=Space+Grotesk:wght@700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
         
         :root {
-            --bg-dark: #09090b;
-            --bg-light: #E8DFD0;
-            --panel-light: #E0D4C0;
-            --text-light: #432818;
+            --bg-dark: #000000;
+            --bg-light: #f8f5f0;
+            --panel-light: #e6e0d4;
+            --text-dark: #1a1a1a;
+            --text-light: #ffffff;
+            --accent-pink: #fd19c8;
+            --accent-purple: #da70d6;
+            --accent-yellow: #fae84f;
             --sidebar-width: 320px;
         }
 
-        body { 
-            font-family: 'Inter', sans-serif; 
-            overflow: hidden; 
-            margin: 0; 
-            padding: 0; 
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
             transition: background-color 0.5s cubic-bezier(0.16, 1, 0.3, 1);
             user-select: none;
             -webkit-user-select: none;
         }
-        
+
         /* Typography */
         .font-display { font-family: 'Space Grotesk', sans-serif; }
         .font-serif { font-family: 'Lora', serif; }
 
         /* Theme Classes */
-        .light-theme { 
-            background-color: var(--bg-light) !important; 
-            color: #3d2b1f;
+        .light-theme {
+            background-color: var(--bg-light) !important;
+            color: var(--text-dark);
         }
-        .dark-theme { 
-            background-color: var(--bg-dark) !important; 
-            color: #f4f4f5; 
+        .dark-theme {
+            background-color: var(--bg-dark) !important;
+            color: var(--text-light);
         }
 
         /* Smooth Sidebar Architecture */
@@ -54,12 +58,12 @@
         }
         
         .light-theme .sidebar-panel {
-            border-color: rgba(60, 40, 20, 0.08);
-            background: rgba(224, 212, 192, 0.95);
+            border-color: rgba(253, 25, 200, 0.15);
+            background: rgba(230, 224, 212, 0.95);
         }
-        .dark-theme .sidebar-panel { 
-            border-color: rgba(255, 255, 255, 0.08); 
-            background: rgba(20, 20, 23, 0.9); 
+        .dark-theme .sidebar-panel {
+            border-color: rgba(253, 25, 200, 0.12);
+            background: rgba(10, 10, 10, 0.95);
         }
 
         .sidebar-inner {
@@ -72,8 +76,8 @@
 
         /* Hex & Grid */
         .hex-transition { transition: transform 0.1s linear, fill 0.2s ease; }
-        .bg-grid-dark { background-image: radial-gradient(rgba(255,255,255,0.05) 1.5px, transparent 1px); background-size: 40px 40px; }
-        .bg-grid-light { background-image: radial-gradient(rgba(60, 40, 20, 0.1) 1.5px, transparent 1px); background-size: 40px 40px; }
+        .bg-grid-dark { background-image: radial-gradient(rgba(253, 25, 200, 0.08) 1.5px, transparent 1px); background-size: 40px 40px; }
+        .bg-grid-light { background-image: radial-gradient(rgba(253, 25, 200, 0.1) 1.5px, transparent 1px); background-size: 40px 40px; }
 
         .hex-shadow {
             filter: drop-shadow(0 4px 6px rgba(0,0,0,0.15));
@@ -137,13 +141,20 @@
             opacity: 1;
             transform: scale(1.05);
         }
-        .dark-theme .minimap { background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1); }
-        .light-theme .minimap { background: rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.1); }
+        .dark-theme .minimap { background: rgba(0,0,0,0.8); border: 1px solid rgba(253, 25, 200, 0.2); }
+        .light-theme .minimap { background: rgba(26,26,26,0.9); border: 1px solid rgba(253, 25, 200, 0.15); }
         .minimap-viewport {
             position: absolute;
-            border: 2px solid #6366f1;
+            border: 2px solid #fd19c8;
             border-radius: 3px;
             pointer-events: none;
+        }
+
+        @media print {
+            body { background: white !important; }
+            header, .sidebar-panel, .minimap { display: none !important; }
+            main { overflow: visible !important; }
+            svg { max-width: 100% !important; height: auto !important; }
         }
     </style>
 </head>
@@ -213,6 +224,13 @@
                         <circle cx="12" cy="12" r="1"/>
                         <circle cx="19" cy="12" r="1"/>
                         <circle cx="5" cy="12" r="1"/>
+                    </React.Fragment>
+                ),
+                printer: (
+                    <React.Fragment>
+                        <polyline points="6 9 6 2 18 2 18 9"/>
+                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                        <rect x="6" y="14" width="12" height="8"/>
                     </React.Fragment>
                 )
             };
@@ -389,7 +407,7 @@
             const [cells, setCells] = useState([]);
             const [sketchName, setSketchName] = useState("");
             
-            const [theme, setTheme] = useState('dark');
+            const [theme, setTheme] = useState(() => localStorage.getItem('writingtools_theme') || 'dark');
             const [selection, setSelection] = useState({ q: null, r: null });
             const [pan, setPan] = useState({ x: 0, y: 0 });
             const [zoom, setZoom] = useState(1.0);
@@ -417,7 +435,10 @@
             useEffect(() => { cellsRef.current = cells; }, [cells]);
             useEffect(() => { nameRef.current = sketchName; }, [sketchName]);
             useEffect(() => { currentIdRef.current = currentId; }, [currentId]);
-            useEffect(() => { document.body.className = theme === 'dark' ? 'dark-theme' : 'light-theme'; }, [theme]);
+            useEffect(() => {
+                document.body.className = theme === 'dark' ? 'dark-theme' : 'light-theme';
+                localStorage.setItem('writingtools_theme', theme);
+            }, [theme]);
 
             const loadLocalSketches = () => { try { return JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)) || []; } catch(e) { return []; } };
             const saveLocalSketches = (list) => { localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list)); setSketches(list); };
@@ -579,6 +600,110 @@
                     } catch (e) { console.error("Save", e); }
                 }
             }, [user]);
+
+            const handlePrint = useCallback(() => {
+                // Calculate bounds of used hexes
+                const usedCells = cells.filter(c => c.text || c.type !== 'setup');
+                if (usedCells.length === 0) {
+                    alert('No content to print. Add some beats first!');
+                    return;
+                }
+
+                const minQ = Math.min(...usedCells.map(c => c.q));
+                const maxQ = Math.max(...usedCells.map(c => c.q));
+                const minR = Math.min(...usedCells.map(c => c.r));
+                const maxR = Math.max(...usedCells.map(c => c.r));
+
+                // Create print window with centered, maximized hexes
+                const printWindow = window.open('', '_blank');
+                const hexSize = 80;
+                const hexWidth = Math.sqrt(3) * hexSize;
+                const hexHeight = 2 * hexSize;
+                const vertSpacing = hexHeight * 0.75;
+
+                const getHexPoints = (cx, cy, size) => {
+                    const pts = [];
+                    for (let i = 0; i < 6; i++) {
+                        const angle = (Math.PI / 3) * i - Math.PI / 6;
+                        pts.push(`${cx + size * Math.cos(angle)},${cy + size * Math.sin(angle)}`);
+                    }
+                    return pts.join(' ');
+                };
+
+                const hexToPixel = (q, r) => ({
+                    x: hexWidth * (q + r / 2) - hexWidth * (minQ + minR / 2) + hexSize + 40,
+                    y: vertSpacing * r - vertSpacing * minR + hexSize + 40
+                });
+
+                const width = (maxQ - minQ + 1) * hexWidth + hexSize * 2 + 80;
+                const height = (maxR - minR + 1) * vertSpacing + hexSize * 2 + 80;
+
+                let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`;
+
+                // Draw grid outline for all cells in bounds (dashed for empty)
+                for (let q = minQ; q <= maxQ; q++) {
+                    for (let r = minR; r <= maxR; r++) {
+                        const { x, y } = hexToPixel(q, r);
+                        const cell = cells.find(c => c.q === q && c.r === r);
+                        const hasContent = cell && (cell.text || cell.type !== 'setup');
+
+                        if (!hasContent) {
+                            svgContent += `<polygon points="${getHexPoints(x, y, hexSize)}" fill="none" stroke="#ccc" stroke-width="1" stroke-dasharray="5,5"/>`;
+                        }
+                    }
+                }
+
+                // Draw filled hexes
+                usedCells.forEach(cell => {
+                    const { x, y } = hexToPixel(cell.q, cell.r);
+                    const beatType = BEAT_TYPES.find(t => t.id === cell.type) || BEAT_TYPES[0];
+                    const fillColor = beatType.color.light;
+                    const strokeColor = beatType.stroke.light;
+
+                    svgContent += `<polygon points="${getHexPoints(x, y, hexSize)}" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2"/>`;
+
+                    // Add text
+                    if (cell.text) {
+                        const lines = cell.text.split('\n').slice(0, 4);
+                        const lineHeight = 14;
+                        const startY = y - (lines.length - 1) * lineHeight / 2;
+                        lines.forEach((line, i) => {
+                            const truncated = line.length > 20 ? line.substring(0, 17) + '...' : line;
+                            svgContent += `<text x="${x}" y="${startY + i * lineHeight}" text-anchor="middle" font-size="11" font-family="Inter, sans-serif" fill="#000">${truncated}</text>`;
+                        });
+                    }
+
+                    // Add beat type label
+                    svgContent += `<text x="${x}" y="${y + hexSize - 20}" text-anchor="middle" font-size="8" font-family="Inter, sans-serif" fill="${strokeColor}" font-weight="bold">${beatType.label.toUpperCase()}</text>`;
+                });
+
+                svgContent += '</svg>';
+
+                printWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>BeatHive - ${sketchName || 'Untitled'}</title>
+                        <style>
+                            body { margin: 0; padding: 20px; display: flex; justify-content: center; }
+                            @media print {
+                                body { padding: 0; }
+                                svg { max-width: 100%; height: auto; }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div>
+                            <h1 style="text-align: center; font-family: sans-serif; margin-bottom: 20px;">${sketchName || 'Untitled Beat Map'}</h1>
+                            ${svgContent}
+                        </div>
+                    </body>
+                    </html>
+                `);
+                printWindow.document.close();
+                printWindow.focus();
+                setTimeout(() => printWindow.print(), 250);
+            }, [cells, sketchName]);
 
             const handleNewMap = async () => {
                 setIsCreating(true);
@@ -794,6 +919,7 @@
                                 <Icon name="zoomIn" size={12} className="opacity-50"/>
                             </div>
                             <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} aria-label="Toggle Theme" className="p-2 opacity-50 hover:opacity-100"><Icon name={theme === 'dark' ? 'sun' : 'moon'} size={20}/></button>
+                            <button onClick={handlePrint} aria-label="Print" className="p-2 opacity-50 hover:opacity-100"><Icon name="printer" size={20}/></button>
                             <button onClick={() => setSidebarOpen(!sidebarOpen)} aria-label="Toggle Inspector" className={`p-2 rounded-lg transition-all ${sidebarOpen ? 'bg-indigo-600 text-white shadow-lg' : 'hover:bg-black/10 opacity-60'}`}><Icon name="mask" size={18}/></button>
                         </div>
                     </header>

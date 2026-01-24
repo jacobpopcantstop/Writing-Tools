@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>This But That v3</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23fd19c8'/><text x='50' y='68' font-size='50' font-weight='bold' fill='white' text-anchor='middle'>?</text></svg>">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #da70d6; border-radius: 3px; }
+
+        /* Animation Utilities */
+        .fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        .slide-up { animation: slideUp 0.3s ease-out forwards; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        /* Noise Texture for Noir feel */
+        .bg-noise {
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+        }
+    </style>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        neonPink: '#fd19c8',
+                        neonPurple: '#da70d6',
+                        neonYellow: '#fae84f'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-white text-black transition-colors duration-300 min-h-screen relative">
+    <!-- Background Noise Overlay -->
+    <div class="fixed inset-0 pointer-events-none bg-noise z-0"></div>
+
+    <!-- Sticky Header -->
+    <header class="sticky top-0 z-40 px-6 py-3 flex justify-between items-center max-w-2xl mx-auto border-b-2 bg-white/95 border-black/10 backdrop-blur-md transition-colors duration-300" id="main-header">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded bg-neonPink text-white flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]">
+                <span class="font-black text-xl leading-none mt-0.5">B</span>
+            </div>
+            <h1 class="font-black text-lg tracking-tight uppercase hidden sm:block">This But That <span class="text-[10px] text-neonPurple ml-1">v3</span></h1>
+        </div>
+        
+        <!-- Compact Medals -->
+        <div class="flex items-center gap-3 px-4 py-1 rounded-full border border-black/5 dark:border-white/10 bg-black/5 dark:bg-white/5">
+            <div id="medal-bronze" class="transition-all duration-500 opacity-20 scale-75 grayscale"><i data-lucide="medal" class="w-5 h-5 text-[#cd7f32]"></i></div>
+            <div id="medal-silver" class="transition-all duration-500 opacity-20 scale-75 grayscale"><i data-lucide="medal" class="w-5 h-5 text-[#c0c0c0]"></i></div>
+            <div id="medal-gold" class="transition-all duration-500 opacity-20 scale-75 grayscale"><i data-lucide="medal" class="w-5 h-5 text-neonYellow"></i></div>
+        </div>
+
+        <div class="flex gap-1">
+            <button onclick="toggleHistory(true)" class="p-2 hover:bg-neonPurple/10 hover:text-neonPurple rounded-lg transition-colors">
+                <i data-lucide="history" class="w-5 h-5"></i>
+            </button>
+            <button onclick="toggleTheme()" class="p-2 hover:bg-neonPurple/10 hover:text-neonPurple rounded-lg transition-colors">
+                <span id="wrapper-moon" class="hidden"><i data-lucide="moon" class="w-5 h-5"></i></span>
+                <span id="wrapper-sun"><i data-lucide="sun" class="w-5 h-5"></i></span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-2xl mx-auto px-6 py-8 pb-32 relative z-10">
+        
+        <!-- Topic Selection -->
+        <div class="mb-8">
+            <div class="flex justify-between items-center mb-4">
+                <span class="text-xs font-bold uppercase tracking-widest text-neonPurple flex items-center gap-2">
+                    <i data-lucide="globe" class="w-4 h-4"></i> Trending Topics
+                </span>
+                <button onclick="fetchTopics()" id="btn-refresh" class="text-[10px] h-7 px-2 py-1 rounded border-2 border-black/10 dark:border-white/20 text-black/60 dark:text-white/60 hover:border-neonPink hover:text-neonPink uppercase font-bold tracking-wider flex items-center gap-1 transition-all">
+                    <i data-lucide="refresh-cw" class="w-3 h-3"></i> Refresh
+                </button>
+            </div>
+
+            <!-- Grid Container -->
+            <div id="topic-grid" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+                <!-- Skeletons will be injected here dynamically -->
+            </div>
+            
+            <!-- Active Context (Updated for expansion) -->
+            <div id="active-context" class="animate-in fade-in slide-in-from-top-2 duration-300 hidden">
+                <div id="context-box" onclick="toggleContext()" class="cursor-pointer group p-4 border-l-4 border-neonYellow bg-neonYellow/10 mb-6 transition-all duration-200 hover:bg-neonYellow/20 relative">
+                    <p class="italic text-sm leading-relaxed dark:text-white">
+                        <span class="font-bold not-italic mr-1 text-neonPurple uppercase text-xs">Context //</span> 
+                        <span id="context-text" class="line-clamp-2">Loading...</span>
+                    </p>
+                    <div id="context-hint" class="text-[10px] text-neonYellow font-bold mt-2 opacity-50 group-hover:opacity-100 transition-opacity uppercase tracking-widest flex items-center gap-1">
+                        <i data-lucide="chevron-down" class="w-3 h-3"></i> Read More
+                    </div>
+                </div>
+                
+                <!-- Related Links -->
+                <div id="related-links" class="flex flex-wrap gap-2 mb-8">
+                    <!-- Links injected here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="mb-8">
+            <form onsubmit="addTwist(event)" class="relative group z-10">
+                <div class="absolute left-4 top-1/2 -translate-y-1/2 font-black text-neonPurple text-xl pointer-events-none uppercase select-none">BUT</div>
+                <input
+                    type="text"
+                    id="twist-input"
+                    placeholder="Twist for..."
+                    class="w-full pl-20 pr-12 py-4 text-lg font-medium rounded-xl bg-transparent border-2 border-black/20 dark:border-white/20 focus:border-neonPink dark:focus:border-neonPink shadow-sm focus:shadow-[0_0_20px_rgba(253,25,200,0.2)] outline-none transition-all placeholder:text-black/30 dark:placeholder:text-white/30 disabled:opacity-50"
+                    autocomplete="off"
+                />
+                <button 
+                    type="submit" 
+                    id="btn-add"
+                    class="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-neonPink text-white disabled:opacity-0 disabled:scale-75 transition-all hover:bg-neonPurple"
+                    disabled
+                >
+                    <i data-lucide="plus" class="w-5 h-5"></i>
+                </button>
+            </form>
+            
+            <!-- Infinite Mode Message -->
+            <div id="gold-message" class="hidden mt-2 text-center text-xs font-bold uppercase tracking-widest text-neonYellow animate-pulse">
+                Gold Medal Achieved! Infinite Mode Active.
+            </div>
+        </div>
+
+        <!-- List Area -->
+        <div id="twist-list" class="space-y-4 mb-8 min-h-[100px]">
+            <div class="text-center py-4 opacity-30 select-none pointer-events-none">
+                <p class="text-sm font-bold uppercase tracking-widest">Add your twists above</p>
+            </div>
+        </div>
+
+        <!-- Action Bar -->
+        <div class="grid grid-cols-2 gap-4 sticky bottom-6 z-20">
+            <button 
+                onclick="saveAndNext()"
+                id="btn-save"
+                disabled
+                class="col-span-2 sm:col-span-1 w-full shadow-lg shadow-black/10 dark:shadow-none font-bold uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed border-2 px-4 py-3 text-sm rounded-lg bg-neonYellow border-neonYellow text-black hover:bg-black hover:text-neonYellow hover:border-neonYellow dark:hover:bg-white"
+            >
+                <i data-lucide="save" class="w-4 h-4"></i> Save & Next
+            </button>
+            
+            <div class="col-span-2 sm:col-span-1 grid grid-cols-2 gap-2">
+                <button 
+                    onclick="copyToClipboard()"
+                    id="btn-copy"
+                    disabled
+                    class="w-full shadow-lg shadow-neonPurple/20 dark:shadow-none font-bold uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed border-2 px-2 py-3 text-sm rounded-lg bg-neonPurple border-neonPurple text-white hover:bg-black hover:text-neonPurple dark:hover:bg-white dark:hover:text-neonPurple"
+                >
+                    <i data-lucide="copy" class="w-4 h-4"></i> Copy
+                </button>
+
+                <button 
+                    onclick="exportEmail()"
+                    id="btn-export"
+                    disabled
+                    class="w-full shadow-lg shadow-neonPink/20 dark:shadow-none font-bold uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed border-2 px-2 py-3 text-sm rounded-lg bg-neonPink border-neonPink text-white hover:bg-black hover:text-neonPink dark:hover:bg-white dark:hover:text-neonPink"
+                >
+                    <i data-lucide="send" class="w-4 h-4"></i> Email
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- History Sidebar -->
+    <div id="history-modal" class="fixed inset-0 z-50 flex justify-end hidden">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="toggleHistory(false)"></div>
+        <div class="relative w-full max-w-md bg-white dark:bg-black border-l-2 border-black dark:border-white h-full shadow-2xl p-6 overflow-y-auto animate-in slide-in-from-right duration-300">
+            <div class="flex justify-between items-center mb-8">
+                <h3 class="text-2xl font-black uppercase tracking-tighter dark:text-white">History</h3>
+                <button onclick="toggleHistory(false)" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full dark:text-white">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <div id="history-content" class="space-y-6">
+                <!-- History Items Injected Here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 bg-black text-white dark:bg-white dark:text-black px-4 py-2 rounded-full shadow-xl text-sm font-bold opacity-0 pointer-events-none transition-opacity duration-300 z-50">
+        Copied to clipboard!
+    </div>
+
+    <!-- Javascript Logic -->
+    <script>
+        // --- State ---
+        const state = {
+            darkMode: false,
+            topics: [], // Array of { text, description, related }
+            selectedIndex: 0,
+            twists: [],
+            history: [],
+            loading: false,
+            contextExpanded: false // NEW: Track context expansion
+        };
+
+        // --- Init ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadHistory();
+            fetchTopics();
+            setupInputListener();
+            lucide.createIcons();
+            
+            // Check system preference for dark mode initially
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                toggleTheme(); 
+            }
+        });
+
+        // --- Theme ---
+        function toggleTheme() {
+            state.darkMode = !state.darkMode;
+            const body = document.body;
+            const header = document.getElementById('main-header');
+            const wrapperSun = document.getElementById('wrapper-sun');
+            const wrapperMoon = document.getElementById('wrapper-moon');
+
+            if (state.darkMode) {
+                document.documentElement.classList.add('dark');
+                body.classList.remove('bg-white', 'text-black');
+                body.classList.add('bg-black', 'text-white');
+                header.classList.remove('bg-white/95', 'border-black/10');
+                header.classList.add('bg-black/95', 'border-white/20');
+                if(wrapperSun) wrapperSun.classList.add('hidden');
+                if(wrapperMoon) wrapperMoon.classList.remove('hidden');
+            } else {
+                document.documentElement.classList.remove('dark');
+                body.classList.remove('bg-black', 'text-white');
+                body.classList.add('bg-white', 'text-black');
+                header.classList.remove('bg-black/95', 'border-white/20');
+                header.classList.add('bg-white/95', 'border-black/10');
+                if(wrapperSun) wrapperSun.classList.remove('hidden');
+                if(wrapperMoon) wrapperMoon.classList.add('hidden');
+            }
+        }
+
+        // --- API ---
+        async function fetchTopics(specificTitle = null) {
+            setLoading(true);
+
+            // Cache current twists before fetching new topics
+            if (state.twists.length > 0 && state.topics[state.selectedIndex]) {
+                const cacheKey = 'thisButThat_cachedTwists';
+                const cached = {
+                    topic: state.topics[state.selectedIndex],
+                    twists: state.twists
+                };
+                localStorage.setItem(cacheKey, JSON.stringify(cached));
+            }
+
+            // Manually inject skeletons
+            const grid = document.getElementById('topic-grid');
+            grid.innerHTML = `
+                <div class="h-24 rounded-lg bg-black/5 dark:bg-white/10 animate-pulse"></div>
+                <div class="h-24 rounded-lg bg-black/5 dark:bg-white/10 animate-pulse"></div>
+                <div class="h-24 rounded-lg bg-black/5 dark:bg-white/10 animate-pulse"></div>
+            `;
+
+            try {
+                let titlesToFetch = [];
+
+                if (specificTitle) {
+                    titlesToFetch = [specificTitle];
+                } else {
+                    // Try Trending
+                    try {
+                        const date = new Date();
+                        date.setDate(date.getDate() - 1); // Yesterday
+                        const yyyy = date.getFullYear();
+                        const mm = String(date.getMonth() + 1).padStart(2, '0');
+                        const dd = String(date.getDate()).padStart(2, '0');
+
+                        const resp = await fetch(`https://wikimedia.org/api/rest_v1/metrics/pageviews/top/en.wikipedia/all-access/${yyyy}/${mm}/${dd}`);
+                        if (resp.ok) {
+                            const data = await resp.json();
+                            const articles = data.items?.[0]?.articles || [];
+                            const valid = articles.filter(a => 
+                                a.article !== "Main_Page" && a.article !== "Search" && 
+                                !a.article.startsWith("Special:") && !a.article.startsWith("User:")
+                            );
+                            
+                            // Pick 3 random
+                            const pool = valid.slice(0, 50);
+                            const selected = [];
+                            while(selected.length < 3 && pool.length > 0) {
+                                const idx = Math.floor(Math.random() * pool.length);
+                                selected.push(pool[idx].article.replace(/_/g, ' '));
+                                pool.splice(idx, 1);
+                            }
+                            titlesToFetch = selected;
+                        } else {
+                            throw new Error("Pageviews API failed");
+                        }
+                    } catch (e) {
+                        console.warn("Fallback to random", e);
+                        const randResp = await fetch('https://en.wikipedia.org/w/api.php?origin=*&action=query&format=json&list=random&rnnamespace=0&rnlimit=3');
+                        const randData = await randResp.json();
+                        titlesToFetch = randData.query.random.map(p => p.title);
+                    }
+                }
+
+                // Get Details - Parallel requests to avoid link limit starvation
+                const detailPromises = titlesToFetch.map(async (title) => {
+                    const resp = await fetch(`https://en.wikipedia.org/w/api.php?origin=*&action=query&format=json&prop=extracts|links&titles=${encodeURIComponent(title)}&exintro&explaintext&plnamespace=0&pllimit=100`);
+                    const data = await resp.json();
+                    const pageId = Object.keys(data.query.pages)[0];
+                    return data.query.pages[pageId];
+                });
+
+                const pages = await Promise.all(detailPromises);
+
+                state.topics = pages.map(page => {
+                    // MODIFIED: We store the full extract now, no truncation here
+                    const extract = page.extract || "No description available.";
+                    
+                    const links = page.links 
+                        ? page.links.map(l => l.title).filter(t => !t.startsWith("List of")) 
+                        : [];
+                    
+                    const shuffledLinks = links.sort(() => 0.5 - Math.random()).slice(0, 6);
+
+                    return {
+                        text: page.title,
+                        description: extract,
+                        related: shuffledLinks
+                    };
+                });
+                
+                state.twists = [];
+                state.selectedIndex = 0;
+                state.contextExpanded = false; // Reset expansion on new topics
+                renderTopicGrid();
+                renderTwistList();
+                updateMedals();
+
+            } catch (err) {
+                console.error(err);
+                state.topics = [{ text: "API Error", description: "Could not load topics.", related: [] }];
+                renderTopicGrid();
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // --- Rendering ---
+        
+        function setLoading(isLoading) {
+            state.loading = isLoading;
+            const refreshBtn = document.getElementById('btn-refresh');
+            if (!refreshBtn) return;
+            const icon = refreshBtn.querySelector('svg') || refreshBtn.querySelector('i');
+            
+            if(isLoading) {
+                if(icon) icon.classList.add('animate-spin');
+                refreshBtn.disabled = true;
+            } else {
+                if(icon) icon.classList.remove('animate-spin');
+                refreshBtn.disabled = false;
+            }
+        }
+
+        function renderTopicGrid() {
+            const grid = document.getElementById('topic-grid');
+            // Always clear the grid before rendering new topics
+            grid.innerHTML = '';
+
+            state.topics.forEach((topic, idx) => {
+                const isSelected = idx === state.selectedIndex;
+                
+                const div = document.createElement('div');
+                div.className = `cursor-pointer p-3 rounded-lg border-2 transition-all duration-200 relative group ${isSelected 
+                    ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white shadow-[4px_4px_0px_0px_#fd19c8] translate-y-[-2px] translate-x-[-2px]' 
+                    : 'bg-transparent border-black/20 dark:border-white/20 hover:border-neonPurple dark:hover:border-neonPurple'}`;
+                
+                div.onclick = () => selectTopic(idx);
+
+                div.innerHTML = `
+                    ${isSelected ? `
+                    <div class="absolute -top-3 -right-3 bg-neonYellow text-black border-2 border-black rounded-full p-0.5 shadow-sm z-10">
+                        <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                    </div>` : ''}
+                    <h3 class="font-bold text-sm leading-tight mb-2 ${isSelected ? 'line-clamp-2' : 'line-clamp-2'}">${topic.text}</h3>
+                    ${!isSelected ? `<p class="text-[10px] opacity-60 line-clamp-2 leading-relaxed font-medium">${topic.description}</p>` : ''}
+                `;
+                grid.appendChild(div);
+            });
+            lucide.createIcons();
+            renderActiveContext();
+            updatePlaceholder();
+        }
+
+        function renderActiveContext() {
+            const container = document.getElementById('active-context');
+            const topic = state.topics[state.selectedIndex];
+            
+            if (!topic) {
+                container.classList.add('hidden');
+                return;
+            }
+
+            container.classList.remove('hidden');
+            
+            // Handle Expanded/Collapsed state
+            const textSpan = document.getElementById('context-text');
+            const hint = document.getElementById('context-hint');
+            textSpan.textContent = topic.description;
+
+            if (state.contextExpanded) {
+                textSpan.classList.remove('line-clamp-2');
+                hint.innerHTML = `<i data-lucide="chevron-up" class="w-3 h-3"></i> Read Less`;
+            } else {
+                textSpan.classList.add('line-clamp-2');
+                hint.innerHTML = `<i data-lucide="chevron-down" class="w-3 h-3"></i> Read More`;
+            }
+
+            const linksContainer = document.getElementById('related-links');
+            linksContainer.innerHTML = '';
+            
+            if (topic.related && topic.related.length > 0) {
+                 const label = document.createElement('span');
+                 label.className = "text-xs font-bold uppercase text-neonPurple py-1.5 mr-1";
+                 label.textContent = "Pivot To:";
+                 linksContainer.appendChild(label);
+
+                 topic.related.slice(0, 4).forEach(linkText => {
+                     const btn = document.createElement('button');
+                     btn.className = "bg-transparent border border-black/10 dark:border-white/20 text-black/60 dark:text-white/60 hover:border-neonPink hover:text-neonPink dark:hover:border-neonPink dark:hover:text-neonPink shadow-sm text-xs px-2 py-1 rounded-md flex items-center gap-1 transition-all mt-1";
+                     btn.onclick = () => fetchTopics(linkText);
+                     btn.innerHTML = `${linkText} <i data-lucide="arrow-right" class="w-3 h-3 opacity-50"></i>`;
+                     linksContainer.appendChild(btn);
+                 });
+            }
+            lucide.createIcons();
+        }
+        
+        // NEW: Toggle context expansion
+        function toggleContext() {
+            state.contextExpanded = !state.contextExpanded;
+            renderActiveContext();
+        }
+
+        function updatePlaceholder() {
+            const input = document.getElementById('twist-input');
+            const topic = state.topics[state.selectedIndex];
+            input.placeholder = topic ? `Twist for "${topic.text}"...` : "Loading...";
+        }
+
+        function renderTwistList() {
+            const list = document.getElementById('twist-list');
+            list.innerHTML = '';
+
+            if (state.twists.length === 0) {
+                list.innerHTML = `
+                    <div class="text-center py-4 opacity-30 select-none pointer-events-none">
+                        <p class="text-sm font-bold uppercase tracking-widest">Add your twists above</p>
+                    </div>`;
+            } else {
+                state.twists.forEach((twist, idx) => {
+                    const div = document.createElement('div');
+                    div.className = "group flex items-start gap-4 p-4 rounded-xl bg-black/5 dark:bg-white/5 border-2 border-transparent hover:border-neonPurple/50 transition-all slide-up";
+                    
+                    div.innerHTML = `
+                        <span class="font-black text-neonPurple text-xl mt-0.5 select-none uppercase">BUT</span>
+                        <p class="flex-1 font-medium text-lg leading-relaxed dark:text-white outline-none focus:text-neonPink transition-colors border-b border-transparent focus:border-neonPink" 
+                           contenteditable="true" 
+                           onblur="editTwist(${idx}, this.innerText)"
+                           onkeydown="if(event.key === 'Enter') { this.blur(); event.preventDefault(); }">${twist}</p>
+                        <button onclick="removeTwist(${idx})" class="opacity-0 group-hover:opacity-100 p-2 text-neonPink hover:bg-neonPink/10 rounded transition-all">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    `;
+                    list.appendChild(div);
+                });
+            }
+            
+            const hasItems = state.twists.length > 0;
+            const hasCachedItems = localStorage.getItem('thisButThat_cachedTwists') !== null;
+            const saveBtn = document.getElementById('btn-save');
+            const exportBtn = document.getElementById('btn-export');
+            const copyBtn = document.getElementById('btn-copy');
+
+            saveBtn.disabled = !hasItems;
+            exportBtn.disabled = !hasItems && !hasCachedItems;
+            copyBtn.disabled = !hasItems && !hasCachedItems;
+            
+            lucide.createIcons();
+        }
+
+        function updateMedals() {
+            const count = state.twists.length;
+            const bronze = document.getElementById('medal-bronze');
+            const silver = document.getElementById('medal-silver');
+            const gold = document.getElementById('medal-gold');
+            const msg = document.getElementById('gold-message');
+
+            const activate = (el, active) => {
+                if(!el) return;
+                const icon = el.querySelector('svg') || el.querySelector('i');
+                if(!icon) return;
+
+                if(active) {
+                    el.classList.remove('opacity-20', 'scale-75', 'grayscale');
+                    el.classList.add('opacity-100', 'scale-110');
+                    icon.classList.add('fill-current', 'drop-shadow-[0_0_8px_rgba(253,25,200,0.5)]');
+                } else {
+                    el.classList.add('opacity-20', 'scale-75', 'grayscale');
+                    el.classList.remove('opacity-100', 'scale-110');
+                    icon.classList.remove('fill-current', 'drop-shadow-[0_0_8px_rgba(253,25,200,0.5)]');
+                }
+            };
+
+            activate(bronze, count >= 3);
+            activate(silver, count >= 4);
+            activate(gold, count >= 5);
+
+            if(count >= 5) msg.classList.remove('hidden');
+            else msg.classList.add('hidden');
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('history-content');
+            container.innerHTML = '';
+
+            if (state.history.length === 0) {
+                container.innerHTML = `
+                     <div class="text-center text-gray-400 mt-20">
+                        <i data-lucide="history" class="w-12 h-12 mx-auto mb-4 opacity-50"></i>
+                        <p>No history yet.</p>
+                    </div>
+                `;
+            } else {
+                state.history.forEach(session => {
+                    const div = document.createElement('div');
+                    div.className = "p-4 rounded-xl border-2 border-black/10 dark:border-white/10 hover:border-neonPurple dark:hover:border-neonPurple transition-colors bg-transparent dark:text-white";
+                    
+                    let medalBadge = '';
+                    if (session.medal) {
+                        const style = session.medal === 'gold' ? 'bg-neonYellow/20 border-neonYellow text-neonYellow' :
+                                      session.medal === 'silver' ? 'bg-gray-200 border-gray-400 text-gray-600' :
+                                      'bg-orange-100 border-orange-400 text-orange-600';
+                        medalBadge = `<span class="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${style}">${session.medal}</span>`;
+                    }
+
+                    div.innerHTML = `
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-xs font-mono opacity-50">${session.date}</span>
+                            ${medalBadge}
+                        </div>
+                        <h4 class="font-bold text-lg mb-1 leading-tight">${session.prompt.text}</h4>
+                        <ul class="space-y-1 ml-4 mt-3 list-disc marker:text-neonPink">
+                            ${session.twists.map(t => `<li class="text-sm opacity-80 pl-1">${t}</li>`).join('')}
+                        </ul>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+            lucide.createIcons();
+        }
+
+        // --- Interaction ---
+        function selectTopic(idx) {
+            if (idx !== state.selectedIndex) {
+                state.selectedIndex = idx;
+                state.twists = [];
+                state.contextExpanded = false; // Reset expansion when switching topics
+                renderTopicGrid();
+                renderTwistList();
+                updateMedals();
+            }
+        }
+
+        function setupInputListener() {
+            const input = document.getElementById('twist-input');
+            const btn = document.getElementById('btn-add');
+            input.addEventListener('input', (e) => {
+                btn.disabled = !e.target.value.trim();
+                btn.classList.toggle('opacity-50', !e.target.value.trim());
+            });
+        }
+
+        function addTwist(e) {
+            e.preventDefault();
+            const input = document.getElementById('twist-input');
+            const val = input.value.trim();
+            if (!val) return;
+
+            state.twists.push(val);
+            input.value = '';
+            document.getElementById('btn-add').disabled = true;
+            document.getElementById('btn-add').classList.add('opacity-50');
+            
+            renderTwistList();
+            updateMedals();
+        }
+
+        function removeTwist(idx) {
+            state.twists.splice(idx, 1);
+            renderTwistList();
+            updateMedals();
+        }
+
+        function editTwist(idx, newText) {
+            const trimmed = newText.trim();
+            if (trimmed) {
+                state.twists[idx] = trimmed;
+            } else {
+                removeTwist(idx);
+            }
+        }
+
+        function toggleHistory(show) {
+            const modal = document.getElementById('history-modal');
+            if (show) {
+                modal.classList.remove('hidden');
+                renderHistory();
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        function saveAndNext() {
+            if (state.twists.length === 0) return;
+            
+            const currentTopic = state.topics[state.selectedIndex];
+            const medalCount = state.twists.length;
+            const medal = medalCount >= 5 ? 'gold' : medalCount >= 4 ? 'silver' : medalCount >= 3 ? 'bronze' : null;
+
+            const entry = {
+                id: Date.now(),
+                date: new Date().toLocaleDateString(),
+                prompt: currentTopic,
+                twists: [...state.twists],
+                medal: medal
+            };
+
+            state.history.unshift(entry);
+            localStorage.setItem('thisButThatHistory', JSON.stringify(state.history));
+            
+            // Refresh
+            fetchTopics();
+        }
+
+        function loadHistory() {
+            const saved = localStorage.getItem('thisButThatHistory');
+            if (saved) {
+                try {
+                    state.history = JSON.parse(saved);
+                } catch(e) { console.error("History parse fail"); }
+            }
+        }
+
+        function formatExport() {
+            let currentTopic = state.topics[state.selectedIndex];
+            let twists = state.twists;
+
+            // Fall back to cached twists if current session is empty
+            if (twists.length === 0) {
+                const cached = localStorage.getItem('thisButThat_cachedTwists');
+                if (cached) {
+                    try {
+                        const parsed = JSON.parse(cached);
+                        currentTopic = parsed.topic;
+                        twists = parsed.twists;
+                    } catch(e) {}
+                }
+            }
+
+            if (!currentTopic || twists.length === 0) return null;
+
+            let body = `TOPIC: ${currentTopic.text}\nCONTEXT: ${currentTopic.description}\n\nTHE TWISTS:\n`;
+            twists.forEach((t, i) => {
+                body += `${i + 1}. BUT ${t}\n`;
+            });
+            const count = twists.length;
+            const medal = count >= 5 ? 'GOLD' : count >= 4 ? 'SILVER' : count >= 3 ? 'BRONZE' : null;
+            if(medal) body += `\n🏅 Rank Achieved: ${medal}`;
+            return { subject: `Twists for: ${currentTopic.text}`, body };
+        }
+
+        function exportEmail() {
+            const data = formatExport();
+            if(!data) return;
+            window.open(`mailto:?subject=${encodeURIComponent(data.subject)}&body=${encodeURIComponent(data.body)}`);
+        }
+
+        function copyToClipboard() {
+            const data = formatExport();
+            if(!data) return;
+            navigator.clipboard.writeText(data.body).then(() => {
+                const toast = document.getElementById('toast');
+                toast.classList.remove('opacity-0');
+                setTimeout(() => toast.classList.add('opacity-0'), 2000);
+            });
+        }
+
+    </script>
+</body>
+</html>

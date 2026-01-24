@@ -4,39 +4,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Courius Screenwriter</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect x=%225%22 y=%2230%22 width=%2290%22 height=%2265%22 rx=%225%22 fill=%22%231a2f23%22/><rect x=%225%22 y=%2210%22 width=%2290%22 height=%2225%22 fill=%22%231a2f23%22/><rect x=%225%22 y=%2210%22 width=%2218%22 height=%2225%22 fill=%22%23c5a059%22 transform=%22skewX(-15)%22/><rect x=%2228%22 y=%2210%22 width=%2218%22 height=%2225%22 fill=%22%23c5a059%22 transform=%22skewX(-15)%22/><rect x=%2251%22 y=%2210%22 width=%2218%22 height=%2225%22 fill=%22%23c5a059%22 transform=%22skewX(-15)%22/><rect x=%2274%22 y=%2210%22 width=%2218%22 height=%2225%22 fill=%22%23c5a059%22 transform=%22skewX(-15)%22/><line x1=%2215%22 y1=%2250%22 x2=%2285%22 y2=%2250%22 stroke=%22%23c5a059%22 stroke-width=%223%22/><line x1=%2215%22 y1=%2265%22 x2=%2270%22 y2=%2265%22 stroke=%22%23c5a059%22 stroke-width=%222%22/><line x1=%2215%22 y1=%2280%22 x2=%2255%22 y2=%2280%22 stroke=%22%23c5a059%22 stroke-width=%222%22/></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect x=%225%22 y=%2230%22 width=%2290%22 height=%2265%22 rx=%225%22 fill=%22%23000000%22/><rect x=%225%22 y=%2210%22 width=%2290%22 height=%2225%22 fill=%22%23000000%22/><rect x=%225%22 y=%2210%22 width=%2218%22 height=%2225%22 fill=%22%23fd19c8%22 transform=%22skewX(-15)%22/><rect x=%2228%22 y=%2210%22 width=%2218%22 height=%2225%22 fill=%22%23fd19c8%22 transform=%22skewX(-15)%22/><rect x=%2251%22 y=%2210%22 width=%2218%22 height=%2225%22 fill=%22%23fd19c8%22 transform=%22skewX(-15)%22/><rect x=%2274%22 y=%2210%22 width=%2218%22 height=%2225%22 fill=%22%23fd19c8%22 transform=%22skewX(-15)%22/><line x1=%2215%22 y1=%2250%22 x2=%2285%22 y2=%2250%22 stroke=%22%23fd19c8%22 stroke-width=%223%22/><line x1=%2215%22 y1=%2265%22 x2=%2270%22 y2=%2265%22 stroke=%22%23fd19c8%22 stroke-width=%222%22/><line x1=%2215%22 y1=%2280%22 x2=%2255%22 y2=%2280%22 stroke=%22%23fd19c8%22 stroke-width=%222%22/></svg>">
     <style>
         :root {
-            /* Chessboard Theme - Cream & Dark Green */
-            --bg-color: #f0f2ef; /* Light grey-green background */
-            --paper-color: #fdfbf7; /* Rich Cream paper */
-            --text-color: #1a2f23; /* Deep Forest Green text */
-            --ui-bg: rgba(26, 47, 35, 0.95); /* Deep Green UI */
-            --ui-text: #e9edde; /* Sage text for UI */
-            --shadow: 0 12px 40px rgba(26, 47, 35, 0.15);
-            --caret: #1a2f23;
-            --suggestion: #a3ad9f;
-            --accent: #2d5a42; /* Classic Green accent */
-            --accent-gold: #c5a059; /* Muted Gold */
+            /* Dad Skeleton Theme - Dark Mode */
+            --bg-color: #0a0a0a; /* Near black background */
+            --paper-color: #121212; /* Dark paper */
+            --text-color: #ffffff; /* White text */
+            --ui-bg: rgba(10, 10, 10, 0.95); /* Dark UI */
+            --ui-text: #ffffff; /* White text for UI */
+            --shadow: 0 12px 40px rgba(253, 25, 200, 0.15);
+            --caret: #fd19c8;
+            --suggestion: rgba(253, 25, 200, 0.4);
+            --accent: #fd19c8; /* Hot Pink accent */
+            --accent-gold: #fae84f; /* Yellow accent */
             --courier: "Courier New", Courier, monospace;
             --line-height: 1.15;
             --font-size: 12pt;
-            
+
             /* Page Break Guide Color */
-            --guide-color: rgba(0,0,0,0.1);
+            --guide-color: rgba(253, 25, 200, 0.15);
         }
 
         body.night-mode {
-            --bg-color: #0d140f;
-            --paper-color: #16211a; /* Dark Forest paper */
-            --text-color: #d1d9cf; /* Soft Sage text */
-            --ui-bg: rgba(5, 8, 6, 0.95);
-            --ui-text: #8fa194;
-            --shadow: 0 10px 40px rgba(0,0,0,0.5);
-            --caret: #d1d9cf;
-            --suggestion: #4a5c51;
-            --accent-gold: #9e7e44;
-            --guide-color: rgba(255,255,255,0.1);
+            --bg-color: #000000;
+            --paper-color: #0d0d0d; /* Pure black paper */
+            --text-color: #ffffff; /* White text */
+            --ui-bg: rgba(5, 5, 5, 0.95);
+            --ui-text: #ffffff;
+            --shadow: 0 10px 40px rgba(253, 25, 200, 0.2);
+            --caret: #fd19c8;
+            --suggestion: rgba(253, 25, 200, 0.3);
+            --accent-gold: #fae84f;
+            --guide-color: rgba(253, 25, 200, 0.1);
         }
 
         * { box-sizing: border-box; }
@@ -112,7 +112,8 @@
 
         .side-btn.active {
             background: var(--accent-gold);
-            color: #fff;
+            color: #000;
+            text-shadow: none;
         }
 
         /* Tooltips */
@@ -814,8 +815,10 @@
                 else if (fdxType === 'Transition') type = 'transition';
 
                 let text = '';
-                const textNode = paragraphs[i].getElementsByTagName('Text')[0];
-                if (textNode) text = textNode.textContent;
+                const textNodes = paragraphs[i].getElementsByTagName('Text');
+                for (let j = 0; j < textNodes.length; j++) {
+                    text += textNodes[j].textContent;
+                }
 
                 const div = document.createElement('div');
                 setBlockType(div, type);
