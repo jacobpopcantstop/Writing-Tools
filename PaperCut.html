@@ -591,8 +591,10 @@
                         pdf: pdf,
                         totalPages: pdf.numPages,
                         currentPage: 1,
-                        pageRotations: {},
-                        annotations: {}
+                        // Initialize page mapping [1, 2, 3, ... N]
+                        pageMapping: Array.from({length: pdf.numPages}, (_, i) => i + 1),
+                        pageRotations: {}, // Keyed by ORIGINAL page number
+                        annotations: {}    // Keyed by ORIGINAL page number
                     };
                     
                     state.documents.push(newDoc);
@@ -673,12 +675,21 @@
             renderThumbnails();
         }
 
+        // Helper to get original page number from mapping
+        function getOriginalPageNumber(doc) {
+            // doc.currentPage is 1-based index into our valid pages
+            // pageMapping is 0-indexed array of original 1-based page numbers
+            return doc.pageMapping[doc.currentPage - 1];
+        }
+
         async function renderPage() {
             const doc = getActiveDoc();
-            if (!doc || !doc.pdf) return;
+            if (!doc || !doc.pdf || doc.totalPages === 0) return;
 
-            const page = await doc.pdf.getPage(doc.currentPage);
-            const rotation = (doc.pageRotations[doc.currentPage] || 0) + page.rotate;
+            const originalPageNum = getOriginalPageNumber(doc);
+            const page = await doc.pdf.getPage(originalPageNum);
+            
+            const rotation = (doc.pageRotations[originalPageNum] || 0) + page.rotate;
             const viewport = page.getViewport({ scale: state.scale, rotation });
 
             dom.pdfCanvas.width = viewport.width;
@@ -707,12 +718,16 @@
             dom.thumbnails.innerHTML = '';
             if(!doc) return;
 
-            for (let i = 1; i <= doc.totalPages; i++) {
-                const page = await doc.pdf.getPage(i);
+            // Iterate through our valid pages map
+            for (let i = 0; i < doc.pageMapping.length; i++) {
+                const logicalPageNum = i + 1;
+                const originalPageNum = doc.pageMapping[i];
+                
+                const page = await doc.pdf.getPage(originalPageNum);
                 const viewport = page.getViewport({ scale: 0.2 });
                 const thumbDiv = document.createElement('div');
-                thumbDiv.className = 'thumbnail' + (i === doc.currentPage ? ' active' : '');
-                thumbDiv.onclick = () => goToPage(i);
+                thumbDiv.className = 'thumbnail' + (logicalPageNum === doc.currentPage ? ' active' : '');
+                thumbDiv.onclick = () => goToPage(logicalPageNum);
                 
                 const canvas = document.createElement('canvas');
                 canvas.width = viewport.width; canvas.height = viewport.height;
@@ -721,8 +736,8 @@
                 
                 await page.render({ canvasContext: ctx, viewport: viewport }).promise;
                 
-                thumbDiv.innerHTML = `<div class="thumbnail-number">${i}</div>
-                    <div class="thumbnail-actions"><button class="thumb-btn" onclick="event.stopPropagation(); rotatePage(-90, ${i});" title="Rotate"><i data-lucide="rotate-ccw" style="width: 12px; height: 12px;"></i></button></div>`;
+                thumbDiv.innerHTML = `<div class="thumbnail-number">${logicalPageNum}</div>
+                    <div class="thumbnail-actions"><button class="thumb-btn" onclick="event.stopPropagation(); rotatePage(-90, ${logicalPageNum});" title="Rotate"><i data-lucide="rotate-ccw" style="width: 12px; height: 12px;"></i></button></div>`;
                 thumbDiv.prepend(canvas);
                 dom.thumbnails.appendChild(thumbDiv);
             }
@@ -745,7 +760,8 @@
             const doc = getActiveDoc();
             const containerWidth = dom.canvasContainer.clientWidth - 64;
             if (doc && doc.pdf) {
-                doc.pdf.getPage(doc.currentPage).then(page => {
+                const originalPageNum = getOriginalPageNumber(doc);
+                doc.pdf.getPage(originalPageNum).then(page => {
                     const viewport = page.getViewport({ scale: 1 });
                     state.scale = containerWidth / viewport.width;
                     renderPage();
@@ -792,7 +808,8 @@
                 
                 const doc = getActiveDoc();
                 if(!doc) return;
-                const anns = doc.annotations[doc.currentPage];
+                const originalPageNum = getOriginalPageNumber(doc);
+                const anns = doc.annotations[originalPageNum];
                 const ann = anns.find(a => a.id === state.draggingAnnotationId);
                 if (ann) {
                     ann.x = toPct(mouseX - state.dragOffset.x, rect.width);
@@ -849,7 +866,8 @@
             const rect = dom.annotationLayer.getBoundingClientRect();
             
             const doc = getActiveDoc();
-            const ann = doc.annotations[doc.currentPage].find(a => a.id === annId);
+            const originalPageNum = getOriginalPageNumber(doc);
+            const ann = doc.annotations[originalPageNum].find(a => a.id === annId);
             const annPxX = toPx(ann.x, rect.width);
             const annPxY = toPx(ann.y, rect.height);
             
@@ -873,8 +891,9 @@
         function saveAnnotation(annotation) {
             const doc = getActiveDoc();
             if(!doc) return;
-            if (!doc.annotations[doc.currentPage]) doc.annotations[doc.currentPage] = [];
-            doc.annotations[doc.currentPage].push(annotation);
+            const originalPageNum = getOriginalPageNumber(doc);
+            if (!doc.annotations[originalPageNum]) doc.annotations[originalPageNum] = [];
+            doc.annotations[originalPageNum].push(annotation);
             state.selectedAnnotationId = annotation.id;
             updateAnnotationCount();
         }
@@ -898,8 +917,11 @@
 
         function deleteSelectedAnnotation() {
             const doc = getActiveDoc();
-            if (!doc || !state.selectedAnnotationId || !doc.annotations[doc.currentPage]) return;
-            doc.annotations[doc.currentPage] = doc.annotations[doc.currentPage].filter(a => a.id !== state.selectedAnnotationId);
+            if (!doc || !state.selectedAnnotationId) return;
+            const originalPageNum = getOriginalPageNumber(doc);
+            if(!doc.annotations[originalPageNum]) return;
+            
+            doc.annotations[originalPageNum] = doc.annotations[originalPageNum].filter(a => a.id !== state.selectedAnnotationId);
             state.selectedAnnotationId = null;
             renderAnnotations();
             updateAnnotationCount();
@@ -909,7 +931,8 @@
             dom.annotationLayer.innerHTML = '';
             const doc = getActiveDoc();
             if(!doc) return;
-            const pageAnnotations = doc.annotations[doc.currentPage] || [];
+            const originalPageNum = getOriginalPageNumber(doc);
+            const pageAnnotations = doc.annotations[originalPageNum] || [];
             const rect = dom.annotationLayer.getBoundingClientRect();
 
             pageAnnotations.forEach(ann => {
@@ -941,14 +964,16 @@
         function updateAnnotationCount() {
             const doc = getActiveDoc();
             if(!doc) return;
-            const count = (doc.annotations[doc.currentPage] || []).length;
+            const originalPageNum = getOriginalPageNumber(doc);
+            const count = (doc.annotations[originalPageNum] || []).length;
             document.getElementById('annotation-count').textContent = count;
         }
 
         function clearAnnotations() {
             const doc = getActiveDoc();
             if(!doc) return;
-            doc.annotations[doc.currentPage] = [];
+            const originalPageNum = getOriginalPageNumber(doc);
+            doc.annotations[originalPageNum] = [];
             renderAnnotations();
         }
 
@@ -956,32 +981,68 @@
         function rotatePage(degrees) {
             const doc = getActiveDoc();
             if(!doc) return;
-            if (!doc.pageRotations[doc.currentPage]) doc.pageRotations[doc.currentPage] = 0;
-            doc.pageRotations[doc.currentPage] = (doc.pageRotations[doc.currentPage] + degrees) % 360;
+            const originalPageNum = getOriginalPageNumber(doc);
+            
+            if (!doc.pageRotations[originalPageNum]) doc.pageRotations[originalPageNum] = 0;
+            doc.pageRotations[originalPageNum] = (doc.pageRotations[originalPageNum] + degrees) % 360;
             renderPage();
+            // renderThumbnails is heavy, maybe skip re-rendering all for a single rotation?
+            // But we need to update the thumb.
             renderThumbnails();
         }
 
         function deletePage() {
-            alert('Page deletion requires the document to be re-exported. Use Convert to Images to export individual pages.');
+            const doc = getActiveDoc();
+            if (!doc) return;
+            
+            if (doc.totalPages <= 1) {
+                alert("Cannot delete the last page.");
+                return;
+            }
+
+            if (confirm(`Are you sure you want to delete page ${doc.currentPage}?`)) {
+                // Remove the current page from the mapping
+                // doc.currentPage is 1-based, splice needs 0-based
+                doc.pageMapping.splice(doc.currentPage - 1, 1);
+                
+                // Update total pages
+                doc.totalPages = doc.pageMapping.length;
+                
+                // Adjust current page if we were on the last page
+                if (doc.currentPage > doc.totalPages) {
+                    doc.currentPage = doc.totalPages;
+                }
+                
+                updateUIForActiveDoc();
+            }
         }
 
         // --- HELPER TO BAKE ANNOTATIONS (SHARED) ---
-        async function bakeAnnotationsToPdf(docState, pdfDoc) {
-            const pages = pdfDoc.getPages();
+        // Updated to handle creating a NEW PDF based on pageMapping
+        async function createEditedPdf(docState) {
+            const arrayBuffer = await docState.file.arrayBuffer();
+            const srcPdf = await PDFLib.PDFDocument.load(arrayBuffer);
+            const newPdf = await PDFLib.PDFDocument.create();
+
+            // Prepare indices to copy: these are 0-based indices from the ORIGINAL pdf
+            // defined by our pageMapping
+            const indicesToCopy = docState.pageMapping.map(p => p - 1);
             
-            for (let i = 0; i < pages.length; i++) {
-                const pageNum = i + 1;
-                const pageAnnotations = docState.annotations[pageNum] || [];
-                const page = pages[i];
-                const { width, height } = page.getSize();
+            const copiedPages = await newPdf.copyPages(srcPdf, indicesToCopy);
+            
+            // Add pages and bake annotations
+            for (let i = 0; i < copiedPages.length; i++) {
+                const page = newPdf.addPage(copiedPages[i]);
+                const originalPageNum = docState.pageMapping[i]; // Get 1-based original index
                 
+                const { width, height } = page.getSize();
+                const pageAnnotations = docState.annotations[originalPageNum] || [];
+
                 for (const ann of pageAnnotations) {
                     if (ann.type === 'highlight') {
                         const rectWidth = ann.w * width;
                         const rectHeight = ann.h * height;
                         const rectX = ann.x * width;
-                        // PDF coords are bottom-left, DOM is top-left
                         const rectY = height - (ann.y * height) - rectHeight;
                         
                         let color = parseColor(ann.color);
@@ -1009,13 +1070,16 @@
                         });
                     }
                 }
-                
-                // Rotation
-                if (docState.pageRotations[pageNum]) {
-                    page.setRotation(PDFLib.degrees(docState.pageRotations[pageNum]));
+
+                // Apply Rotation
+                if (docState.pageRotations[originalPageNum]) {
+                    page.setRotation(PDFLib.degrees(docState.pageRotations[originalPageNum]));
                 }
             }
+
+            return newPdf;
         }
+
 
         // --- SINGLE PDF DOWNLOAD ---
         async function downloadPDF() {
@@ -1023,9 +1087,7 @@
             if (!doc) return;
             showLoading(true);
             try {
-                const arrayBuffer = await doc.file.arrayBuffer();
-                const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
-                await bakeAnnotationsToPdf(doc, pdfDoc);
+                const pdfDoc = await createEditedPdf(doc);
                 const pdfBytes = await pdfDoc.save();
                 downloadBlob(pdfBytes, `edited_${doc.fileName}`);
             } catch (err) { console.error(err); alert("Failed to generate PDF."); }
@@ -1040,14 +1102,12 @@
                 const mergedPdf = await PDFLib.PDFDocument.create();
                 
                 for (const docState of state.documents) {
-                    const arrayBuffer = await docState.file.arrayBuffer();
-                    const srcPdf = await PDFLib.PDFDocument.load(arrayBuffer);
+                    // Create an individual edited PDF for this doc first (handles deletion/rotation/annotations)
+                    const editedPdf = await createEditedPdf(docState);
                     
-                    // Apply annotations to in-memory srcPdf
-                    await bakeAnnotationsToPdf(docState, srcPdf);
-                    
-                    // Copy all pages
-                    const copiedPages = await mergedPdf.copyPages(srcPdf, srcPdf.getPageIndices());
+                    // Copy all pages from the edited PDF to the master merged PDF
+                    const indices = editedPdf.getPageIndices();
+                    const copiedPages = await mergedPdf.copyPages(editedPdf, indices);
                     copiedPages.forEach((page) => mergedPdf.addPage(page));
                 }
                 
@@ -1100,7 +1160,8 @@
             const doc = getActiveDoc();
             if(!doc) return;
             for (let i = 1; i <= doc.totalPages; i++) {
-                const page = await doc.pdf.getPage(i);
+                const originalPageNum = doc.pageMapping[i-1];
+                const page = await doc.pdf.getPage(originalPageNum);
                 const viewport = page.getViewport({ scale: 2 });
                 const canvas = document.createElement('canvas');
                 canvas.width = viewport.width; canvas.height = viewport.height;
@@ -1118,7 +1179,8 @@
             showLoading(true);
             let fullText = '';
             for (let i = 1; i <= doc.totalPages; i++) {
-                const page = await doc.pdf.getPage(i);
+                const originalPageNum = doc.pageMapping[i-1];
+                const page = await doc.pdf.getPage(originalPageNum);
                 const textContent = await page.getTextContent();
                 const pageText = textContent.items.map(item => item.str).join(' ');
                 fullText += `--- Page ${i} ---\n${pageText}\n\n`;
@@ -1134,7 +1196,8 @@
             if(!doc) return;
             let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${doc.fileName}</title><style>body{font-family:system-ui,sans-serif;max-width:800px;margin:2rem auto;padding:0 1rem;line-height:1.6}.page{margin-bottom:2rem;padding-bottom:2rem;border-bottom:1px solid #eee}.page-num{color:#666;font-size:0.8rem;margin-bottom:1rem}</style></head><body>`;
             for (let i = 1; i <= doc.totalPages; i++) {
-                const page = await doc.pdf.getPage(i);
+                const originalPageNum = doc.pageMapping[i-1];
+                const page = await doc.pdf.getPage(originalPageNum);
                 const textContent = await page.getTextContent();
                 const pageText = textContent.items.map(item => item.str).join(' ');
                 html += `<div class="page"><div class="page-num">Page ${i}</div><p>${escapeHtml(pageText)}</p></div>\n`;
@@ -1148,7 +1211,8 @@
             if(!doc) return;
             let md = `# ${doc.fileName}\n\n`;
             for (let i = 1; i <= doc.totalPages; i++) {
-                const page = await doc.pdf.getPage(i);
+                const originalPageNum = doc.pageMapping[i-1];
+                const page = await doc.pdf.getPage(originalPageNum);
                 const textContent = await page.getTextContent();
                 const pageText = textContent.items.map(item => item.str).join(' ');
                 md += `## Page ${i}\n\n${pageText}\n\n---\n\n`;
