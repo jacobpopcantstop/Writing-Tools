@@ -609,10 +609,17 @@
                     return;
                 }
 
-                const minQ = Math.min(...usedCells.map(c => c.q));
-                const maxQ = Math.max(...usedCells.map(c => c.q));
-                const minR = Math.min(...usedCells.map(c => c.r));
-                const maxR = Math.max(...usedCells.map(c => c.r));
+                // Calculate center of content
+                const qValues = usedCells.map(c => c.q);
+                const rValues = usedCells.map(c => c.r);
+                const centerQ = Math.round((Math.min(...qValues) + Math.max(...qValues)) / 2);
+                const centerR = Math.round((Math.min(...rValues) + Math.max(...rValues)) / 2);
+
+                // Force full page grid (approx 10x12 hexes to fill print paper)
+                const minQ = centerQ - 5;
+                const maxQ = centerQ + 5;
+                const minR = centerR - 6;
+                const maxR = centerR + 6;
 
                 // Create print window with centered, maximized hexes
                 const printWindow = window.open('', '_blank');
