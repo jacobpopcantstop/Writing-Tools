@@ -247,12 +247,12 @@
 
 /* Light Theme */
 [data-wt-theme="light"] {
-  --wt-bg: #1a1a1a;
-  --wt-bg-elevated: #242424;
-  --wt-text: var(--wt-white);
-  --wt-text-muted: rgba(255, 255, 255, 0.6);
+  --wt-bg: #f8f5f0;
+  --wt-bg-elevated: #ffffff;
+  --wt-text: var(--wt-black);
+  --wt-text-muted: rgba(0, 0, 0, 0.6);
   --wt-border: rgba(253, 25, 200, 0.2);
-  --wt-ui-bg: rgba(30, 30, 30, 0.95);
+  --wt-ui-bg: rgba(255, 255, 255, 0.95);
 }
 
 /* Dark Theme (Default) */

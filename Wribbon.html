@@ -559,6 +559,7 @@
                 <button onclick="app.download('html')">HTML (.html)</button>
                 <button onclick="window.print()">Print / PDF</button>
                 <button onclick="app.email()">Email</button>
+                <button onclick="app.emailGmail()">Gmail</button>
             </div>
         </div>
 
@@ -906,9 +907,16 @@
             },
 
             email() {
-                const subject = "My Wribbon Writing";
+                const subject = encodeURIComponent("My Wribbon Writing");
                 const body = encodeURIComponent(this.state.text);
-                window.location.href = `mailto:?subject=${subject}&body=${body}`;
+                window.open(`mailto:?subject=${subject}&body=${body}`);
+                this.toggleExportMenu();
+            },
+
+            emailGmail() {
+                const subject = encodeURIComponent("My Wribbon Writing");
+                const body = encodeURIComponent(this.state.text);
+                window.open(`https://mail.google.com/mail/?view=cm&fs=1&su=${subject}&body=${body}`, '_blank');
                 this.toggleExportMenu();
             },
 

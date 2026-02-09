@@ -228,6 +228,7 @@
                     <div class="flex gap-8">
                         <button id="export-text-btn" class="interactive-layer text-[9px] font-black tracking-[0.4em] opacity-30 hover:opacity-100 transition-opacity uppercase">Export Text</button>
                         <button id="export-email-btn" class="interactive-layer text-[9px] font-black tracking-[0.4em] opacity-30 hover:opacity-100 transition-opacity uppercase">Email</button>
+                        <button id="export-gmail-btn" class="interactive-layer text-[9px] font-black tracking-[0.4em] opacity-30 hover:opacity-100 transition-opacity uppercase">Gmail</button>
                     </div>
                 </div>
             </section>
@@ -267,7 +268,7 @@
             focusPrompt: '',
             timerInterval: null,
             isDarkMode: localStorage.getItem('writingtools_theme') === 'dark' || localStorage.getItem('writingtools_theme') === null,
-            archives: JSON.parse(localStorage.getItem('joterie_archives')) || []
+            archives: JSON.parse(localStorage.getItem('writingtools_joterie_archives')) || []
         };
 
         const elements = {
@@ -483,7 +484,7 @@
                 duration: formatTime(totalSecs)
             };
             state.archives.unshift(archiveEntry);
-            localStorage.setItem('joterie_archives', JSON.stringify(state.archives));
+            localStorage.setItem('writingtools_joterie_archives', JSON.stringify(state.archives));
 
             // Show Summary
             elements.summaryStat.innerText = `${kept.length} Kept / ${state.sessionCards.length} Total`;
@@ -560,7 +561,15 @@
             const subject = encodeURIComponent(`Joterie Harvest: ${state.focusPrompt || 'Untitled'}`);
             const bodyContent = kept.map((c, i) => `${i + 1}. ${c.text}`).join('\n');
             const body = encodeURIComponent(bodyContent);
-            window.location.href = `mailto:?subject=${subject}&body=${body}`;
+            window.open(`mailto:?subject=${subject}&body=${body}`);
+        }
+
+        function exportGmail() {
+            const kept = state.sessionCards.filter(c => c.status === 'kept');
+            const subject = encodeURIComponent(`Joterie Harvest: ${state.focusPrompt || 'Untitled'}`);
+            const bodyContent = kept.map((c, i) => `${i + 1}. ${c.text}`).join('\n');
+            const body = encodeURIComponent(bodyContent);
+            window.open(`https://mail.google.com/mail/?view=cm&fs=1&su=${subject}&body=${body}`, '_blank');
         }
 
         // Event Listeners
@@ -569,6 +578,7 @@
         elements.newSessionBtn.onclick = () => setView('home');
         elements.exportTextBtn.onclick = exportText;
         elements.exportEmailBtn.onclick = exportEmail;
+        document.getElementById('export-gmail-btn').onclick = exportGmail;
         elements.themeToggle.onclick = toggleTheme;
         elements.historyBtn.onclick = () => setView('history');
         elements.historyBackBtn.onclick = () => setView('home');

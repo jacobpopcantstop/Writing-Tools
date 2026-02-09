@@ -229,16 +229,21 @@
             fetchTopics();
             setupInputListener();
             lucide.createIcons();
-            
-            // Check system preference for dark mode initially
-            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                toggleTheme(); 
+
+            // Load theme from suite-wide localStorage key
+            const savedTheme = localStorage.getItem('writingtools_theme');
+            if (savedTheme === 'dark') {
+                state.darkMode = true;
+            } else if (savedTheme === 'light') {
+                state.darkMode = false;
+            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                state.darkMode = true;
             }
+            applyThemeState();
         });
 
         // --- Theme ---
-        function toggleTheme() {
-            state.darkMode = !state.darkMode;
+        function applyThemeState() {
             const body = document.body;
             const header = document.getElementById('main-header');
             const wrapperSun = document.getElementById('wrapper-sun');
@@ -261,6 +266,12 @@
                 if(wrapperSun) wrapperSun.classList.remove('hidden');
                 if(wrapperMoon) wrapperMoon.classList.add('hidden');
             }
+        }
+
+        function toggleTheme() {
+            state.darkMode = !state.darkMode;
+            localStorage.setItem('writingtools_theme', state.darkMode ? 'dark' : 'light');
+            applyThemeState();
         }
 
         // --- API ---
