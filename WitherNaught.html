@@ -379,7 +379,10 @@ const THEMES = {
     }
 
     function savePrefs() {
-      try { localStorage.setItem('flowstate_prefs_v13', JSON.stringify({ theme: state.theme, difficulty: state.difficulty })); } catch (e) {}
+      try {
+        localStorage.setItem('flowstate_prefs_v13', JSON.stringify({ theme: state.theme, difficulty: state.difficulty }));
+        localStorage.setItem('writingtools_theme', state.theme === 'warm' ? 'light' : 'dark');
+      } catch (e) {}
     }
 
     function updateStreak() {
@@ -1124,12 +1127,20 @@ const THEMES = {
     // ===== INIT =====
     function init() {
       loadFromStorage();
-      
+
       if (!localStorage.getItem('flowstate_prefs_v13')) {
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        state.theme = prefersDark ? 'cool' : 'warm';
+        // Sync from suite-wide theme if available
+        const suiteTheme = localStorage.getItem('writingtools_theme');
+        if (suiteTheme === 'light') {
+          state.theme = 'warm';
+        } else if (suiteTheme === 'dark') {
+          state.theme = 'cool';
+        } else {
+          const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          state.theme = prefersDark ? 'cool' : 'warm';
+        }
       }
-      
+
       render();
       animationId = requestAnimationFrame(animate);
     }

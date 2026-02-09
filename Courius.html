@@ -474,9 +474,10 @@
         }
         updateSuggestions();
         
-        // Theme Logic: Default is Dark (no class). Check if user specifically saved 'light'.
+        // Theme Logic: Default is Dark (no class). Check local key first, then suite-wide key.
         const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
-        if (savedTheme === 'light') {
+        const suiteTheme = localStorage.getItem('writingtools_theme');
+        if (savedTheme === 'light' || (!savedTheme && suiteTheme === 'light')) {
             document.body.classList.add('day-mode');
         }
         
@@ -500,6 +501,7 @@
         document.body.classList.toggle('day-mode');
         const isLight = document.body.classList.contains('day-mode');
         localStorage.setItem(THEME_STORAGE_KEY, isLight ? 'light' : 'dark');
+        localStorage.setItem('writingtools_theme', isLight ? 'light' : 'dark');
     }
 
     // --- Title Page Logic ---
