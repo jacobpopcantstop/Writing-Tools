@@ -725,7 +725,8 @@
             }
         }
 
-        function formatExport() {
+        function formatExport(options = {}) {
+            const compact = !!options.compact;
             const batches = getCachedTwistBatches();
             const currentTopic = state.topics[state.selectedIndex];
             const currentTwists = state.twists.map(t => String(t).trim()).filter(Boolean);
@@ -751,9 +752,10 @@
             batches.forEach((batch, batchIndex) => {
                 const topicText = batch.topic?.text || 'Untitled Topic';
                 const topicDescription = batch.topic?.description || 'No context available.';
+                const compactContext = topicDescription.length > 320 ? `${topicDescription.slice(0, 317)}...` : topicDescription;
                 body += `=== BATCH ${batchIndex + 1} ===\n`;
                 body += `TOPIC: ${topicText}\n`;
-                body += `CONTEXT: ${topicDescription}\n`;
+                body += `CONTEXT: ${compact ? compactContext : topicDescription}\n`;
                 body += `TWISTS:\n`;
 
                 batch.twists.forEach((twist, i) => {
@@ -771,9 +773,32 @@
         }
 
         function exportEmail() {
-            const data = formatExport();
+            const fullData = formatExport({ compact: false });
+            const compactData = formatExport({ compact: true });
+            const data = compactData || fullData;
             if(!data) return;
-            window.open(`mailto:?subject=${encodeURIComponent(data.subject)}&body=${encodeURIComponent(data.body)}`);
+
+            const gmailBase = 'https://mail.google.com/mail/?view=cm&fs=1';
+            const encodedSubject = encodeURIComponent(data.subject);
+            let bodyForUrl = data.body;
+            let wasTrimmed = false;
+
+            if (bodyForUrl.length > 1600) {
+                wasTrimmed = true;
+                bodyForUrl = `${bodyForUrl.slice(0, 1500)}\n\n[Truncated for Gmail URL length. Full export copied to clipboard.]`;
+            }
+
+            const encodedBody = encodeURIComponent(bodyForUrl);
+            const gmailUrl = `${gmailBase}&su=${encodedSubject}&body=${encodedBody}`;
+
+            if (fullData && (wasTrimmed || fullData.body.length > bodyForUrl.length)) {
+                navigator.clipboard.writeText(fullData.body).catch(() => {});
+            }
+
+            const win = window.open(gmailUrl, '_blank', 'noopener,noreferrer');
+            if (!win) {
+                window.location.href = gmailUrl;
+            }
         }
 
         function copyToClipboard() {

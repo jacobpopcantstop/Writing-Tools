@@ -361,3 +361,21 @@ All tools now read/write `writingtools_theme` in localStorage. The index hub add
 2. Added a header `Momentum` meter based on active beat count and structure diversity.
 3. Added ambient canvas glow drift and selected-node pulse feedback.
 4. Added low-friction nudges when maps are still underdeveloped (below three story beats).
+
+---
+
+## 13. PaperCut Audit Addendum (February 23, 2026)
+
+### Findings Addressed
+
+1. Mobile zoom was artificially blocked via viewport lock.
+2. File list rendering used unsanitized `innerHTML` for filenames.
+3. Thumbnail rotate action always rotated the current page, not the clicked thumbnail.
+4. Conversion flow could fail silently if no format was selected.
+
+### Fixes Applied
+
+1. Removed viewport zoom lock (`user-scalable=no`).
+2. Replaced filename list rendering with safe DOM node construction.
+3. Added page-targeted rotation support from thumbnail controls.
+4. Added explicit conversion selection guard with user feedback.

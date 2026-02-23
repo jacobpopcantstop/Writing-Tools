@@ -123,27 +123,6 @@
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-in { animation: fadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        @keyframes hivePulse {
-            0% { transform: scale(0.7); opacity: 0.45; }
-            100% { transform: scale(1.6); opacity: 0; }
-        }
-        @keyframes glowDrift {
-            0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.5; }
-            50% { transform: translate3d(18px, -16px, 0) scale(1.08); opacity: 0.8; }
-        }
-        .hive-selected-pulse {
-            animation: hivePulse 1.4s ease-out infinite;
-            transform-origin: center;
-            pointer-events: none;
-        }
-        .hive-ambient-orb {
-            position: absolute;
-            border-radius: 9999px;
-            filter: blur(48px);
-            pointer-events: none;
-            animation: glowDrift 9s ease-in-out infinite;
-        }
-
         /* Minimap */
         .minimap {
             position: absolute;
@@ -332,17 +311,6 @@
                         stroke={stroke} 
                         strokeWidth={isSelected ? 6 : (data ? 3 : 2)} 
                     />
-                    {isSelected && data && (
-                        <circle
-                            cx={x}
-                            cy={y}
-                            r={HEX_SIZE * 0.42}
-                            fill="none"
-                            stroke={theme === 'dark' ? 'rgba(99,102,241,0.65)' : 'rgba(67,40,24,0.35)'}
-                            strokeWidth="3"
-                            className="hive-selected-pulse"
-                        />
-                    )}
                     
                     {/* Tags with icons on the hex edge */}
                     {data?.tags?.length > 0 && !isFarZoom && (
@@ -410,7 +378,8 @@
             if (sorted.length < 2) return null;
 
             const pathD = sorted.map((c, i) => {
-                const x = c.q * HEX_WIDTH + (c.r % 2 === 0 ? 0 : HEX_WIDTH / 2);
+                // Keep spine visually straight in a single narrative column.
+                const x = c.q * HEX_WIDTH;
                 const y = c.r * VERT_SPACING;
                 return (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
             }).join(' ');
@@ -634,28 +603,34 @@
             }, [user]);
 
             const handlePrint = useCallback(() => {
-                // Calculate bounds of used hexes
-                const usedCells = cells.filter(c => c.text || c.type !== 'setup');
+                const usedCells = cells.filter(c => (c.content || '').trim().length > 0 || c.type !== 'setup');
                 if (usedCells.length === 0) {
                     alert('No content to print. Add some beats first!');
                     return;
                 }
 
-                // Calculate center of content
+                const printWindow = window.open('', '_blank');
+                if (!printWindow) {
+                    alert('Please allow popups to open the print preview.');
+                    return;
+                }
+
                 const qValues = usedCells.map(c => c.q);
                 const rValues = usedCells.map(c => c.r);
-                const centerQ = Math.round((Math.min(...qValues) + Math.max(...qValues)) / 2);
-                const centerR = Math.round((Math.min(...rValues) + Math.max(...rValues)) / 2);
+                const minQ = Math.min(...qValues) - 1;
+                const maxQ = Math.max(...qValues) + 1;
+                const minR = Math.min(...rValues) - 1;
+                const maxR = Math.max(...rValues) + 1;
 
-                // Force full page grid (approx 10x12 hexes to fill print paper)
-                const minQ = centerQ - 5;
-                const maxQ = centerQ + 5;
-                const minR = centerR - 6;
-                const maxR = centerR + 6;
+                const qRange = Math.max(1, maxQ - minQ + 1);
+                const rRange = Math.max(1, maxR - minR + 1);
 
-                // Create print window with centered, maximized hexes
-                const printWindow = window.open('', '_blank');
-                const hexSize = 80;
+                // Dynamically maximize hex size based on content bounds.
+                const targetWidth = 1500;
+                const targetHeight = 980;
+                const maxByWidth = targetWidth / (Math.sqrt(3) * (qRange + 2));
+                const maxByHeight = targetHeight / (1.5 * rRange + 2);
+                const hexSize = Math.max(42, Math.min(130, Math.floor(Math.min(maxByWidth, maxByHeight))));
                 const hexWidth = Math.sqrt(3) * hexSize;
                 const hexHeight = 2 * hexSize;
                 const vertSpacing = hexHeight * 0.75;
@@ -670,12 +645,12 @@
                 };
 
                 const hexToPixel = (q, r) => ({
-                    x: hexWidth * (q + r / 2) - hexWidth * (minQ + minR / 2) + hexSize + 40,
-                    y: vertSpacing * r - vertSpacing * minR + hexSize + 40
+                    x: (q - minQ) * hexWidth + ((r % 2 === 0) ? 0 : hexWidth / 2) + hexSize + 40,
+                    y: (r - minR) * vertSpacing + hexSize + 40
                 });
 
-                const width = (maxQ - minQ + 1) * hexWidth + hexSize * 2 + 80;
-                const height = (maxR - minR + 1) * vertSpacing + hexSize * 2 + 80;
+                const width = (qRange + 2) * hexWidth + hexSize * 2;
+                const height = (rRange + 2) * vertSpacing + hexSize * 2;
 
                 let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`;
 
@@ -684,7 +659,7 @@
                     for (let r = minR; r <= maxR; r++) {
                         const { x, y } = hexToPixel(q, r);
                         const cell = cells.find(c => c.q === q && c.r === r);
-                        const hasContent = cell && (cell.text || cell.type !== 'setup');
+                        const hasContent = cell && ((cell.content || '').trim().length > 0 || cell.type !== 'setup');
 
                         if (!hasContent) {
                             svgContent += `<polygon points="${getHexPoints(x, y, hexSize)}" fill="none" stroke="#ccc" stroke-width="1" stroke-dasharray="5,5"/>`;
@@ -702,18 +677,19 @@
                     svgContent += `<polygon points="${getHexPoints(x, y, hexSize)}" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2"/>`;
 
                     // Add text
-                    if (cell.text) {
-                        const lines = cell.text.split('\n').slice(0, 4);
-                        const lineHeight = 14;
+                    if (cell.content) {
+                        const lines = cell.content.split('\n').slice(0, 4);
+                        const lineHeight = Math.max(12, Math.floor(hexSize * 0.17));
                         const startY = y - (lines.length - 1) * lineHeight / 2;
                         lines.forEach((line, i) => {
-                            const truncated = line.length > 20 ? line.substring(0, 17) + '...' : line;
-                            svgContent += `<text x="${x}" y="${startY + i * lineHeight}" text-anchor="middle" font-size="11" font-family="Inter, sans-serif" fill="#000">${truncated}</text>`;
+                            const maxChars = Math.max(14, Math.floor(hexSize / 4));
+                            const truncated = line.length > maxChars ? line.substring(0, maxChars - 3) + '...' : line;
+                            svgContent += `<text x="${x}" y="${startY + i * lineHeight}" text-anchor="middle" font-size="${Math.max(9, Math.floor(hexSize * 0.14))}" font-family="Inter, sans-serif" fill="#000">${truncated}</text>`;
                         });
                     }
 
                     // Add beat type label
-                    svgContent += `<text x="${x}" y="${y + hexSize - 20}" text-anchor="middle" font-size="8" font-family="Inter, sans-serif" fill="${strokeColor}" font-weight="bold">${beatType.label.toUpperCase()}</text>`;
+                    svgContent += `<text x="${x}" y="${y + hexSize - Math.max(14, Math.floor(hexSize * 0.18))}" text-anchor="middle" font-size="${Math.max(8, Math.floor(hexSize * 0.1))}" font-family="Inter, sans-serif" fill="${strokeColor}" font-weight="bold">${beatType.label.toUpperCase()}</text>`;
                 });
 
                 svgContent += '</svg>';
@@ -722,6 +698,7 @@
                     <!DOCTYPE html>
                     <html>
                     <head>
+                        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5' fill='%23fd19c8'/><polygon points='50,20 80,37.5 80,62.5 50,80 20,62.5 20,37.5' fill='%23da70d6' opacity='0.6'/></svg>">
                         <title>BeatHive - ${sketchName || 'Untitled'}</title>
                         <style>
                             body { margin: 0; padding: 20px; display: flex; justify-content: center; }
@@ -1017,8 +994,6 @@
                              onMouseMove={handleMouseMove}
                              onMouseUp={handleMouseUp}
                              onMouseLeave={() => setDragState({ active: false, startQ: null, startR: null, dropTarget: null })}>
-                            <div className="hive-ambient-orb w-72 h-72 top-[8%] left-[12%]" style={{ background: theme === 'dark' ? 'rgba(99, 102, 241, 0.28)' : 'rgba(99, 102, 241, 0.20)' }} />
-                            <div className="hive-ambient-orb w-80 h-80 bottom-[10%] right-[8%]" style={{ background: theme === 'dark' ? 'rgba(168, 85, 247, 0.24)' : 'rgba(168, 85, 247, 0.15)', animationDelay: '1.7s' }} />
                             <svg ref={svgRef} className="w-full h-full">
                                 <g transform={`translate(${window.innerWidth/2 + pan.x - (libOpen ? 160 : 0) + (sidebarOpen ? -160 : 0)}, ${window.innerHeight/2 + pan.y - 40}) scale(${zoom})`}>
                                     
@@ -1056,46 +1031,49 @@
                                     const clickX = e.clientX - rect.left;
                                     const clickY = e.clientY - rect.top;
 
-                                    // Calculate bounds
-                                    const qs = cells.map(c => c.q);
-                                    const rs = cells.map(c => c.r);
-                                    const minQ = Math.min(...qs), maxQ = Math.max(...qs);
-                                    const minR = Math.min(...rs), maxR = Math.max(...rs);
-                                    const padding = 2;
+                                    const points = cells.map(c => ({
+                                        q: c.q,
+                                        r: c.r,
+                                        x: c.q * HEX_WIDTH + (c.r % 2 === 0 ? 0 : HEX_WIDTH / 2),
+                                        y: c.r * VERT_SPACING
+                                    }));
+                                    const minX = Math.min(...points.map(p => p.x)) - HEX_WIDTH;
+                                    const maxX = Math.max(...points.map(p => p.x)) + HEX_WIDTH;
+                                    const minY = Math.min(...points.map(p => p.y)) - HEX_HEIGHT;
+                                    const maxY = Math.max(...points.map(p => p.y)) + HEX_HEIGHT;
 
-                                    const rangeQ = (maxQ - minQ + padding * 2) || 1;
-                                    const rangeR = (maxR - minR + padding * 2) || 1;
+                                    const worldX = minX + (clickX / 150) * (maxX - minX || 1);
+                                    const worldY = minY + (clickY / 120) * (maxY - minY || 1);
+                                    const snappedR = Math.round(worldY / VERT_SPACING);
+                                    const snappedQ = Math.round((worldX - (snappedR % 2 === 0 ? 0 : HEX_WIDTH / 2)) / HEX_WIDTH);
+                                    const snappedX = snappedQ * HEX_WIDTH + (snappedR % 2 === 0 ? 0 : HEX_WIDTH / 2);
+                                    const snappedY = snappedR * VERT_SPACING;
 
-                                    // Map click to world coordinates
-                                    const targetQ = minQ - padding + (clickX / 150) * rangeQ;
-                                    const targetR = minR - padding + (clickY / 120) * rangeR;
-
-                                    const worldX = targetQ * HEX_WIDTH + (Math.round(targetR) % 2 === 0 ? 0 : HEX_WIDTH / 2);
-                                    const worldY = targetR * VERT_SPACING;
-
-                                    setPan({ x: -worldX * zoom, y: -worldY * zoom });
-                                    panRef.current = { x: -worldX * zoom, y: -worldY * zoom };
+                                    setPan({ x: -snappedX * zoom, y: -snappedY * zoom });
+                                    panRef.current = { x: -snappedX * zoom, y: -snappedY * zoom };
                                 }}>
                                     <svg width="150" height="120" style={{ display: 'block' }}>
                                         {(() => {
-                                            const qs = cells.map(c => c.q);
-                                            const rs = cells.map(c => c.r);
-                                            const minQ = Math.min(...qs), maxQ = Math.max(...qs);
-                                            const minR = Math.min(...rs), maxR = Math.max(...rs);
-                                            const padding = 2;
+                                            const points = cells.map(c => ({
+                                                q: c.q,
+                                                r: c.r,
+                                                x: c.q * HEX_WIDTH + (c.r % 2 === 0 ? 0 : HEX_WIDTH / 2),
+                                                y: c.r * VERT_SPACING,
+                                                type: c.type
+                                            }));
+                                            const minX = Math.min(...points.map(p => p.x)) - HEX_WIDTH;
+                                            const maxX = Math.max(...points.map(p => p.x)) + HEX_WIDTH;
+                                            const minY = Math.min(...points.map(p => p.y)) - HEX_HEIGHT;
+                                            const maxY = Math.max(...points.map(p => p.y)) + HEX_HEIGHT;
+                                            const rangeX = (maxX - minX) || 1;
+                                            const rangeY = (maxY - minY) || 1;
 
-                                            const rangeQ = (maxQ - minQ + padding * 2) || 1;
-                                            const rangeR = (maxR - minR + padding * 2) || 1;
-                                            const scaleX = 150 / rangeQ;
-                                            const scaleY = 120 / rangeR;
-                                            const scale = Math.min(scaleX, scaleY) * 0.8;
-
-                                            return cells.map(c => {
-                                                const nx = (c.q - minQ + padding) * scale + 10;
-                                                const ny = (c.r - minR + padding) * scale + 10;
-                                                const typeData = BEAT_TYPES.find(t => t.id === c.type) || BEAT_TYPES[4];
+                                            return points.map(p => {
+                                                const nx = ((p.x - minX) / rangeX) * 146 + 2;
+                                                const ny = ((p.y - minY) / rangeY) * 116 + 2;
+                                                const typeData = BEAT_TYPES.find(t => t.id === p.type) || BEAT_TYPES[4];
                                                 const fill = theme === 'dark' ? typeData.color.dark : typeData.color.light;
-                                                return <circle key={`mm-${c.q}-${c.r}`} cx={nx} cy={ny} r={4} fill={fill} />;
+                                                return <circle key={`mm-${p.q}-${p.r}`} cx={nx} cy={ny} r={3.6} fill={fill} />;
                                             });
                                         })()}
                                     </svg>

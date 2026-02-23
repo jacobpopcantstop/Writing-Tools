@@ -213,6 +213,7 @@
       SPARK_WORD_HIGHLIGHT_MS: 5000,
       MIN_SPARK_INTERVAL: 15,
       MAX_SPARK_INTERVAL: 50,
+      SCORE_PER_RING: 800,
     };
 
     const DIFFICULTIES = {
@@ -492,9 +493,49 @@ const THEMES = {
       }).join('');
     }
 
+    function getRingStats() {
+      const totalRings = Math.floor(state.score / CONSTANTS.SCORE_PER_RING);
+      const activeProgress = (state.score % CONSTANTS.SCORE_PER_RING) / CONSTANTS.SCORE_PER_RING;
+      return { totalRings, activeProgress };
+    }
+
+    function renderRingMeter(t) {
+      const { totalRings, activeProgress } = getRingStats();
+      const radii = [52, 44, 36, 28, 20, 12];
+      const activeIndex = totalRings % radii.length;
+      const cycleCount = Math.floor(totalRings / radii.length);
+
+      return `
+        <div class="flex items-center gap-4">
+          <svg width="150" height="150" viewBox="0 0 150 150" class="shrink-0">
+            <g transform="rotate(-90 75 75)">
+              ${radii.map((r, idx) => {
+                const c = 2 * Math.PI * r;
+                const progress = idx < activeIndex ? 1 : (idx === activeIndex ? activeProgress : 0);
+                const offset = c * (1 - progress);
+                return `
+                  <circle cx="75" cy="75" r="${r}" fill="none" stroke="${t.border}" stroke-width="5" opacity="0.45"></circle>
+                  <circle class="ring-segment" data-ring-index="${idx}" data-circ="${c.toFixed(3)}" cx="75" cy="75" r="${r}" fill="none" stroke="${t.accent}" stroke-width="5" stroke-linecap="round" stroke-dasharray="${c.toFixed(3)}" stroke-dashoffset="${offset.toFixed(3)}" style="transition: stroke-dashoffset 120ms linear, stroke 220ms ease;"></circle>
+                `;
+              }).join('')}
+            </g>
+          </svg>
+          <div>
+            <div id="ring-count" class="text-4xl md:text-5xl font-light tracking-tight tabular-nums">${totalRings}</div>
+            <div class="text-[10px] font-sans tracking-[0.22em] uppercase opacity-50 mt-1">Rings Completed</div>
+            <div id="ring-meta" class="text-[10px] font-sans tracking-widest uppercase mt-3" style="color:${t.accent}; opacity:0.8;">
+              Layer ${activeIndex + 1}/6 • Growth ${Math.round(activeProgress * 100)}%
+            </div>
+            ${cycleCount > 0 ? `<div class="text-[10px] font-sans uppercase tracking-widest opacity-40 mt-1">Tree Cycles: ${cycleCount}</div>` : ''}
+          </div>
+        </div>
+      `;
+    }
+
     function renderEndScreen(t) {
       const highScores = getHighScores();
       const wpm = Math.floor((state.wordCount / (state.totalTime / 60)) || 0);
+      const ringsCompleted = Math.floor(state.score / CONSTANTS.SCORE_PER_RING);
       const isNewBest = state.score >= (highScores[0]?.score || 0) && state.history.length > 1;
       
       return `
@@ -539,6 +580,10 @@ const THEMES = {
                 <div class="text-3xl font-light mb-1">${wpm}</div>
                 <div class="text-[10px] uppercase tracking-[0.2em] opacity-40 font-sans">WPM</div>
               </div>
+            </div>
+            <div class="animate-slide-up stagger-3 mb-8 text-center">
+              <div class="text-xs uppercase tracking-[0.2em] opacity-40 font-sans mb-1">Rings Completed</div>
+              <div class="text-3xl font-light" style="color:${t.accent};">${ringsCompleted}</div>
             </div>
 
             <div class="animate-slide-up stagger-3 mb-10 p-5 rounded-2xl" style="background: ${t.accentLight};">
@@ -814,16 +859,16 @@ const THEMES = {
               ` : ''}
             </div>
 
-            <!-- Score & Time display -->
-            <div class="flex justify-between items-end mb-10 px-1">
-              <div class="flex items-baseline gap-4">
-                <div id="score-display" class="text-4xl md:text-5xl font-light tracking-tight tabular-nums transition-all duration-300">${Math.floor(state.displayScore).toLocaleString()}</div>
-                <div id="combo-display" class="text-[10px] font-sans tracking-widest uppercase transition-all duration-500 flex items-center gap-2" 
-                  style="opacity: ${state.sparks.length > 0 ? 1 : (state.combo > 10 ? 0.4 : 0)}; transform: translateY(${state.sparks.length > 0 ? '-4px' : '0'});">
+            <!-- Ring Meter & Time -->
+            <div class="flex justify-between items-start mb-10 px-1">
+              ${renderRingMeter(t)}
+              <div class="text-right">
+                <div id="time-display" class="text-sm tracking-widest opacity-40 font-sans tabular-nums mb-2">${formatTime(state.totalTime)}</div>
+                <div id="combo-display" class="text-[10px] font-sans tracking-widest uppercase transition-all duration-500 flex items-center gap-2 justify-end"
+                  style="opacity: ${state.sparks.length > 0 ? 1 : (state.combo > 10 ? 0.45 : 0)}; transform: translateY(${state.sparks.length > 0 ? '-3px' : '0'});">
                   ${state.sparks.length > 0 ? `<span style="color: ${t.accent};">${icons.sparkles}</span> Spark!` : `${Math.floor(state.combo / CONSTANTS.COMBO_THRESHOLD) + 1}× flow`}
                 </div>
               </div>
-              <div id="time-display" class="text-sm tracking-widest opacity-40 font-sans tabular-nums">${formatTime(state.totalTime)}</div>
             </div>
 
             <!-- Writing area -->
@@ -866,7 +911,9 @@ const THEMES = {
       dom.textarea = document.getElementById('main-textarea');
       dom.overlay = document.getElementById('text-overlay');
       dom.flowBar = document.getElementById('flow-bar');
-      dom.scoreDisplay = document.getElementById('score-display');
+      dom.ringCount = document.getElementById('ring-count');
+      dom.ringMeta = document.getElementById('ring-meta');
+      dom.ringSegments = Array.from(document.querySelectorAll('.ring-segment'));
       dom.timeDisplay = document.getElementById('time-display');
       dom.comboDisplay = document.getElementById('combo-display');
       dom.sparksContainer = document.getElementById('sparks-container');
@@ -968,10 +1015,12 @@ const THEMES = {
       state.gameState = 'ended';
       state.displayScore = Math.floor(state.score); // Final update
       const finalWords = state.text.trim().split(/\s+/).filter(w => w.length > 0).length;
+      const ringsCompleted = Math.floor(state.score / CONSTANTS.SCORE_PER_RING);
       const session = {
         id: Date.now(),
         date: new Date().toISOString(),
         score: Math.floor(state.score),
+        rings: ringsCompleted,
         words: finalWords,
         time: Math.floor(state.totalTime),
         wpm: Math.floor((finalWords / (state.totalTime / 60)) || 0),
@@ -1012,7 +1061,7 @@ const THEMES = {
 
           updateFlowBar();
           updateTimeDisplay();
-          updateScoreDisplay(deltaTime);
+          updateRingDisplay();
         }
       }
       
@@ -1029,13 +1078,23 @@ const THEMES = {
         : (state.sparks.length > 0 ? `0 0 30px ${t.sparkColor}` : 'none');
     }
 
-    function updateScoreDisplay(deltaTime = 0) {
-      if (!dom.scoreDisplay) return;
-      const smoothing = Math.min(1, Math.max(0.1, deltaTime * 9));
-      state.displayScore += (state.score - state.displayScore) * smoothing;
-      const shown = Math.floor(state.displayScore);
-      if (dom.scoreDisplay.textContent !== shown.toLocaleString()) {
-        dom.scoreDisplay.textContent = shown.toLocaleString();
+    function updateRingDisplay() {
+      if (!dom.ringSegments || dom.ringSegments.length === 0) return;
+      const { totalRings, activeProgress } = getRingStats();
+      const activeIndex = totalRings % dom.ringSegments.length;
+
+      dom.ringSegments.forEach((segment, idx) => {
+        const circ = parseFloat(segment.dataset.circ || '0');
+        const progress = idx < activeIndex ? 1 : (idx === activeIndex ? activeProgress : 0);
+        const offset = circ * (1 - progress);
+        segment.style.strokeDashoffset = `${offset}`;
+      });
+
+      if (dom.ringCount) {
+        dom.ringCount.textContent = `${totalRings}`;
+      }
+      if (dom.ringMeta) {
+        dom.ringMeta.textContent = `Layer ${activeIndex + 1}/6 • Growth ${Math.round(activeProgress * 100)}%`;
       }
     }
 

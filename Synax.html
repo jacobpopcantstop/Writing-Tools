@@ -355,6 +355,7 @@
             const [loading, setLoading] = useState(false);
             const [contextInput, setContextInput] = useState('');
             const [definition, setDefinition] = useState(null);
+            const [definitionLoading, setDefinitionLoading] = useState(false);
             const [showCanvas, setShowCanvas] = useState(false);
             const [showSettings, setShowSettings] = useState(false);
             const [serendipityCount, setSerendipityCount] = useState(4);
@@ -639,23 +640,32 @@
                         newWords.push({ word, type });
                     }
                 } else if (mode === 'triad') {
-                    let actor, action, setting;
-                    if (offlineMode) {
-                    actor = getRandomAvoidRecent(LOCAL_LIBRARY.actors);
-                    action = getRandomAvoidRecent(LOCAL_LIBRARY.verbs);
-                    setting = getRandomAvoidRecent(LOCAL_LIBRARY.settings);
-                    } else {
-                    try {
-                        const actors = await fetchDatamuse({ ml: 'character', max: 50 });
-                        actor = getRandomAvoidRecent(actors) || getRandomAvoidRecent(LOCAL_LIBRARY.actors);
-                        const settings = await fetchDatamuse({ ml: 'place', max: 50 });
-                        setting = getRandomAvoidRecent(settings) || getRandomAvoidRecent(LOCAL_LIBRARY.settings);
-                        action = getRandomAvoidRecent(LOCAL_LIBRARY.verbs);
-                    } catch (e) {
-                        actor = getRandomAvoidRecent(LOCAL_LIBRARY.actors);
-                        action = getRandomAvoidRecent(LOCAL_LIBRARY.verbs);
-                        setting = getRandomAvoidRecent(LOCAL_LIBRARY.settings);
-                    }
+                    let actor = getRandomAvoidRecent(LOCAL_LIBRARY.actors);
+                    let action = getRandomAvoidRecent(LOCAL_LIBRARY.verbs);
+                    let setting = getRandomAvoidRecent(LOCAL_LIBRARY.settings);
+
+                    // Narrative mode should stay coherent and cinematic by default.
+                    // API enrichment is optional and only used if we can find clear verbs.
+                    if (!offlineMode && contextInput.trim()) {
+                        try {
+                            const contextSeed = contextInput.trim().toLowerCase();
+                            const relatedRaw = await fetchDatamuseRaw({ ml: contextSeed, md: 'p', max: 120 });
+                            const contextVerbs = relatedRaw
+                                .filter(item => item && item.word && Array.isArray(item.tags) && item.tags.includes('v'))
+                                .map(item => String(item.word).toLowerCase())
+                                .filter(word => /^[a-z-]{4,}$/.test(word));
+
+                            if (contextVerbs.length > 0) {
+                                action = getRandomAvoidRecent(contextVerbs);
+                            }
+
+                            const matchingSetting = LOCAL_LIBRARY.settings.find(s => s.toLowerCase().includes(contextSeed));
+                            if (matchingSetting) {
+                                setting = matchingSetting;
+                            }
+                        } catch (_) {
+                            // Keep curated fallback if API enrichment fails.
+                        }
                     }
                     newWords = [
                     { word: actor, type: 'The Actor' },
@@ -762,9 +772,13 @@
 
             const fetchDefinition = async (word) => {
                 const cleanWord = word.replace(/^The\s+/i, '');
-                setLoading(true);
+                setDefinition(null);
+                setDefinitionLoading(true);
                 try {
-                const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${cleanWord}`);
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 7000);
+                const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(cleanWord)}`, { signal: controller.signal });
+                clearTimeout(timeoutId);
                 const data = await res.json();
                 if (data && data[0]) {
                     setDefinition(data[0]);
@@ -774,7 +788,7 @@
                 } catch (e) {
                 setDefinition({ word: cleanWord, meanings: [] });
                 }
-                setLoading(false);
+                setDefinitionLoading(false);
             };
 
             const clearHistory = () => {
