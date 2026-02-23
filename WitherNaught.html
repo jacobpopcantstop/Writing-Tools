@@ -501,32 +501,28 @@ const THEMES = {
 
     function renderRingMeter(t) {
       const { totalRings, activeProgress } = getRingStats();
-      const radii = [52, 44, 36, 28, 20, 12];
-      const activeIndex = totalRings % radii.length;
-      const cycleCount = Math.floor(totalRings / radii.length);
+      const maxR = 52;
+      const minR = 20;
+      const activeRadius = maxR - ((maxR - minR) * activeProgress);
+      const circumference = 2 * Math.PI * activeRadius;
+      const offset = circumference * (1 - activeProgress);
 
       return `
         <div class="flex items-center gap-4">
           <svg width="150" height="150" viewBox="0 0 150 150" class="shrink-0">
+            <circle cx="75" cy="75" r="56" fill="none" stroke="${t.border}" stroke-width="1.5" opacity="0.35"></circle>
+            <circle cx="75" cy="75" r="14" fill="${t.accentLight}" opacity="0.8"></circle>
             <g transform="rotate(-90 75 75)">
-              ${radii.map((r, idx) => {
-                const c = 2 * Math.PI * r;
-                const progress = idx < activeIndex ? 1 : (idx === activeIndex ? activeProgress : 0);
-                const offset = c * (1 - progress);
-                return `
-                  <circle cx="75" cy="75" r="${r}" fill="none" stroke="${t.border}" stroke-width="5" opacity="0.45"></circle>
-                  <circle class="ring-segment" data-ring-index="${idx}" data-circ="${c.toFixed(3)}" cx="75" cy="75" r="${r}" fill="none" stroke="${t.accent}" stroke-width="5" stroke-linecap="round" stroke-dasharray="${c.toFixed(3)}" stroke-dashoffset="${offset.toFixed(3)}" style="transition: stroke-dashoffset 120ms linear, stroke 220ms ease;"></circle>
-                `;
-              }).join('')}
+              <circle id="ring-track" cx="75" cy="75" r="${activeRadius.toFixed(3)}" fill="none" stroke="${t.border}" stroke-width="6" opacity="0.4"></circle>
+              <circle id="ring-active" cx="75" cy="75" r="${activeRadius.toFixed(3)}" fill="none" stroke="${t.accent}" stroke-width="6" stroke-linecap="round" stroke-dasharray="${circumference.toFixed(3)}" stroke-dashoffset="${offset.toFixed(3)}" style="transition: r 220ms ease, stroke-dashoffset 120ms linear, stroke-dasharray 220ms ease;"></circle>
             </g>
           </svg>
           <div>
             <div id="ring-count" class="text-4xl md:text-5xl font-light tracking-tight tabular-nums">${totalRings}</div>
             <div class="text-[10px] font-sans tracking-[0.22em] uppercase opacity-50 mt-1">Rings Completed</div>
             <div id="ring-meta" class="text-[10px] font-sans tracking-widest uppercase mt-3" style="color:${t.accent}; opacity:0.8;">
-              Layer ${activeIndex + 1}/6 • Growth ${Math.round(activeProgress * 100)}%
+              Active Ring ${Math.round(activeProgress * 100)}%
             </div>
-            ${cycleCount > 0 ? `<div class="text-[10px] font-sans uppercase tracking-widest opacity-40 mt-1">Tree Cycles: ${cycleCount}</div>` : ''}
           </div>
         </div>
       `;
@@ -859,17 +855,19 @@ const THEMES = {
               ` : ''}
             </div>
 
-            <!-- Ring Meter & Time -->
-            <div class="flex justify-between items-start mb-10 px-1">
-              ${renderRingMeter(t)}
-              <div class="text-right">
-                <div id="time-display" class="text-sm tracking-widest opacity-40 font-sans tabular-nums mb-2">${formatTime(state.totalTime)}</div>
-                <div id="combo-display" class="text-[10px] font-sans tracking-widest uppercase transition-all duration-500 flex items-center gap-2 justify-end"
-                  style="opacity: ${state.sparks.length > 0 ? 1 : (state.combo > 10 ? 0.45 : 0)}; transform: translateY(${state.sparks.length > 0 ? '-3px' : '0'});">
-                  ${state.sparks.length > 0 ? `<span style="color: ${t.accent};">${icons.sparkles}</span> Spark!` : `${Math.floor(state.combo / CONSTANTS.COMBO_THRESHOLD) + 1}× flow`}
+            ${state.gameState !== 'ended' && !state.showStats ? `
+              <!-- Ring Meter & Time -->
+              <div class="flex justify-between items-start mb-10 px-1">
+                ${renderRingMeter(t)}
+                <div class="text-right">
+                  <div id="time-display" class="text-sm tracking-widest opacity-40 font-sans tabular-nums mb-2">${formatTime(state.totalTime)}</div>
+                  <div id="combo-display" class="text-[10px] font-sans tracking-widest uppercase transition-all duration-500 flex items-center gap-2 justify-end"
+                    style="opacity: ${state.sparks.length > 0 ? 1 : (state.combo > 10 ? 0.45 : 0)}; transform: translateY(${state.sparks.length > 0 ? '-3px' : '0'});">
+                    ${state.sparks.length > 0 ? `<span style="color: ${t.accent};">${icons.sparkles}</span> Spark!` : `${Math.floor(state.combo / CONSTANTS.COMBO_THRESHOLD) + 1}× flow`}
+                  </div>
                 </div>
               </div>
-            </div>
+            ` : ''}
 
             <!-- Writing area -->
             <div class="relative flex-grow rounded-2xl" style="min-height: 420px;">
@@ -913,7 +911,8 @@ const THEMES = {
       dom.flowBar = document.getElementById('flow-bar');
       dom.ringCount = document.getElementById('ring-count');
       dom.ringMeta = document.getElementById('ring-meta');
-      dom.ringSegments = Array.from(document.querySelectorAll('.ring-segment'));
+      dom.ringActive = document.getElementById('ring-active');
+      dom.ringTrack = document.getElementById('ring-track');
       dom.timeDisplay = document.getElementById('time-display');
       dom.comboDisplay = document.getElementById('combo-display');
       dom.sparksContainer = document.getElementById('sparks-container');
@@ -980,7 +979,6 @@ const THEMES = {
 
     function triggerSpark(currentWordCount) {
       state.targetFlow = Math.min(100, state.targetFlow + 40);
-      state.score += 500;
 
       const targetIndex = currentWordCount - 1;
       state.sparkedWords[targetIndex] = true;
@@ -1079,22 +1077,24 @@ const THEMES = {
     }
 
     function updateRingDisplay() {
-      if (!dom.ringSegments || dom.ringSegments.length === 0) return;
+      if (!dom.ringActive || !dom.ringTrack) return;
       const { totalRings, activeProgress } = getRingStats();
-      const activeIndex = totalRings % dom.ringSegments.length;
+      const maxR = 52;
+      const minR = 20;
+      const activeRadius = maxR - ((maxR - minR) * activeProgress);
+      const circ = 2 * Math.PI * activeRadius;
+      const offset = circ * (1 - activeProgress);
 
-      dom.ringSegments.forEach((segment, idx) => {
-        const circ = parseFloat(segment.dataset.circ || '0');
-        const progress = idx < activeIndex ? 1 : (idx === activeIndex ? activeProgress : 0);
-        const offset = circ * (1 - progress);
-        segment.style.strokeDashoffset = `${offset}`;
-      });
+      dom.ringActive.setAttribute('r', activeRadius.toFixed(3));
+      dom.ringTrack.setAttribute('r', activeRadius.toFixed(3));
+      dom.ringActive.setAttribute('stroke-dasharray', circ.toFixed(3));
+      dom.ringActive.setAttribute('stroke-dashoffset', offset.toFixed(3));
 
       if (dom.ringCount) {
         dom.ringCount.textContent = `${totalRings}`;
       }
       if (dom.ringMeta) {
-        dom.ringMeta.textContent = `Layer ${activeIndex + 1}/6 • Growth ${Math.round(activeProgress * 100)}%`;
+        dom.ringMeta.textContent = `Active Ring ${Math.round(activeProgress * 100)}%`;
       }
     }
 

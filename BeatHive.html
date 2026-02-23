@@ -378,8 +378,8 @@
             if (sorted.length < 2) return null;
 
             const pathD = sorted.map((c, i) => {
-                // Keep spine visually straight in a single narrative column.
-                const x = c.q * HEX_WIDTH;
+                // Throughline should pass through the actual center of each adjacent hex.
+                const x = c.q * HEX_WIDTH + (c.r % 2 === 0 ? 0 : HEX_WIDTH / 2);
                 const y = c.r * VERT_SPACING;
                 return (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
             }).join(' ');
@@ -602,8 +602,15 @@
                 }
             }, [user]);
 
+            const getCellContentText = useCallback((cell) => {
+                if (!cell) return '';
+                const modern = typeof cell.content === 'string' ? cell.content : '';
+                const legacy = typeof cell.text === 'string' ? cell.text : '';
+                return (modern || legacy).trim();
+            }, []);
+
             const handlePrint = useCallback(() => {
-                const usedCells = cells.filter(c => (c.content || '').trim().length > 0 || c.type !== 'setup');
+                const usedCells = cells.filter(c => getCellContentText(c).length > 0 || c.type !== 'setup');
                 if (usedCells.length === 0) {
                     alert('No content to print. Add some beats first!');
                     return;
@@ -659,7 +666,7 @@
                     for (let r = minR; r <= maxR; r++) {
                         const { x, y } = hexToPixel(q, r);
                         const cell = cells.find(c => c.q === q && c.r === r);
-                        const hasContent = cell && ((cell.content || '').trim().length > 0 || cell.type !== 'setup');
+                        const hasContent = cell && (getCellContentText(cell).length > 0 || cell.type !== 'setup');
 
                         if (!hasContent) {
                             svgContent += `<polygon points="${getHexPoints(x, y, hexSize)}" fill="none" stroke="#ccc" stroke-width="1" stroke-dasharray="5,5"/>`;
@@ -677,8 +684,9 @@
                     svgContent += `<polygon points="${getHexPoints(x, y, hexSize)}" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2"/>`;
 
                     // Add text
-                    if (cell.content) {
-                        const lines = cell.content.split('\n').slice(0, 4);
+                    const cellText = getCellContentText(cell);
+                    if (cellText) {
+                        const lines = cellText.split('\n').slice(0, 4);
                         const lineHeight = Math.max(12, Math.floor(hexSize * 0.17));
                         const startY = y - (lines.length - 1) * lineHeight / 2;
                         lines.forEach((line, i) => {
@@ -718,8 +726,8 @@
                 `);
                 printWindow.document.close();
                 printWindow.focus();
-                setTimeout(() => printWindow.print(), 250);
-            }, [cells, sketchName]);
+                printWindow.onload = () => setTimeout(() => printWindow.print(), 150);
+            }, [cells, sketchName, getCellContentText]);
 
             const handleNewMap = async () => {
                 setIsCreating(true);
@@ -893,12 +901,12 @@
 
             const selectedCell = cells.find(c => c.q === selection.q && c.r === selection.r);
             const beatMetrics = useMemo(() => {
-                const withContent = cells.filter(c => (c.content || '').trim().length > 0);
+                const withContent = cells.filter(c => getCellContentText(c).length > 0);
                 const storyBeats = withContent.filter(c => c.type !== 'note');
                 const distinctTypes = new Set(storyBeats.map(c => c.type)).size;
                 const momentum = Math.min(100, Math.round((storyBeats.length * 11) + (distinctTypes * 9)));
                 return { withContent: withContent.length, storyBeats: storyBeats.length, distinctTypes, momentum };
-            }, [cells]);
+            }, [cells, getCellContentText]);
 
             const seedStarterArc = useCallback(() => {
                 const base = [
@@ -956,7 +964,13 @@
                                 <div className="text-[10px] font-black tabular-nums">{beatMetrics.momentum}</div>
                             </div>
                             <div className="flex items-center gap-2 px-2">
-                                <Icon name="zoomOut" size={12} className="opacity-50"/>
+                                <button
+                                    onClick={() => setZoom(z => Math.max(0.1, z - 0.1))}
+                                    aria-label="Zoom out"
+                                    className="p-1 rounded hover:bg-current/10 transition-colors"
+                                >
+                                    <Icon name="zoomOut" size={12} className="opacity-70"/>
+                                </button>
                                 <input 
                                     type="range" min="0.1" max="3" step="0.1" 
                                     value={zoom} 
@@ -964,7 +978,13 @@
                                     aria-label="Zoom Level"
                                     className="w-20 h-1 bg-current opacity-20 rounded-lg appearance-none cursor-pointer"
                                 />
-                                <Icon name="zoomIn" size={12} className="opacity-50"/>
+                                <button
+                                    onClick={() => setZoom(z => Math.min(3.0, z + 0.1))}
+                                    aria-label="Zoom in"
+                                    className="p-1 rounded hover:bg-current/10 transition-colors"
+                                >
+                                    <Icon name="zoomIn" size={12} className="opacity-70"/>
+                                </button>
                             </div>
                             <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} aria-label="Toggle Theme" className="p-2 opacity-50 hover:opacity-100"><Icon name={theme === 'dark' ? 'sun' : 'moon'} size={20}/></button>
                             <button onClick={handlePrint} aria-label="Print" className="p-2 opacity-50 hover:opacity-100"><Icon name="printer" size={20}/></button>
