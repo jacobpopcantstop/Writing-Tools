@@ -247,6 +247,26 @@
 
     .featured h3 { font-size: 15px; text-transform: uppercase; letter-spacing: .12em; color: var(--accent-2); margin-bottom: 10px; font-family: "IBM Plex Mono", monospace; }
     .featured p { font-size: 15px; color: var(--text); opacity: .9; }
+    .quick-links {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .quick-link {
+      text-decoration: none;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 11px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 7px 10px;
+      color: var(--text);
+      background: color-mix(in srgb, var(--bg-soft) 75%, transparent);
+      transition: background .2s ease, transform .2s ease;
+    }
+    .quick-link:hover { background: var(--card-hover); transform: translateY(-1px); }
 
     footer {
       margin-top: 26px;
@@ -307,22 +327,19 @@
 
     <div class="featured">
       <h3>Best Flow Right Now</h3>
-      <p>Start in <strong>Synax</strong> for generation, move to <strong>BeatHive</strong> for structure, draft in <strong>WitherNaught</strong> or <strong>Wribbon</strong>, and export in <strong>Courius</strong>.</p>
+      <p>Start in <strong>Synax</strong>, pressure-test ideas in <strong>ThisButThat</strong>, map in <strong>BeatHive</strong>, draft in <strong>WitherNaught</strong>, and finish in <strong>Courius</strong>.</p>
+      <div class="quick-links">
+        <a class="quick-link" href="Synax.html" target="_blank" rel="noopener">Idea Sprint</a>
+        <a class="quick-link" href="BeatHive.html" target="_blank" rel="noopener">Build Structure</a>
+        <a class="quick-link" href="WitherNaught.html" target="_blank" rel="noopener">Draft Fast</a>
+        <a class="quick-link" href="Courius.html" target="_blank" rel="noopener">Screenplay Output</a>
+      </div>
     </div>
 
     <main class="sections">
       <section class="section">
         <div class="section-head"><div class="section-title">Ideation</div></div>
         <div class="cards" id="tools">
-          <a class="card" href="Joterie.html" target="_blank" rel="noopener">
-            <div>
-              <div class="card-top"><div class="icon-shell"><i data-lucide="zap" style="width:18px;height:18px"></i></div></div>
-              <h2>Joterie</h2>
-              <p>Timed sprint ideation to break inertia and force forward motion.</p>
-            </div>
-            <span class="card-cta">Open Tool <i data-lucide="arrow-right" style="width:14px;height:14px"></i></span>
-          </a>
-
           <a class="card" href="Synax.html" target="_blank" rel="noopener">
             <div>
               <div class="card-top"><div class="icon-shell"><i data-lucide="sparkles" style="width:18px;height:18px"></i></div></div>
@@ -337,6 +354,15 @@
               <div class="card-top"><div class="icon-shell"><i data-lucide="git-branch" style="width:18px;height:18px"></i></div></div>
               <h2>ThisButThat</h2>
               <p>Turn topical material into twist-driven comedic premises quickly.</p>
+            </div>
+            <span class="card-cta">Open Tool <i data-lucide="arrow-right" style="width:14px;height:14px"></i></span>
+          </a>
+
+          <a class="card" href="Joterie.html" target="_blank" rel="noopener">
+            <div>
+              <div class="card-top"><div class="icon-shell"><i data-lucide="zap" style="width:18px;height:18px"></i></div></div>
+              <h2>Joterie</h2>
+              <p>Timed sprint ideation to break inertia and force forward motion.</p>
             </div>
             <span class="card-cta">Open Tool <i data-lucide="arrow-right" style="width:14px;height:14px"></i></span>
           </a>
@@ -355,20 +381,20 @@
             <span class="card-cta">Open Tool <i data-lucide="arrow-right" style="width:14px;height:14px"></i></span>
           </a>
 
-          <a class="card" href="Wribbon.html" target="_blank" rel="noopener">
-            <div>
-              <div class="card-top"><div class="icon-shell"><i data-lucide="feather" style="width:18px;height:18px"></i></div></div>
-              <h2>Wribbon</h2>
-              <p>Low-friction drafting for clean pages and consistent momentum.</p>
-            </div>
-            <span class="card-cta">Open Tool <i data-lucide="arrow-right" style="width:14px;height:14px"></i></span>
-          </a>
-
           <a class="card" href="WitherNaught.html" target="_blank" rel="noopener">
             <div>
               <div class="card-top"><div class="icon-shell"><i data-lucide="wind" style="width:18px;height:18px"></i></div></div>
               <h2>WitherNaught</h2>
               <p>Pressure-based drafting game that rewards sustained writing flow.</p>
+            </div>
+            <span class="card-cta">Open Tool <i data-lucide="arrow-right" style="width:14px;height:14px"></i></span>
+          </a>
+
+          <a class="card" href="Wribbon.html" target="_blank" rel="noopener">
+            <div>
+              <div class="card-top"><div class="icon-shell"><i data-lucide="feather" style="width:18px;height:18px"></i></div></div>
+              <h2>Wribbon</h2>
+              <p>Low-friction drafting for clean pages and consistent momentum.</p>
             </div>
             <span class="card-cta">Open Tool <i data-lucide="arrow-right" style="width:14px;height:14px"></i></span>
           </a>
