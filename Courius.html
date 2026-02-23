@@ -460,6 +460,7 @@
         'parenthetical': 'Parenthetical',
         'transition': 'Transition'
     };
+    const SCENE_TIME_HINTS = ['DAY.', 'NIGHT.', 'DUSK.', 'DAWN.', 'CONTINUOUS.', 'LATER.'];
 
     let characterSet = new Set();
     let locationSet = new Set();
@@ -677,6 +678,7 @@
         if (type === 'parenthetical' && div.firstChild) range.setStart(div.firstChild, 1);
         sel.removeAllRanges();
         sel.addRange(range);
+        applyLineBootstrapSuggestion(div, type, afterBlock);
         div.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
@@ -708,19 +710,83 @@
         return text.replace(/\n$/, '');
     }
 
+    function setSuggestion(block, suggestionText) {
+        const existing = block.querySelector('.suggestion');
+        if (existing) existing.remove();
+        if (!suggestionText) return;
+        const span = document.createElement('span');
+        span.className = 'suggestion';
+        span.textContent = suggestionText;
+        block.appendChild(span);
+    }
+
+    function getCharacterBlocksInOrder() {
+        return Array.from(document.querySelectorAll('.character'))
+            .map(d => getPureText(d).trim().toUpperCase())
+            .filter(Boolean);
+    }
+
+    function getAlternatingCharacterSuggestion() {
+        const names = getCharacterBlocksInOrder();
+        if (names.length < 2) return '';
+        const last = names[names.length - 1];
+        let priorDistinct = '';
+        for (let i = names.length - 2; i >= 0; i--) {
+            if (names[i] !== last) {
+                priorDistinct = names[i];
+                break;
+            }
+        }
+        return priorDistinct || '';
+    }
+
+    function getSceneTimeSuggestion(text) {
+        const normalized = text.toUpperCase().trim();
+        if (!normalized || !normalized.includes('-')) return '';
+        if (!/[-\u2013\u2014]\s*$/.test(normalized)) return '';
+        return ' ' + SCENE_TIME_HINTS[0];
+    }
+
+    function applyLineBootstrapSuggestion(block, type, previousBlock) {
+        if (!block || !previousBlock) return;
+        if (type === 'character') {
+            const suggestion = getAlternatingCharacterSuggestion();
+            if (suggestion) setSuggestion(block, suggestion);
+        }
+        if (type === 'scene-heading') {
+            const prevText = getPureText(previousBlock).trim().toUpperCase();
+            if (/(INT\.|EXT\.|INT\/EXT\.|EST\.)/.test(prevText)) {
+                setSuggestion(block, ' - DAY.');
+            }
+        }
+    }
+
     function handleAutofill(block, type, key) {
-        const existingSugg = block.querySelector('.suggestion');
-        if (existingSugg) existingSugg.remove();
+        setSuggestion(block, '');
         const text = getPureText(block).toUpperCase();
         if (text.length < 1 || ['Backspace', 'Delete', 'Enter'].includes(key)) return;
+        
+        if (type === 'scene-heading') {
+            const timeHint = getSceneTimeSuggestion(text);
+            if (timeHint) {
+                setSuggestion(block, timeHint);
+                return;
+            }
+        }
+
+        if (type === 'character') {
+            const alternating = getAlternatingCharacterSuggestion();
+            if (alternating && alternating.startsWith(text) && alternating !== text) {
+                setSuggestion(block, alternating.substring(text.length));
+                return;
+            }
+        }
+
         const targetSet = (type === 'character') ? characterSet : locationSet;
         for (let entry of targetSet) {
             if (entry.startsWith(text) && entry !== text) {
-                const span = document.createElement('span');
-                span.className = 'suggestion';
-                span.textContent = entry.substring(text.length);
-                block.appendChild(span);
-                break;
+                setSuggestion(block, entry.substring(text.length));
+                return;
             }
         }
     }

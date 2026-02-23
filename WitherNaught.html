@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WitherNaught</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23000000'/><path d='M20 72 C40 36, 60 36, 80 72' stroke='%23da70d6' stroke-width='7' fill='none'/><circle cx='50' cy='36' r='10' fill='%23fd19c8'/></svg>">
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
   <style>
@@ -85,6 +86,10 @@
       0%, 100% { opacity: 0.15; }
       50% { opacity: 0.25; }
     }
+    @keyframes ambient-drift {
+      0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+      50% { transform: translate3d(0, -10px, 0) scale(1.03); }
+    }
     @keyframes score-pop {
       0% { transform: scale(1); }
       50% { transform: scale(1.08); }
@@ -100,6 +105,7 @@
     .animate-spark-burst { animation: spark-burst ease-out forwards; }
     .animate-spark-spiral { animation: spark-spiral linear forwards; }
     .animate-breathe { animation: breathe 4s var(--ease-in-out-sine) infinite; }
+    .animate-ambient-drift { animation: ambient-drift 10s var(--ease-in-out-sine) infinite; }
     .animate-score-pop { animation: score-pop 0.4s var(--ease-out-expo); }
 
     /* Staggered animations */
@@ -207,7 +213,6 @@
       SPARK_WORD_HIGHLIGHT_MS: 5000,
       MIN_SPARK_INTERVAL: 15,
       MAX_SPARK_INTERVAL: 50,
-      SCORE_UPDATE_INTERVAL_MS: 5000,
     };
 
     const DIFFICULTIES = {
@@ -302,7 +307,6 @@ const THEMES = {
 
     // ===== TIMERS & REFS =====
     let lastUpdate = null;
-    let lastScoreUpdate = 0;
     let animationId = null;
     let comboTimeout = null;
     let sparkTimeouts = [];
@@ -709,7 +713,7 @@ const THEMES = {
         <div class="min-h-screen transition-colors duration-1000 selection-${state.theme} flex flex-col items-center p-6 md:p-12 lg:p-16 overflow-hidden relative" style="color: ${t.text};">
           
           <!-- Ambient background glow -->
-          <div class="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] pointer-events-none opacity-30 animate-breathe" 
+          <div class="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] pointer-events-none opacity-30 animate-breathe animate-ambient-drift" 
             style="background: radial-gradient(ellipse at center, ${t.sparkColor} 0%, transparent 70%); filter: blur(60px);">
           </div>
 
@@ -813,7 +817,7 @@ const THEMES = {
             <!-- Score & Time display -->
             <div class="flex justify-between items-end mb-10 px-1">
               <div class="flex items-baseline gap-4">
-                <div id="score-display" class="text-4xl md:text-5xl font-light tracking-tight tabular-nums transition-all duration-300">${state.displayScore.toLocaleString()}</div>
+                <div id="score-display" class="text-4xl md:text-5xl font-light tracking-tight tabular-nums transition-all duration-300">${Math.floor(state.displayScore).toLocaleString()}</div>
                 <div id="combo-display" class="text-[10px] font-sans tracking-widest uppercase transition-all duration-500 flex items-center gap-2" 
                   style="opacity: ${state.sparks.length > 0 ? 1 : (state.combo > 10 ? 0.4 : 0)}; transform: translateY(${state.sparks.length > 0 ? '-4px' : '0'});">
                   ${state.sparks.length > 0 ? `<span style="color: ${t.accent};">${icons.sparkles}</span> Spark!` : `${Math.floor(state.combo / CONSTANTS.COMBO_THRESHOLD) + 1}× flow`}
@@ -1008,12 +1012,7 @@ const THEMES = {
 
           updateFlowBar();
           updateTimeDisplay();
-          
-          // Update score display every 5 seconds
-          if (time - lastScoreUpdate >= CONSTANTS.SCORE_UPDATE_INTERVAL_MS) {
-            updateScoreDisplay();
-            lastScoreUpdate = time;
-          }
+          updateScoreDisplay(deltaTime);
         }
       }
       
@@ -1030,15 +1029,13 @@ const THEMES = {
         : (state.sparks.length > 0 ? `0 0 30px ${t.sparkColor}` : 'none');
     }
 
-    function updateScoreDisplay() {
+    function updateScoreDisplay(deltaTime = 0) {
       if (!dom.scoreDisplay) return;
-      const newScore = Math.floor(state.score);
-      if (newScore !== state.displayScore) {
-        state.displayScore = newScore;
-        dom.scoreDisplay.textContent = state.displayScore.toLocaleString();
-        dom.scoreDisplay.classList.remove('animate-score-pop');
-        void dom.scoreDisplay.offsetWidth; // Trigger reflow
-        dom.scoreDisplay.classList.add('animate-score-pop');
+      const smoothing = Math.min(1, Math.max(0.1, deltaTime * 9));
+      state.displayScore += (state.score - state.displayScore) * smoothing;
+      const shown = Math.floor(state.displayScore);
+      if (dom.scoreDisplay.textContent !== shown.toLocaleString()) {
+        dom.scoreDisplay.textContent = shown.toLocaleString();
       }
     }
 
@@ -1073,7 +1070,6 @@ const THEMES = {
         state.totalTime = 0;
         state.combo = 0;
         state.sparks = [];
-        lastScoreUpdate = 0;
         render();
       },
 

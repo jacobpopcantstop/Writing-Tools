@@ -123,6 +123,26 @@
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-in { animation: fadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes hivePulse {
+            0% { transform: scale(0.7); opacity: 0.45; }
+            100% { transform: scale(1.6); opacity: 0; }
+        }
+        @keyframes glowDrift {
+            0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.5; }
+            50% { transform: translate3d(18px, -16px, 0) scale(1.08); opacity: 0.8; }
+        }
+        .hive-selected-pulse {
+            animation: hivePulse 1.4s ease-out infinite;
+            transform-origin: center;
+            pointer-events: none;
+        }
+        .hive-ambient-orb {
+            position: absolute;
+            border-radius: 9999px;
+            filter: blur(48px);
+            pointer-events: none;
+            animation: glowDrift 9s ease-in-out infinite;
+        }
 
         /* Minimap */
         .minimap {
@@ -312,6 +332,17 @@
                         stroke={stroke} 
                         strokeWidth={isSelected ? 6 : (data ? 3 : 2)} 
                     />
+                    {isSelected && data && (
+                        <circle
+                            cx={x}
+                            cy={y}
+                            r={HEX_SIZE * 0.42}
+                            fill="none"
+                            stroke={theme === 'dark' ? 'rgba(99,102,241,0.65)' : 'rgba(67,40,24,0.35)'}
+                            strokeWidth="3"
+                            className="hive-selected-pulse"
+                        />
+                    )}
                     
                     {/* Tags with icons on the hex edge */}
                     {data?.tags?.length > 0 && !isFarZoom && (
@@ -417,6 +448,7 @@
             const [libOpen, setLibOpen] = useState(true);
             const [sidebarOpen, setSidebarOpen] = useState(true);
             const [isCreating, setIsCreating] = useState(false);
+            const [showImmersionTips, setShowImmersionTips] = useState(() => localStorage.getItem('writingtools_beathive_immersive_seen') !== '1');
 
             // Refs
             const keysPressed = useRef({});
@@ -883,6 +915,31 @@
             const centerY = dimensions.h / 2.2;
 
             const selectedCell = cells.find(c => c.q === selection.q && c.r === selection.r);
+            const beatMetrics = useMemo(() => {
+                const withContent = cells.filter(c => (c.content || '').trim().length > 0);
+                const storyBeats = withContent.filter(c => c.type !== 'note');
+                const distinctTypes = new Set(storyBeats.map(c => c.type)).size;
+                const momentum = Math.min(100, Math.round((storyBeats.length * 11) + (distinctTypes * 9)));
+                return { withContent: withContent.length, storyBeats: storyBeats.length, distinctTypes, momentum };
+            }, [cells]);
+
+            const seedStarterArc = useCallback(() => {
+                const base = [
+                    { q: 0, r: 0, type: 'setup', content: "ORDINARY WORLD\nWho are we following and what do they want?" },
+                    { q: 0, r: 1, type: 'inciting', content: "INCITING INCIDENT\nSomething forces a change of plan." },
+                    { q: 0, r: 2, type: 'heightening', content: "MIDPOINT ESCALATION\nRaise the cost and reveal new information." },
+                    { q: 0, r: 3, type: 'heightening', content: "CRISIS\nThe worst option becomes the only option." },
+                    { q: 0, r: 4, type: 'blowoff', content: "RESOLUTION\nHow are they changed by what happened?" }
+                ];
+                setCells(base);
+                save(base);
+                setSelection({ q: 0, r: 0 });
+            }, [save]);
+
+            const dismissImmersionTips = useCallback(() => {
+                localStorage.setItem('writingtools_beathive_immersive_seen', '1');
+                setShowImmersionTips(false);
+            }, []);
 
             // Optimization 4.1: Memoize Grid Generation
             const visibleGrid = useMemo(() => {
@@ -914,6 +971,13 @@
                             <input value={sketchName} onChange={(e) => { setSketchName(e.target.value); save(null, e.target.value); }} aria-label="Project Name" className="bg-transparent font-display font-bold text-lg outline-none w-48 sm:w-64" placeholder="Untitled Hive" />
                         </div>
                         <div className="flex items-center gap-4">
+                            <div className={`hidden lg:flex items-center gap-3 px-3 py-2 rounded-xl border ${theme === 'dark' ? 'border-white/10 bg-black/30' : 'border-[#432818]/15 bg-white/50'}`}>
+                                <div className="text-[9px] font-black uppercase tracking-[0.18em] opacity-70">Momentum</div>
+                                <div className="w-20 h-1.5 rounded-full overflow-hidden bg-current/20">
+                                    <div className="h-full rounded-full transition-all duration-500" style={{ width: `${beatMetrics.momentum}%`, background: 'linear-gradient(90deg, #6366f1, #a855f7)' }}></div>
+                                </div>
+                                <div className="text-[10px] font-black tabular-nums">{beatMetrics.momentum}</div>
+                            </div>
                             <div className="flex items-center gap-2 px-2">
                                 <Icon name="zoomOut" size={12} className="opacity-50"/>
                                 <input 
@@ -953,6 +1017,8 @@
                              onMouseMove={handleMouseMove}
                              onMouseUp={handleMouseUp}
                              onMouseLeave={() => setDragState({ active: false, startQ: null, startR: null, dropTarget: null })}>
+                            <div className="hive-ambient-orb w-72 h-72 top-[8%] left-[12%]" style={{ background: theme === 'dark' ? 'rgba(99, 102, 241, 0.28)' : 'rgba(99, 102, 241, 0.20)' }} />
+                            <div className="hive-ambient-orb w-80 h-80 bottom-[10%] right-[8%]" style={{ background: theme === 'dark' ? 'rgba(168, 85, 247, 0.24)' : 'rgba(168, 85, 247, 0.15)', animationDelay: '1.7s' }} />
                             <svg ref={svgRef} className="w-full h-full">
                                 <g transform={`translate(${window.innerWidth/2 + pan.x - (libOpen ? 160 : 0) + (sidebarOpen ? -160 : 0)}, ${window.innerHeight/2 + pan.y - 40}) scale(${zoom})`}>
                                     
@@ -976,6 +1042,11 @@
                                 <div className={`px-5 py-3 rounded-full border text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl ${theme === 'dark' ? 'bg-black/80 border-white/10 text-white/50' : 'bg-white/80 border-black/5 text-black/50'}`}>
                                     {selection.q !== null ? 'Node Selected' : 'Hive Ready'}
                                 </div>
+                                {beatMetrics.storyBeats < 3 && (
+                                    <div className={`px-4 py-2 rounded-xl text-[10px] font-bold tracking-wider uppercase ${theme === 'dark' ? 'bg-black/70 border border-white/10 text-white/60' : 'bg-white/85 border border-black/10 text-black/60'}`}>
+                                        Add 3 beats to unlock rhythm
+                                    </div>
+                                )}
                             </div>
 
                             {/* Minimap */}
@@ -1191,6 +1262,42 @@
                             </div>
                         </aside>
                     </main>
+
+                    {showImmersionTips && (
+                        <div className="absolute inset-0 z-[120] flex items-center justify-center p-6" style={{ background: theme === 'dark' ? 'rgba(0,0,0,0.65)' : 'rgba(26,26,26,0.45)' }}>
+                            <div className={`w-full max-w-xl rounded-3xl border shadow-2xl p-7 md:p-8 ${theme === 'dark' ? 'bg-black/90 border-white/10' : 'bg-[#f5efe4]/95 border-[#432818]/15'}`}>
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center"><Icon name="zap" size={16} /></div>
+                                    <h2 className="font-display text-xl">Ignite BeatHive</h2>
+                                </div>
+                                <p className="text-sm opacity-75 leading-relaxed mb-5">
+                                    Quick audit pass: your map is strongest when it has a clear spine, escalating midpoint, and an ending beat with consequence.
+                                </p>
+                                <div className={`rounded-2xl p-4 mb-6 text-xs leading-relaxed ${theme === 'dark' ? 'bg-white/5' : 'bg-white/70'}`}>
+                                    <div className="font-black uppercase tracking-[0.15em] mb-2 opacity-60">Suggested Flow</div>
+                                    1. Seed five beats with a beginning-middle-end arc.
+                                    <br />
+                                    2. Add at least one `Subversion` or `Hidden Info` tag.
+                                    <br />
+                                    3. Keep momentum above 60 before expanding sideways.
+                                </div>
+                                <div className="flex flex-col sm:flex-row gap-3">
+                                    <button
+                                        onClick={() => { seedStarterArc(); dismissImmersionTips(); }}
+                                        className="flex-1 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-widest transition-all"
+                                    >
+                                        Start With Arc
+                                    </button>
+                                    <button
+                                        onClick={dismissImmersionTips}
+                                        className={`flex-1 py-3 px-4 rounded-xl border font-bold text-xs uppercase tracking-widest transition-all ${theme === 'dark' ? 'border-white/15 hover:bg-white/5' : 'border-[#432818]/20 hover:bg-black/5'}`}
+                                    >
+                                        Continue Current Map
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     <footer className={`h-12 px-8 flex items-center justify-between border-t border-inherit bg-current/5 text-[10px] font-bold opacity-40 uppercase tracking-widest`}>
                         <div className="flex gap-6">

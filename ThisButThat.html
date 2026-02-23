@@ -222,6 +222,7 @@
             loading: false,
             contextExpanded: false // NEW: Track context expansion
         };
+        const CACHE_KEY = 'thisButThat_cachedTwists_v2';
 
         // --- Init ---
         document.addEventListener('DOMContentLoaded', () => {
@@ -241,6 +242,48 @@
             }
             applyThemeState();
         });
+
+        function getCachedTwistBatches() {
+            try {
+                const raw = localStorage.getItem(CACHE_KEY);
+                if (!raw) return [];
+                const parsed = JSON.parse(raw);
+                if (!Array.isArray(parsed)) return [];
+                return parsed.filter(item =>
+                    item &&
+                    item.topic &&
+                    typeof item.topic.text === 'string' &&
+                    Array.isArray(item.twists) &&
+                    item.twists.length > 0
+                );
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveCurrentSessionToCache() {
+            const currentTopic = state.topics[state.selectedIndex];
+            if (!currentTopic || state.twists.length === 0) return;
+
+            const normalizedTwists = state.twists.map(t => String(t).trim()).filter(Boolean);
+            if (normalizedTwists.length === 0) return;
+
+            const signature = `${currentTopic.text}::${normalizedTwists.join('||')}`;
+            const cached = getCachedTwistBatches();
+            const withoutDupes = cached.filter(item => item.signature !== signature);
+            const next = [
+                ...withoutDupes,
+                {
+                    id: Date.now(),
+                    timestamp: new Date().toISOString(),
+                    signature,
+                    topic: currentTopic,
+                    twists: normalizedTwists
+                }
+            ].slice(-250);
+
+            localStorage.setItem(CACHE_KEY, JSON.stringify(next));
+        }
 
         // --- Theme ---
         function applyThemeState() {
@@ -279,14 +322,7 @@
             setLoading(true);
 
             // Cache current twists before fetching new topics
-            if (state.twists.length > 0 && state.topics[state.selectedIndex]) {
-                const cacheKey = 'thisButThat_cachedTwists';
-                const cached = {
-                    topic: state.topics[state.selectedIndex],
-                    twists: state.twists
-                };
-                localStorage.setItem(cacheKey, JSON.stringify(cached));
-            }
+            saveCurrentSessionToCache();
 
             // Manually inject skeletons
             const grid = document.getElementById('topic-grid');
@@ -514,7 +550,7 @@
             }
             
             const hasItems = state.twists.length > 0;
-            const hasCachedItems = localStorage.getItem('thisButThat_cachedTwists') !== null;
+            const hasCachedItems = getCachedTwistBatches().length > 0;
             const saveBtn = document.getElementById('btn-save');
             const exportBtn = document.getElementById('btn-export');
             const copyBtn = document.getElementById('btn-copy');
@@ -690,31 +726,48 @@
         }
 
         function formatExport() {
-            let currentTopic = state.topics[state.selectedIndex];
-            let twists = state.twists;
+            const batches = getCachedTwistBatches();
+            const currentTopic = state.topics[state.selectedIndex];
+            const currentTwists = state.twists.map(t => String(t).trim()).filter(Boolean);
 
-            // Fall back to cached twists if current session is empty
-            if (twists.length === 0) {
-                const cached = localStorage.getItem('thisButThat_cachedTwists');
-                if (cached) {
-                    try {
-                        const parsed = JSON.parse(cached);
-                        currentTopic = parsed.topic;
-                        twists = parsed.twists;
-                    } catch(e) {}
+            if (currentTopic && currentTwists.length > 0) {
+                const signature = `${currentTopic.text}::${currentTwists.join('||')}`;
+                const alreadyCached = batches.some(batch => batch.signature === signature);
+                if (!alreadyCached) {
+                    batches.push({
+                        id: Date.now(),
+                        timestamp: new Date().toISOString(),
+                        signature,
+                        topic: currentTopic,
+                        twists: currentTwists
+                    });
                 }
             }
 
-            if (!currentTopic || twists.length === 0) return null;
+            if (batches.length === 0) return null;
 
-            let body = `TOPIC: ${currentTopic.text}\nCONTEXT: ${currentTopic.description}\n\nTHE TWISTS:\n`;
-            twists.forEach((t, i) => {
-                body += `${i + 1}. BUT ${t}\n`;
+            let body = `THIS BUT THAT EXPORT\nGenerated: ${new Date().toLocaleString()}\nTotal Batches: ${batches.length}\n\n`;
+
+            batches.forEach((batch, batchIndex) => {
+                const topicText = batch.topic?.text || 'Untitled Topic';
+                const topicDescription = batch.topic?.description || 'No context available.';
+                body += `=== BATCH ${batchIndex + 1} ===\n`;
+                body += `TOPIC: ${topicText}\n`;
+                body += `CONTEXT: ${topicDescription}\n`;
+                body += `TWISTS:\n`;
+
+                batch.twists.forEach((twist, i) => {
+                    body += `${i + 1}. BUT ${twist}\n`;
+                });
+
+                const count = batch.twists.length;
+                const medal = count >= 5 ? 'GOLD' : count >= 4 ? 'SILVER' : count >= 3 ? 'BRONZE' : null;
+                if (medal) body += `RANK: ${medal}\n`;
+                body += `\n`;
             });
-            const count = twists.length;
-            const medal = count >= 5 ? 'GOLD' : count >= 4 ? 'SILVER' : count >= 3 ? 'BRONZE' : null;
-            if(medal) body += `\n🏅 Rank Achieved: ${medal}`;
-            return { subject: `Twists for: ${currentTopic.text}`, body };
+
+            const subjectTopic = batches[batches.length - 1]?.topic?.text || 'Session';
+            return { subject: `This But That Export (${batches.length} batches) - ${subjectTopic}`, body };
         }
 
         function exportEmail() {
