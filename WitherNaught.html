@@ -214,6 +214,7 @@
       MIN_SPARK_INTERVAL: 15,
       MAX_SPARK_INTERVAL: 50,
       SCORE_PER_RING: 800,
+      RING_FILL_FACTOR: 0.2,
     };
 
     const DIFFICULTIES = {
@@ -318,6 +319,10 @@ const THEMES = {
     // ===== HELPERS =====
     function getNextSparkInterval() {
       return Math.floor(Math.random() * (CONSTANTS.MAX_SPARK_INTERVAL - CONSTANTS.MIN_SPARK_INTERVAL + 1) + CONSTANTS.MIN_SPARK_INTERVAL);
+    }
+
+    function getScorePerRing() {
+      return Math.max(1, Math.floor(CONSTANTS.SCORE_PER_RING * CONSTANTS.RING_FILL_FACTOR));
     }
 
     function generateSparks(count) {
@@ -494,8 +499,9 @@ const THEMES = {
     }
 
     function getRingStats() {
-      const totalRings = Math.floor(state.score / CONSTANTS.SCORE_PER_RING);
-      const activeProgress = (state.score % CONSTANTS.SCORE_PER_RING) / CONSTANTS.SCORE_PER_RING;
+      const scorePerRing = getScorePerRing();
+      const totalRings = Math.floor(state.score / scorePerRing);
+      const activeProgress = (state.score % scorePerRing) / scorePerRing;
       return { totalRings, activeProgress };
     }
 
@@ -531,7 +537,7 @@ const THEMES = {
     function renderEndScreen(t) {
       const highScores = getHighScores();
       const wpm = Math.floor((state.wordCount / (state.totalTime / 60)) || 0);
-      const ringsCompleted = Math.floor(state.score / CONSTANTS.SCORE_PER_RING);
+      const ringsCompleted = Math.floor(state.score / getScorePerRing());
       const isNewBest = state.score >= (highScores[0]?.score || 0) && state.history.length > 1;
       
       return `
@@ -1013,7 +1019,7 @@ const THEMES = {
       state.gameState = 'ended';
       state.displayScore = Math.floor(state.score); // Final update
       const finalWords = state.text.trim().split(/\s+/).filter(w => w.length > 0).length;
-      const ringsCompleted = Math.floor(state.score / CONSTANTS.SCORE_PER_RING);
+      const ringsCompleted = Math.floor(state.score / getScorePerRing());
       const session = {
         id: Date.now(),
         date: new Date().toISOString(),

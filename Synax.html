@@ -771,24 +771,10 @@
             };
 
             const fetchDefinition = async (word) => {
-                const cleanWord = word.replace(/^The\s+/i, '');
-                setDefinition(null);
-                setDefinitionLoading(true);
-                try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 7000);
-                const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(cleanWord)}`, { signal: controller.signal });
-                clearTimeout(timeoutId);
-                const data = await res.json();
-                if (data && data[0]) {
-                    setDefinition(data[0]);
-                } else {
-                    setDefinition({ word: cleanWord, meanings: [] });
-                }
-                } catch (e) {
-                setDefinition({ word: cleanWord, meanings: [] });
-                }
-                setDefinitionLoading(false);
+                const cleanWord = word.replace(/^The\s+/i, '').trim();
+                if (!cleanWord) return;
+                const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(`${cleanWord} definition`)}`;
+                window.open(searchUrl, '_blank', 'noopener,noreferrer');
             };
 
             const clearHistory = () => {
