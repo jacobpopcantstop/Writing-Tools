@@ -705,16 +705,38 @@
                 }
             }
 
-            if (!currentTopic || twists.length === 0) return null;
+            if ((!currentTopic || twists.length === 0) && state.history.length === 0) return null;
 
-            let body = `TOPIC: ${currentTopic.text}\nCONTEXT: ${currentTopic.description}\n\nTHE TWISTS:\n`;
-            twists.forEach((t, i) => {
-                body += `${i + 1}. BUT ${t}\n`;
-            });
-            const count = twists.length;
-            const medal = count >= 5 ? 'GOLD' : count >= 4 ? 'SILVER' : count >= 3 ? 'BRONZE' : null;
-            if(medal) body += `\n🏅 Rank Achieved: ${medal}`;
-            return { subject: `Twists for: ${currentTopic.text}`, body };
+            let body = '';
+
+            // Current session
+            if (currentTopic && twists.length > 0) {
+                body += `===== CURRENT SESSION =====\n\n`;
+                body += `TOPIC: ${currentTopic.text}\nCONTEXT: ${currentTopic.description}\n\nTHE TWISTS:\n`;
+                twists.forEach((t, i) => {
+                    body += `${i + 1}. BUT ${t}\n`;
+                });
+                const count = twists.length;
+                const medal = count >= 5 ? 'GOLD' : count >= 4 ? 'SILVER' : count >= 3 ? 'BRONZE' : null;
+                if(medal) body += `\n🏅 Rank Achieved: ${medal}`;
+            }
+
+            // Include full history
+            if (state.history.length > 0) {
+                if (body) body += `\n\n`;
+                body += `===== FULL HISTORY (${state.history.length} sessions) =====\n`;
+                state.history.forEach((session, idx) => {
+                    body += `\n--- Session ${idx + 1} (${session.date}) ---\n`;
+                    body += `TOPIC: ${session.prompt.text}\n`;
+                    session.twists.forEach((t, i) => {
+                        body += `  ${i + 1}. BUT ${t}\n`;
+                    });
+                    if (session.medal) body += `  🏅 ${session.medal.toUpperCase()}\n`;
+                });
+            }
+
+            const subject = currentTopic ? `Twists for: ${currentTopic.text}` : `This But That - All Sessions`;
+            return { subject, body };
         }
 
         function exportEmail() {
