@@ -879,11 +879,10 @@ const THEMES = {
                   </div>
                 </div>
               </div>
-              <div class="flex items-center gap-4">
+              <div class="flex items-center gap-4 mt-2">
                 <div id="word-count-display" class="text-sm tracking-widest font-sans tabular-nums transition-opacity duration-500" style="opacity: ${state.wordCount > 0 ? 0.25 : 0};">${state.wordCount > 0 ? state.wordCount + 'w' : ''}</div>
-                <div id="time-display" class="text-sm tracking-widest opacity-40 font-sans tabular-nums">${formatTime(state.totalTime)}</div>
               </div>
-            </div>
+            ` : ''}
 
             <!-- Writing area -->
             <div class="relative flex-grow rounded-2xl" style="min-height: 420px;">
