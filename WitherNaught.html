@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WitherNaught</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23000000'/><path d='M20 72 C40 36, 60 36, 80 72' stroke='%23da70d6' stroke-width='7' fill='none'/><circle cx='50' cy='36' r='10' fill='%23fd19c8'/></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23050505'/><path d='M35 78 Q62 48 68 22' stroke='%23da70d6' stroke-width='5.5' stroke-linecap='round' fill='none'/><path d='M35 78 Q55 58 65 38' stroke='%23da70d6' stroke-width='3.5' stroke-linecap='round' fill='none' opacity='0.6'/><path d='M35 78 L68 22' stroke='%23da70d6' stroke-width='2' stroke-linecap='round' fill='none' opacity='0.3'/><circle cx='68' cy='22' r='4' fill='%23da70d6'/></svg>">
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
   <style>
@@ -95,6 +95,11 @@
       50% { transform: scale(1.08); }
       100% { transform: scale(1); }
     }
+    @keyframes danger-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+    .flow-bar-danger { animation: danger-pulse 0.8s ease-in-out infinite; }
 
     .animate-fade-in { animation: fade-in 0.8s var(--ease-out-expo) forwards; }
     .animate-slide-up { animation: slide-up 0.8s var(--ease-out-expo) forwards; }
@@ -213,8 +218,7 @@
       SPARK_WORD_HIGHLIGHT_MS: 5000,
       MIN_SPARK_INTERVAL: 15,
       MAX_SPARK_INTERVAL: 50,
-      SCORE_PER_RING: 800,
-      RING_FILL_FACTOR: 0.2,
+      SCORE_UPDATE_INTERVAL_MS: 5000, // unused, kept for reference
     };
 
     const DIFFICULTIES = {
@@ -480,15 +484,17 @@ const THEMES = {
         const glowIntensity = spark.type === 'burst' ? 3 : 2;
         const baseColor = t.sparkColor;
         const glowColor = t.glow;
-        
+        const hueFilter = spark.hueShift !== 0 ? `hue-rotate(${spark.hueShift}deg)` : '';
+
         return `
           <div class="absolute ${animClass}"
-            style="left: ${spark.left}%; top: ${spark.top}%; width: ${spark.size}px; height: ${spark.size}px; 
+            style="left: ${spark.left}%; top: ${spark.top}%; width: ${spark.size}px; height: ${spark.size}px;
             ${spark.shape !== 'star' ? `background: radial-gradient(circle, ${baseColor} 0%, ${baseColor.replace('0.3', '0.1')} 50%, transparent 70%);` : ''}
             ${shapeStyle}
-            box-shadow: 0 0 ${spark.size * glowIntensity}px ${glowColor}, 0 0 ${spark.size * glowIntensity * 2}px ${baseColor}; 
-            animation-delay: ${spark.delay}s; 
-            animation-duration: ${spark.duration}s; 
+            filter: ${hueFilter || 'none'};
+            box-shadow: 0 0 ${spark.size * glowIntensity}px ${glowColor}, 0 0 ${spark.size * glowIntensity * 2}px ${baseColor};
+            animation-delay: ${spark.delay}s;
+            animation-duration: ${spark.duration}s;
             --drift: ${spark.drift}px;
             --rise: ${spark.rise}px;
             --glow-color: ${glowColor};">
@@ -873,7 +879,11 @@ const THEMES = {
                   </div>
                 </div>
               </div>
-            ` : ''}
+              <div class="flex items-center gap-4">
+                <div id="word-count-display" class="text-sm tracking-widest font-sans tabular-nums transition-opacity duration-500" style="opacity: ${state.wordCount > 0 ? 0.25 : 0};">${state.wordCount > 0 ? state.wordCount + 'w' : ''}</div>
+                <div id="time-display" class="text-sm tracking-widest opacity-40 font-sans tabular-nums">${formatTime(state.totalTime)}</div>
+              </div>
+            </div>
 
             <!-- Writing area -->
             <div class="relative flex-grow rounded-2xl" style="min-height: 420px;">
@@ -922,6 +932,7 @@ const THEMES = {
       dom.timeDisplay = document.getElementById('time-display');
       dom.comboDisplay = document.getElementById('combo-display');
       dom.sparksContainer = document.getElementById('sparks-container');
+      dom.wordCountDisplay = document.getElementById('word-count-display');
     }
 
     function attachEventListeners() {
@@ -1065,7 +1076,8 @@ const THEMES = {
 
           updateFlowBar();
           updateTimeDisplay();
-          updateRingDisplay();
+          updateScoreDisplay(deltaTime);
+          updateWordCountDisplay();
         }
       }
       
@@ -1073,34 +1085,49 @@ const THEMES = {
       animationId = requestAnimationFrame(animate);
     }
 
+    function getFlowBarColor(flow, t) {
+      if (flow > 55) return t.bar;
+      if (flow > 25) {
+        // Blend accent → amber as flow drains
+        const ratio = (flow - 25) / 30;
+        return `color-mix(in srgb, ${t.bar} ${Math.round(ratio * 100)}%, #f59e0b ${Math.round((1 - ratio) * 100)}%)`;
+      }
+      // Critical: amber → red
+      const ratio = flow / 25;
+      return `color-mix(in srgb, #f59e0b ${Math.round(ratio * 100)}%, #ef4444 ${Math.round((1 - ratio) * 100)}%)`;
+    }
+
     function updateFlowBar() {
       if (!dom.flowBar) return;
       const t = THEMES[state.theme];
+      const color = getFlowBarColor(state.flow, t);
       dom.flowBar.style.width = `${state.flow}%`;
-      dom.flowBar.style.boxShadow = state.flow < 30 
-        ? `0 0 20px ${t.glow}, 0 0 40px ${t.glow}` 
-        : (state.sparks.length > 0 ? `0 0 30px ${t.sparkColor}` : 'none');
+      dom.flowBar.style.background = `linear-gradient(90deg, ${color}, ${color}dd)`;
+      if (state.flow < 20) {
+        dom.flowBar.classList.add('flow-bar-danger');
+        dom.flowBar.style.boxShadow = `0 0 24px #ef4444aa, 0 0 48px #ef444455`;
+      } else if (state.flow < 30) {
+        dom.flowBar.classList.remove('flow-bar-danger');
+        dom.flowBar.style.boxShadow = `0 0 20px ${t.glow}, 0 0 40px ${t.glow}`;
+      } else {
+        dom.flowBar.classList.remove('flow-bar-danger');
+        dom.flowBar.style.boxShadow = state.sparks.length > 0 ? `0 0 30px ${t.sparkColor}` : 'none';
+      }
     }
 
-    function updateRingDisplay() {
-      if (!dom.ringActive || !dom.ringTrack) return;
-      const { totalRings, activeProgress } = getRingStats();
-      const maxR = 52;
-      const minR = 20;
-      const activeRadius = maxR - ((maxR - minR) * activeProgress);
-      const circ = 2 * Math.PI * activeRadius;
-      const offset = circ * (1 - activeProgress);
+    function updateScoreDisplay(deltaTime) {
+      if (!dom.scoreDisplay) return;
+      // Smooth lerp toward actual score — feels like a live counter
+      const lerpSpeed = Math.min(1, deltaTime * 3);
+      state.displayScore += (state.score - state.displayScore) * lerpSpeed;
+      dom.scoreDisplay.textContent = Math.floor(state.displayScore).toLocaleString();
+    }
 
-      dom.ringActive.setAttribute('r', activeRadius.toFixed(3));
-      dom.ringTrack.setAttribute('r', activeRadius.toFixed(3));
-      dom.ringActive.setAttribute('stroke-dasharray', circ.toFixed(3));
-      dom.ringActive.setAttribute('stroke-dashoffset', offset.toFixed(3));
-
-      if (dom.ringCount) {
-        dom.ringCount.textContent = `${totalRings}`;
-      }
-      if (dom.ringMeta) {
-        dom.ringMeta.textContent = `Active Ring ${Math.round(activeProgress * 100)}%`;
+    function updateWordCountDisplay() {
+      if (!dom.wordCountDisplay) return;
+      if (state.wordCount > 0) {
+        dom.wordCountDisplay.textContent = state.wordCount + 'w';
+        dom.wordCountDisplay.style.opacity = '0.25';
       }
     }
 

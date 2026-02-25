@@ -149,59 +149,125 @@
         const Plus = (props) => <Icon path={ICONS.Plus} {...props} />;
         const Minus = (props) => <Icon path={ICONS.Minus} {...props} />;
 
-        /* --- DATA LIBRARY --- */
+        /* --- DATA LIBRARY (Expanded) --- */
         const LOCAL_LIBRARY = {
             nouns: [
-                "abyss", "anomaly", "archetype", "automaton", "bastion", "behemoth", "catalyst", "chasm", "citadel", "conduit",
-                "covenant", "cipher", "dynamo", "echo", "eclipse", "effigy", "enigma", "epoch", "expanse", "fragment",
-                "fugitive", "glitch", "harbinger", "heirloom", "heretic", "horizon", "illusion", "inferno", "labyrinth", "legacy",
-                "leviathan", "monolith", "monument", "mosaic", "myriad", "nebula", "nexus", "obelisk", "oracle", "paradox",
-                "pariah", "phantom", "phenomenon", "pioneer", "prism", "prophecy", "relic", "remnant", "reverie", "sanctuary",
-                "savant", "scion", "sentinel", "shadow", "silhouette", "specter", "spire", "summit", "syndicate", "talisman",
-                "tempest", "titan", "totem", "vanguard", "velocity", "verdict", "vessel", "void", "vortex", "wraith", "zenith"
+                "abyss", "aftermath", "allegory", "anomaly", "apparition", "archetype", "asylum", "aurora", "automaton", "axiom",
+                "bastion", "beacon", "behemoth", "blade", "blossom", "breach", "burden", "cairn", "canopy", "cascade",
+                "catalyst", "cathedral", "cavern", "chasm", "chronicle", "cipher", "citadel", "colossus", "communion", "conduit",
+                "contagion", "cosmos", "covenant", "crucible", "crusade", "crypt", "daemon", "decree", "deluge", "descent",
+                "dominion", "drought", "dusk", "dynasty", "dynamo", "echo", "eclipse", "eddy", "effigy", "ember",
+                "emissary", "enigma", "entity", "epoch", "equilibrium", "estuary", "ether", "exodus", "expanse", "facade",
+                "famine", "fervor", "figment", "filament", "firmament", "flame", "forge", "fortress", "fracture", "fragment",
+                "frontier", "fugitive", "fulcrum", "furnace", "genesis", "glacier", "glitch", "gossamer", "granite", "harbinger",
+                "haze", "heirloom", "herald", "heretic", "hinterland", "hollow", "horizon", "hymn", "iceberg", "idol",
+                "illusion", "impasse", "incarnation", "incantation", "inferno", "insignia", "instinct", "interlude", "ivory", "junction",
+                "kinship", "knell", "labyrinth", "lagoon", "lance", "lattice", "legacy", "leviathan", "lineage", "locus",
+                "maelstrom", "mandate", "manifesto", "marionette", "matrix", "membrane", "meridian", "metamorphosis", "miasma", "migration",
+                "miracle", "mirage", "monolith", "monument", "mosaic", "mythos", "myriad", "nadir", "nebula", "nemesis",
+                "nexus", "nimbus", "nocturne", "nucleus", "obelisk", "obsession", "omen", "opus", "oracle", "ordeal",
+                "origin", "outcast", "palimpsest", "pandemonium", "paradigm", "paradox", "passage", "pendulum", "penance", "peril",
+                "phantom", "phenomenon", "phoenix", "pilgrimage", "pinnacle", "plague", "portal", "precipice", "prelude", "premonition",
+                "prism", "progeny", "prophecy", "providence", "psyche", "purgatory", "quarry", "quasar", "rapture", "realm",
+                "rebirth", "reckoning", "refuge", "relic", "remnant", "requiem", "resonance", "revelation", "revenant", "reverie",
+                "riddle", "ritual", "ruin", "sacrament", "saga", "salvation", "sanctuary", "savant", "scepter", "schism",
+                "scion", "scourge", "sentinel", "shadow", "shard", "siege", "sigil", "silhouette", "singularity", "solstice",
+                "sovereign", "specter", "spire", "stigma", "summit", "surge", "symbiosis", "syndicate", "talisman", "tempest",
+                "terminus", "threshold", "titan", "torrent", "totem", "tribunal", "tundra", "twilight", "tyrant", "umbra",
+                "undertow", "upheaval", "utopia", "vale", "vanguard", "velocity", "vendetta", "verdict", "vessel", "vigil",
+                "vision", "void", "vortex", "warden", "wasteland", "watershed", "whisper", "wrath", "wraith", "zenith"
             ],
             verbs: [
-                "accelerate", "amplify", "ascend", "assemble", "awaken", "banish", "beckon", "breach", "calibrate", "cascade",
-                "catalyze", "channel", "clash", "collapse", "command", "compel", "conjure", "consume", "converge", "corrupt",
-                "craft", "crumble", "decipher", "defy", "descend", "devour", "dismantle", "disrupt", "distort", "eclipse",
-                "emerge", "engulf", "entangle", "erupt", "evolve", "exhale", "expand", "exploit", "extinguish", "fabricate",
-                "falter", "fluctuate", "forge", "fracture", "fuse", "galvanize", "glimmer", "gravitate", "harness", "haunt",
-                "ignite", "illuminate", "implode", "improvise", "infiltrate", "infuse", "invoke", "isolate", "kindle", "linger",
-                "manifest", "mend", "mimic", "morph", "mutate", "navigate", "obliterate", "obscure", "orbit", "oscillate",
-                "permeate", "pierce", "plummet", "precede", "provoke", "pulsate", "radiate", "ravage", "reclaim", "reconstruct"
+                "abandon", "absorb", "accelerate", "amplify", "anchor", "ascend", "assemble", "awaken", "banish", "beckon",
+                "betray", "bind", "blaze", "bleed", "bloom", "breach", "breathe", "burden", "bury", "calibrate",
+                "cascade", "catalyze", "channel", "clash", "cleave", "coalesce", "collapse", "command", "compel", "conceal",
+                "conjure", "consume", "converge", "corrupt", "craft", "crawl", "crumble", "crystallize", "cultivate", "curse",
+                "decipher", "defy", "demolish", "descend", "devour", "diminish", "dismantle", "disrupt", "dissolve", "distort",
+                "diverge", "dominate", "drift", "eclipse", "emanate", "embrace", "emerge", "endure", "engulf", "entangle",
+                "erode", "erupt", "evaporate", "evolve", "excavate", "exhale", "expand", "exploit", "extinguish", "fabricate",
+                "falter", "feast", "flicker", "flourish", "fluctuate", "forge", "fracture", "fuse", "galvanize", "gather",
+                "glimmer", "gnaw", "gravitate", "grieve", "harness", "haunt", "hollow", "howl", "ignite", "illuminate",
+                "immerse", "implode", "improvise", "incite", "infiltrate", "infuse", "inherit", "invoke", "isolate", "kindle",
+                "languish", "linger", "manifest", "mend", "mimic", "morph", "mourn", "mutate", "navigate", "nurture",
+                "obliterate", "obscure", "orbit", "oscillate", "overcome", "overwhelm", "permeate", "persist", "pierce", "plummet",
+                "precede", "propel", "provoke", "pulsate", "purge", "pursue", "radiate", "ravage", "reclaim", "reconstruct",
+                "redeem", "reforge", "rekindle", "renounce", "repel", "resonate", "restore", "resurrect", "reveal", "reverberate",
+                "rupture", "sacrifice", "scatter", "scorch", "sculpt", "sever", "shatter", "shelter", "shimmer", "silence",
+                "smolder", "spiral", "splinter", "stagger", "submerge", "suffocate", "summon", "surge", "surrender", "sustain",
+                "swallow", "tangle", "temper", "terraform", "thunder", "transcend", "transmute", "traverse", "tremble", "unearth",
+                "unfold", "unleash", "unravel", "vanquish", "wander", "weather", "weave", "wield", "wither", "yield"
             ],
             adjectives: [
-                "absolute", "abstract", "abyssal", "ancient", "arcane", "artificial", "astral", "barren", "bioluminescent", "boundless",
-                "brittle", "celestial", "chaotic", "chronological", "clandestine", "cognitive", "colossal", "corrosive", "cryptic", "crystalline",
-                "cybernetic", "desolate", "digital", "divine", "dormant", "eldritch", "elusive", "empyrean", "endless", "ephemeral",
-                "ethereal", "feral", "forbidden", "fractured", "frenetic", "frozen", "hollow", "holographic", "immortal", "imperceptible",
-                "infinite", "intangible", "kinetic", "liminal", "lucid", "luminous", "malevolent", "mechanical", "merciless", "molten",
-                "nebulous", "obsidian", "ominous", "opalescent", "perpetual", "primal", "prismatic", "profound", "quantum", "radiant",
-                "relentless", "resonant", "savage", "sentient", "shattered", "silent", "solar", "spectral", "static", "sublime"
+                "absolute", "abstract", "abyssal", "aching", "ancient", "arcane", "artificial", "ashen", "astral", "audacious",
+                "barren", "billowing", "bioluminescent", "bitter", "blazing", "blinding", "boundless", "brazen", "breathless", "brittle",
+                "bruised", "burning", "cavernous", "celestial", "chaotic", "charred", "chronological", "clandestine", "cognitive", "colossal",
+                "corrosive", "cracked", "crimson", "crooked", "cruel", "cryptic", "crystalline", "cursed", "cybernetic", "decaying",
+                "desolate", "desperate", "digital", "dim", "divine", "dormant", "dreadful", "drifting", "drowning", "dusted",
+                "eldritch", "electric", "elusive", "empyrean", "endless", "ephemeral", "eroded", "ethereal", "exiled", "extinct",
+                "fading", "famished", "fathomless", "feral", "fevered", "fierce", "flickering", "forbidden", "forlorn", "fractured",
+                "fragile", "fraying", "frenetic", "frozen", "furious", "gilded", "glacial", "gleaming", "gnarled", "golden",
+                "hallowed", "haunted", "hollow", "holographic", "hungering", "hushed", "illuminated", "immense", "immortal", "imperceptible",
+                "incandescent", "infinite", "intangible", "inverted", "iridescent", "jagged", "kinetic", "languid", "liminal", "liquid",
+                "lonesome", "lucid", "luminous", "lurking", "malevolent", "mechanical", "merciless", "midnight", "molten", "monstrous",
+                "mournful", "mythic", "nameless", "nebulous", "nocturnal", "obsidian", "ominous", "opalescent", "orbiting", "pale",
+                "pearlescent", "perpetual", "petrified", "phosphorescent", "piercing", "primal", "prismatic", "profound", "pulsing", "quantum",
+                "radiant", "ragged", "ravaged", "relentless", "resonant", "restless", "ruinous", "rusted", "ruthless", "sacred",
+                "savage", "scarred", "scorched", "sentient", "serpentine", "shattered", "shifting", "shimmering", "silent", "silver",
+                "smoldering", "solar", "solemn", "sovereign", "spectral", "splintered", "static", "stolen", "sublime", "subterranean",
+                "sunken", "tarnished", "tempestuous", "tenuous", "timeless", "toxic", "trembling", "twilit", "uncharted", "undying",
+                "unforgiving", "unraveling", "unseen", "unyielding", "vast", "veiled", "venomous", "verdant", "volcanic", "waning",
+                "weathered", "whispering", "wild", "windswept", "withered", "wrathful", "wretched"
             ],
             actors: [
-                "The Alchemist", "The Architect", "The Automaton", "The Bard", "The Catalyst", "The Diplomat", "The Drifter", 
-                "The Exile", "The Forger", "The Guardian", "The Harbinger", "The Healer", "The Heretic", "The Hunter", 
-                "The Illusionist", "The Inventor", "The Judge", "The Keeper", "The Mercenary", "The Monk", "The Mystic", 
-                "The Navigator", "The Nomad", "The Oracle", "The Outlaw", "The Paladin", "The Phantom", "The Philosopher", 
-                "The Pioneer", "The Prophet", "The Rebel", "The Rogue", "The Sage", "The Savant", "The Scavenger", "The Scholar", 
-                "The Scout", "The Sentinel", "The Shaman", "The Shepherd", "The Soldier", "The Specter", "The Spy", "The Strategist", 
-                "The Survivor", "The Tactician", "The Technician", "The Thief", "The Titan", "The Traveler", "The Vanguard", 
-                "The Veteran", "The Visionary", "The Wanderer", "The Warden", "The Warlock", "The Warrior", "The Weaver", 
-                "The Whisperer", "The Witness", "The Wraith", "The Zealot"
+                "The Alchemist", "The Anchor", "The Apostate", "The Architect", "The Arsonist", "The Automaton", "The Bard",
+                "The Beast", "The Betrayer", "The Bishop", "The Blacksmith", "The Blind One", "The Botanist", "The Brewer",
+                "The Captain", "The Cartographer", "The Catalyst", "The Chaplain", "The Chemist", "The Child", "The Chronicler",
+                "The Collector", "The Commander", "The Conductor", "The Conqueror", "The Corsair", "The Courier", "The Crone",
+                "The Curator", "The Dancer", "The Deacon", "The Deserter", "The Detective", "The Diplomat", "The Dissident",
+                "The Diviner", "The Drifter", "The Elder", "The Emissary", "The Enchanter", "The Engineer", "The Exile",
+                "The Falconer", "The Ferryman", "The Fool", "The Forger", "The Gardener", "The Ghost", "The Gladiator",
+                "The Gravedigger", "The Guardian", "The Harbinger", "The Healer", "The Helmsman", "The Herald", "The Heretic",
+                "The Hermit", "The Highwayman", "The Historian", "The Hollow One", "The Hunter", "The Idol", "The Illusionist",
+                "The Impostor", "The Inquisitor", "The Interpreter", "The Inventor", "The Jester", "The Judge", "The Keeper",
+                "The Lamplighter", "The Leper", "The Librarian", "The Locksmith", "The Martyr", "The Mason", "The Mercenary",
+                "The Merchant", "The Messenger", "The Midwife", "The Minstrel", "The Monk", "The Mourner", "The Muse",
+                "The Mystic", "The Navigator", "The Nomad", "The Oracle", "The Orphan", "The Outcast", "The Outlaw",
+                "The Paladin", "The Penitent", "The Phantom", "The Philosopher", "The Pilgrim", "The Pioneer", "The Poet",
+                "The Prisoner", "The Professor", "The Prophet", "The Prodigy", "The Puppet", "The Queen", "The Rebel",
+                "The Rector", "The Refugee", "The Revenant", "The Rider", "The Rogue", "The Sage", "The Sailor",
+                "The Savant", "The Scavenger", "The Scholar", "The Scout", "The Sculptor", "The Sentinel", "The Serpent",
+                "The Shadow", "The Shaman", "The Shepherd", "The Siege-Breaker", "The Singer", "The Smith", "The Smuggler",
+                "The Soldier", "The Soothsayer", "The Specter", "The Spy", "The Stoic", "The Stranger", "The Strategist",
+                "The Surgeon", "The Survivor", "The Swindler", "The Tactician", "The Templar", "The Thief", "The Tinkerer",
+                "The Titan", "The Torchbearer", "The Tracker", "The Traveler", "The Tyrant", "The Undertaker", "The Vagabond",
+                "The Vanguard", "The Veteran", "The Visionary", "The Wanderer", "The Warden", "The Warlock", "The Warrior",
+                "The Watchman", "The Weaver", "The Whisperer", "The Widow", "The Witch", "The Witness", "The Wraith",
+                "The Zealot"
             ],
             settings: [
-                "Abandoned Station", "Ancient Ruins", "Astral Plane", "Bustling Market", "Celestial Observatory", "Chrome Citadel", 
-                "Clockwork Tower", "Crystal Cavern", "Cyber Slums", "Dark Forest", "Desolate Wasteland", "Digital Void", 
-                "Distant Moon", "Drowned City", "Echoing Canyon", "Floating Island", "Foggy Harbor", "Forbidden Library", 
-                "Forgotten Temple", "Frozen Tundra", "Glass Spire", "Hidden Sanctuary", "High Council", "Hollow Earth", 
-                "Infinite Corridor", "Iron Fortress", "Ivory Tower", "Lost Colony", "Luminous Grove", "Magnetic Fields", 
-                "Marble Hall", "Midnight Garden", "Misty Moor", "Neon Metropolis", "Obsidian Spire", "Ocean Floor", "Orbital Ring", 
-                "Parallel Dimension", "Quantum Realm", "Quiet Village", "Radioactive Zone", "Sacred Grove", "Secret Laboratory", 
-                "Shifting Sands", "Silent Monastery", "Sky Fortress", "Smoky Tavern", "Solar Array", "Starlit Void", 
-                "Steam Tunnels", "Stone Circle", "Stormy Coast", "Subterranean City", "Sunken Ship", "Temporal Rift", 
-                "Throne Room", "Twilight Zone", "Underground Bunker", "Urban Decay", "Velvet Room", "Volcanic Crater", 
-                "Whispering Woods", "Wind-Swept Plains"
+                "Abandoned Station", "Acid Rain District", "Ancient Ruins", "Ash-Covered Valley", "Astral Plane", "Bamboo Labyrinth",
+                "Bazaar of Whispers", "Bleeding Reef", "Bone Cathedral", "Borderlands Outpost", "Broken Bridge", "Bronze Colosseum",
+                "Burning Library", "Bustling Market", "Candle-Lit Catacombs", "Celestial Observatory", "Charnel House", "Chrome Citadel",
+                "Clockwork Tower", "Cloud Harbor", "Coral Throne", "Crater Lake", "Crystal Cavern", "Cursed Orchard",
+                "Cyber Slums", "Dark Forest", "Dead Man's Strait", "Derelict Cathedral", "Desolate Wasteland", "Dew-Soaked Meadow",
+                "Digital Void", "Distant Moon", "Dragon's Spine Pass", "Dream Parlor", "Drowned City", "Dust Bowl",
+                "Echoing Canyon", "Eclipse Observatory", "Elder Grove", "Ember Fields", "Enchanted Bog", "Eternal Staircase",
+                "Fallen Kingdom", "Floating Island", "Flooded Mines", "Foggy Harbor", "Forbidden Library", "Forge of Ancients",
+                "Forgotten Temple", "Frozen Battlefield", "Frozen Tundra", "Fungal Forest", "Ghost Ship", "Glass Desert",
+                "Glass Spire", "Golden Steppe", "Grave Garden", "Haunted Lighthouse", "Hidden Sanctuary", "High Council",
+                "Hollow Earth", "Howling Gorge", "Hunting Grounds", "Infinite Corridor", "Iron Fortress", "Ivory Tower",
+                "Jade Palace", "Jungle Citadel", "Labyrinthine Sewers", "Lantern-Lit Harbor", "Lightning Fields", "Liminal Corridor",
+                "Living Cave", "Lost Colony", "Luminous Grove", "Magnetic Fields", "Marble Hall", "Midnight Bazaar",
+                "Midnight Garden", "Mirrorworld", "Misty Moor", "Moonlit Ruins", "Moss-Covered Aqueduct", "Neon Metropolis",
+                "Obsidian Spire", "Ocean Floor", "Onyx Cavern", "Orbital Ring", "Ossuary", "Painted Desert",
+                "Parallel Dimension", "Petrified Forest", "Plague Village", "Poisoned River", "Quantum Realm", "Quiet Village",
+                "Radioactive Zone", "Red Canyon", "Rusted Factory", "Sacred Grove", "Salt Flats", "Sand-Buried Temple",
+                "Sapphire Coast", "Scarecrow Field", "Secret Laboratory", "Shadow Market", "Shifting Sands", "Shipwreck Bay",
+                "Silent Monastery", "Silver Mines", "Sky Fortress", "Smoky Tavern", "Solar Array", "Starlit Void",
+                "Steam Tunnels", "Stone Circle", "Storm Citadel", "Stormy Coast", "Subterranean City", "Sulfur Springs",
+                "Sunken Ship", "Tar Pits", "Temporal Rift", "Throne Room", "Tidal Caves", "Twilight Zone",
+                "Underground Bunker", "Underwater Ruins", "Urban Decay", "Velvet Room", "Volcanic Crater", "War-Torn Crossroads",
+                "Whispering Woods", "Wind-Swept Plains", "Witch's Hollow", "Wormwood Marsh"
             ]
         };
 
@@ -270,6 +336,17 @@
         const DATAMUSE_API = 'https://api.datamuse.com/words';
         const API_POOL_KEY = 'writingtools_synax_api_pool_v1';
         const getRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+        // Diverse seed concepts for API-powered serendipity
+        const SEED_CONCEPTS = [
+            "dream", "shadow", "fire", "ocean", "storm", "silence", "memory", "ghost", "machine", "garden",
+            "night", "kingdom", "blood", "light", "winter", "hunger", "flight", "mirror", "dust", "cathedral",
+            "wound", "gravity", "forest", "poison", "music", "stone", "animal", "river", "bone", "smoke",
+            "island", "prison", "treasure", "weapon", "monster", "secret", "power", "death", "creation", "ruin",
+            "journey", "stranger", "sacrifice", "wilderness", "rebellion", "plague", "prophecy", "illusion", "ancestor", "labyrinth",
+            "eclipse", "carnival", "ceremony", "betrayal", "paradise", "inferno", "frontier", "asylum", "tempest", "oracle",
+            "fortress", "evolution", "obsession", "horizon", "threshold", "metamorphosis", "tide", "catalyst", "exile", "void"
+        ];
 
         /* --- APP COMPONENTS --- */
 
@@ -607,37 +684,87 @@
 
                 try {
                 if (mode === 'random') {
+                    // API-first serendipity: call Datamuse for full dictionary variety
                     if (!offlineMode) {
-                        await hydrateSerendipityApiPool();
-                    }
-                    const definitions = [
-                        { type: 'Noun', src: LOCAL_LIBRARY.nouns },
-                        { type: 'Verb', src: LOCAL_LIBRARY.verbs },
-                        { type: 'Adjective', src: LOCAL_LIBRARY.adjectives }
-                    ];
+                        try {
+                            const seed = getRandom(SEED_CONCEPTS);
+                            const [mlResults, adjResults, trigResults] = await Promise.all([
+                                fetchDatamuse({ ml: seed, md: 'p', max: 50 }),
+                                fetchDatamuse({ rel_jjb: seed, max: 30 }),
+                                fetchDatamuse({ rel_trg: seed, max: 30 })
+                            ]);
 
-                    for (let i = 0; i < serendipityCount; i++) {
-                        let type, word;
-                        // Cycle through base types first, then random/wildcard
-                        if (i < 3) {
-                            type = definitions[i].type;
-                            const category = type.toLowerCase() + 's';
-                            word = (!offlineMode ? pickSerendipityWord(category) : '') || getRandomAvoidRecent(definitions[i].src);
-                        } else {
-                            // Logic for extra words: mostly nouns or actors for variety
-                            const roll = Math.random();
-                            if (roll < 0.3) {
-                                type = 'Actor';
-                                word = getRandomAvoidRecent(LOCAL_LIBRARY.actors);
-                            } else if (roll < 0.6) {
-                                type = 'Adjective';
-                                word = (!offlineMode ? pickSerendipityWord('adjectives') : '') || getRandomAvoidRecent(LOCAL_LIBRARY.adjectives);
-                            } else {
-                                type = 'Wildcard';
-                                word = (!offlineMode ? pickSerendipityWord('nouns') : '') || getRandomAvoidRecent(LOCAL_LIBRARY.nouns);
+                            // fetchDatamuse returns string[] but with md=p we need raw data
+                            // Re-fetch with metadata for part-of-speech tagging
+                            const rawRes = await fetch(`${DATAMUSE_API}?ml=${encodeURIComponent(seed)}&md=p&max=60`);
+                            const rawData = rawRes.ok ? await rawRes.json() : [];
+
+                            const apiNouns = rawData.filter(w => w.tags?.includes('n')).map(w => w.word);
+                            const apiVerbs = rawData.filter(w => w.tags?.includes('v')).map(w => w.word);
+                            const apiAdjs = adjResults.length > 0 ? adjResults : rawData.filter(w => w.tags?.includes('adj')).map(w => w.word);
+                            const apiWild = trigResults.length > 0 ? trigResults : mlResults;
+
+                            for (let i = 0; i < serendipityCount; i++) {
+                                let type, word;
+                                if (i === 0 && apiNouns.length > 0) {
+                                    type = 'Noun'; word = getRandomAvoidRecent(apiNouns);
+                                } else if (i === 1 && apiVerbs.length > 0) {
+                                    type = 'Verb'; word = getRandomAvoidRecent(apiVerbs);
+                                } else if (i === 2 && apiAdjs.length > 0) {
+                                    type = 'Adjective'; word = getRandomAvoidRecent(apiAdjs);
+                                } else {
+                                    const roll = Math.random();
+                                    if (roll < 0.25 && apiNouns.length > 0) { type = 'Noun'; word = getRandomAvoidRecent(apiNouns); }
+                                    else if (roll < 0.5 && apiAdjs.length > 0) { type = 'Adjective'; word = getRandomAvoidRecent(apiAdjs); }
+                                    else if (roll < 0.75 && apiWild.length > 0) { type = 'Association'; word = getRandomAvoidRecent(apiWild); }
+                                    else { type = 'Discovery'; word = getRandomAvoidRecent(mlResults.length > 0 ? mlResults : LOCAL_LIBRARY.nouns); }
+                                }
+                                if (word) newWords.push({ word, type });
+                            }
+                            // Fill any gaps if API returned too few
+                            if (newWords.length < serendipityCount) throw new Error("Insufficient API results");
+                        } catch (apiErr) {
+                            // Fallback to local library
+                            newWords = [];
+                            const definitions = [
+                                { type: 'Noun', src: LOCAL_LIBRARY.nouns },
+                                { type: 'Verb', src: LOCAL_LIBRARY.verbs },
+                                { type: 'Adjective', src: LOCAL_LIBRARY.adjectives }
+                            ];
+                            for (let i = 0; i < serendipityCount; i++) {
+                                let type, word;
+                                if (i < 3) {
+                                    type = definitions[i].type;
+                                    word = getRandomAvoidRecent(definitions[i].src);
+                                } else {
+                                    const roll = Math.random();
+                                    if (roll < 0.3) { type = 'Actor'; word = getRandomAvoidRecent(LOCAL_LIBRARY.actors); }
+                                    else if (roll < 0.6) { type = 'Adjective'; word = getRandomAvoidRecent(LOCAL_LIBRARY.adjectives); }
+                                    else { type = 'Wildcard'; word = getRandomAvoidRecent(LOCAL_LIBRARY.nouns); }
+                                }
+                                newWords.push({ word, type });
                             }
                         }
-                        newWords.push({ word, type });
+                    } else {
+                        // Offline mode: use local library
+                        const definitions = [
+                            { type: 'Noun', src: LOCAL_LIBRARY.nouns },
+                            { type: 'Verb', src: LOCAL_LIBRARY.verbs },
+                            { type: 'Adjective', src: LOCAL_LIBRARY.adjectives }
+                        ];
+                        for (let i = 0; i < serendipityCount; i++) {
+                            let type, word;
+                            if (i < 3) {
+                                type = definitions[i].type;
+                                word = getRandomAvoidRecent(definitions[i].src);
+                            } else {
+                                const roll = Math.random();
+                                if (roll < 0.3) { type = 'Actor'; word = getRandomAvoidRecent(LOCAL_LIBRARY.actors); }
+                                else if (roll < 0.6) { type = 'Adjective'; word = getRandomAvoidRecent(LOCAL_LIBRARY.adjectives); }
+                                else { type = 'Wildcard'; word = getRandomAvoidRecent(LOCAL_LIBRARY.nouns); }
+                            }
+                            newWords.push({ word, type });
+                        }
                     }
                 } else if (mode === 'triad') {
                     let actor = getRandomAvoidRecent(LOCAL_LIBRARY.actors);

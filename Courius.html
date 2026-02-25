@@ -375,6 +375,65 @@
             border-radius: 6px;
             font-family: monospace;
         }
+
+        /* Autocomplete Dropdown */
+        .autocomplete-dropdown {
+            position: fixed;
+            z-index: 1500;
+            background: var(--ui-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(253, 25, 200, 0.25);
+            border-radius: 10px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(253,25,200,0.08);
+            overflow: hidden;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-4px);
+            transition: opacity 0.15s ease, transform 0.15s ease;
+            min-width: 220px;
+            max-width: 400px;
+        }
+        .autocomplete-dropdown.visible {
+            opacity: 1;
+            pointer-events: all;
+            transform: translateY(0);
+        }
+        .autocomplete-item {
+            padding: 9px 14px;
+            font-size: 0.7rem;
+            font-family: var(--courier);
+            color: var(--ui-text);
+            cursor: pointer;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: background 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .autocomplete-item:hover,
+        .autocomplete-item.active {
+            background: rgba(253, 25, 200, 0.15);
+        }
+        .autocomplete-item.active {
+            background: rgba(253, 25, 200, 0.2);
+        }
+        .autocomplete-item-hint {
+            font-size: 0.55rem;
+            opacity: 0.4;
+            flex-shrink: 0;
+        }
+        .autocomplete-footer {
+            padding: 5px 14px;
+            font-size: 0.55rem;
+            opacity: 0.35;
+            border-top: 1px solid rgba(255,255,255,0.07);
+            color: var(--ui-text);
+            font-family: var(--courier);
+        }
     </style>
 </head>
 <body>
@@ -408,6 +467,10 @@
         <div class="shortcut-row"><span>Reverse Cycle</span><span class="shortcut-key">Shift+Tab</span></div>
         <div class="shortcut-row"><span>New Line</span><span class="shortcut-key">Enter</span></div>
         <div class="shortcut-row"><span>Show Help</span><span class="shortcut-key">?</span></div>
+        <div style="margin-top:12px; padding-top:12px; border-top: 1px solid rgba(0,0,0,0.1); font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; opacity:0.5;">Autocomplete</div>
+        <div class="shortcut-row"><span>Accept suggestion</span><span class="shortcut-key">Tab / ↵</span></div>
+        <div class="shortcut-row"><span>Navigate matches</span><span class="shortcut-key">↑ ↓</span></div>
+        <div class="shortcut-row"><span>Dismiss</span><span class="shortcut-key">Esc</span></div>
         <div style="margin-top: 20px; text-align: center;">
             <button onclick="toggleHelp()" class="side-btn" style="width: auto; padding: 10px 30px; background: var(--accent); color: #fff; border-radius: 8px;">Got it</button>
         </div>
@@ -424,6 +487,7 @@
 </div>
 
 <input type="file" id="file-input" accept=".fdx" style="display: none;" onchange="importFDX(this)">
+<div id="autocomplete-dropdown" class="autocomplete-dropdown"></div>
 
 <main id="editor-container" onclick="focusEditor(event)" onscroll="updatePageCount()">
     <div id="page" contenteditable="true" spellcheck="true" autocorrect="on"></div>
@@ -465,6 +529,12 @@
     let characterSet = new Set();
     let locationSet = new Set();
     let saveTimeout;
+
+    // --- Autocomplete state ---
+    const DROPDOWN = document.getElementById('autocomplete-dropdown');
+    let dropdownBlock = null;
+    let dropdownMatches = [];
+    let dropdownActiveIndex = 0;
 
     window.addEventListener('DOMContentLoaded', () => {
         const content = localStorage.getItem(STORAGE_KEY);
@@ -589,23 +659,51 @@
 
         const type = currentBlock.className;
 
+        if (e.key === 'ArrowDown' && DROPDOWN.classList.contains('visible')) {
+            e.preventDefault();
+            dropdownActiveIndex = Math.min(dropdownActiveIndex + 1, dropdownMatches.length - 1);
+            renderDropdownItems();
+            return;
+        }
+
+        if (e.key === 'ArrowUp' && DROPDOWN.classList.contains('visible')) {
+            e.preventDefault();
+            dropdownActiveIndex = Math.max(dropdownActiveIndex - 1, 0);
+            renderDropdownItems();
+            return;
+        }
+
+        if (e.key === 'Escape' && DROPDOWN.classList.contains('visible')) {
+            e.preventDefault();
+            hideDropdown();
+            return;
+        }
+
         if (e.key === 'Tab') {
             e.preventDefault();
-            const sugg = currentBlock.querySelector('.suggestion');
-            if (sugg) {
-                acceptSuggestion(currentBlock, sugg);
+            if (DROPDOWN.classList.contains('visible')) {
+                acceptFromDropdown(dropdownBlock, dropdownMatches[dropdownActiveIndex]);
             } else {
-                const currentIndex = ELEMENT_CYCLE.indexOf(type);
-                const nextIndex = e.shiftKey ? 
-                    (currentIndex - 1 + ELEMENT_CYCLE.length) % ELEMENT_CYCLE.length : 
-                    (currentIndex + 1) % ELEMENT_CYCLE.length;
-                setBlockType(currentBlock, ELEMENT_CYCLE[nextIndex]);
+                const sugg = currentBlock.querySelector('.suggestion');
+                if (sugg) {
+                    acceptSuggestion(currentBlock, sugg);
+                } else {
+                    const currentIndex = ELEMENT_CYCLE.indexOf(type);
+                    const nextIndex = e.shiftKey ?
+                        (currentIndex - 1 + ELEMENT_CYCLE.length) % ELEMENT_CYCLE.length :
+                        (currentIndex + 1) % ELEMENT_CYCLE.length;
+                    setBlockType(currentBlock, ELEMENT_CYCLE[nextIndex]);
+                }
             }
             updateSelectorUI();
         }
 
         if (e.key === 'Enter') {
             e.preventDefault();
+            if (DROPDOWN.classList.contains('visible')) {
+                acceptFromDropdown(dropdownBlock, dropdownMatches[dropdownActiveIndex]);
+                return;
+            }
             const sugg = currentBlock.querySelector('.suggestion');
             if (sugg) acceptSuggestion(currentBlock, sugg);
             if (type === 'parenthetical') {
@@ -618,9 +716,13 @@
     });
 
     EDITOR.addEventListener('keyup', (e) => {
+        // Eagerly refresh suggestion sets so newly typed chars/headings are immediately available
+        updateSuggestions();
         const block = getBlock(window.getSelection().anchorNode);
         if (block && (block.className === 'character' || block.className === 'scene-heading')) {
             handleAutofill(block, block.className, e.key);
+        } else {
+            hideDropdown();
         }
         updateSelectorUI();
         triggerSave();
@@ -630,6 +732,13 @@
     // Add mouse interactions for UI sync
     EDITOR.addEventListener('mouseup', updateSelectorUI);
     EDITOR.addEventListener('click', updateSelectorUI);
+
+    // Dismiss dropdown when clicking outside editor or dropdown
+    document.addEventListener('mousedown', (e) => {
+        if (!DROPDOWN.contains(e.target) && !EDITOR.contains(e.target)) {
+            hideDropdown();
+        }
+    });
 
     function getBlock(node) {
         if (!node) return null;
@@ -710,90 +819,148 @@
         return text.replace(/\n$/, '');
     }
 
-    function setSuggestion(block, suggestionText) {
-        const existing = block.querySelector('.suggestion');
-        if (existing) existing.remove();
-        if (!suggestionText) return;
-        const span = document.createElement('span');
-        span.className = 'suggestion';
-        span.textContent = suggestionText;
-        block.appendChild(span);
-    }
-
-    function getCharacterBlocksInOrder() {
-        return Array.from(document.querySelectorAll('.character'))
-            .map(d => getPureText(d).trim().toUpperCase())
-            .filter(Boolean);
-    }
-
-    function getAlternatingCharacterSuggestion() {
-        const names = getCharacterBlocksInOrder();
-        if (names.length < 2) return '';
-        const last = names[names.length - 1];
-        let priorDistinct = '';
-        for (let i = names.length - 2; i >= 0; i--) {
-            if (names[i] !== last) {
-                priorDistinct = names[i];
-                break;
+    function getMatches(text, targetSet, type) {
+        const results = [];
+        for (let entry of targetSet) {
+            if (entry === text) continue;
+            if (type === 'scene-heading') {
+                // Match on full heading prefix, OR on the location segment after INT./EXT./INT./EXT.
+                // e.g. typing "KITCHEN" matches "INT. KITCHEN - DAY"
+                const locationPart = entry.replace(/^(INT\/EXT|INT|EXT)\.\s*/i, '').split(/\s*-\s*/)[0].trim();
+                if (entry.startsWith(text) || locationPart.startsWith(text)) {
+                    results.push(entry);
+                }
+            } else {
+                // Character: prefix match
+                if (entry.startsWith(text)) {
+                    results.push(entry);
+                }
             }
         }
-        return priorDistinct || '';
-    }
-
-    function getSceneTimeSuggestion(text) {
-        const normalized = text.toUpperCase().trim();
-        if (!normalized || !normalized.includes('-')) return '';
-        if (!/[-\u2013\u2014]\s*$/.test(normalized)) return '';
-        return ' ' + SCENE_TIME_HINTS[0];
-    }
-
-    function applyLineBootstrapSuggestion(block, type, previousBlock) {
-        if (!block || !previousBlock) return;
-        if (type === 'character') {
-            const suggestion = getAlternatingCharacterSuggestion();
-            if (suggestion) setSuggestion(block, suggestion);
-        }
-        if (type === 'scene-heading') {
-            const prevText = getPureText(previousBlock).trim().toUpperCase();
-            if (/(INT\.|EXT\.|INT\/EXT\.|EST\.)/.test(prevText)) {
-                setSuggestion(block, ' - DAY.');
-            }
-        }
+        // Sort: exact prefix first, then location-part matches
+        results.sort((a, b) => {
+            const aPrefix = a.startsWith(text) ? 0 : 1;
+            const bPrefix = b.startsWith(text) ? 0 : 1;
+            return aPrefix - bPrefix || a.localeCompare(b);
+        });
+        return results.slice(0, 8);
     }
 
     function handleAutofill(block, type, key) {
-        setSuggestion(block, '');
-        const text = getPureText(block).toUpperCase();
-        if (text.length < 1 || ['Backspace', 'Delete', 'Enter'].includes(key)) return;
-        
-        if (type === 'scene-heading') {
-            const timeHint = getSceneTimeSuggestion(text);
-            if (timeHint) {
-                setSuggestion(block, timeHint);
-                return;
-            }
-        }
-
-        if (type === 'character') {
-            const alternating = getAlternatingCharacterSuggestion();
-            if (alternating && alternating.startsWith(text) && alternating !== text) {
-                setSuggestion(block, alternating.substring(text.length));
-                return;
-            }
+        const existingSugg = block.querySelector('.suggestion');
+        if (existingSugg) existingSugg.remove();
+        const text = getPureText(block).toUpperCase().trim();
+        if (text.length < 1 || ['Backspace', 'Delete', 'Enter', 'ArrowUp', 'ArrowDown', 'Escape', 'Tab'].includes(key)) {
+            if (!['ArrowUp', 'ArrowDown'].includes(key)) hideDropdown();
+            return;
         }
 
         const targetSet = (type === 'character') ? characterSet : locationSet;
-        for (let entry of targetSet) {
-            if (entry.startsWith(text) && entry !== text) {
-                setSuggestion(block, entry.substring(text.length));
-                return;
-            }
+        const matches = getMatches(text, targetSet, type);
+
+        if (matches.length === 0) { hideDropdown(); return; }
+
+        // Inline ghost for top match if it's a prefix match
+        const top = matches[0];
+        if (top.startsWith(text) && top !== text) {
+            const span = document.createElement('span');
+            span.className = 'suggestion';
+            span.textContent = top.substring(text.length);
+            block.appendChild(span);
         }
+
+        // Show dropdown for all matches
+        dropdownMatches = matches;
+        dropdownActiveIndex = 0;
+        dropdownBlock = block;
+        showDropdown(block);
+    }
+
+    function showDropdown(block) {
+        const rect = block.getBoundingClientRect();
+        // Smart positioning: flip up if near bottom of viewport
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const dropHeight = Math.min(dropdownMatches.length * 34 + 30, 300);
+        const showAbove = spaceBelow < dropHeight + 8 && rect.top > dropHeight;
+
+        DROPDOWN.style.left = rect.left + 'px';
+        DROPDOWN.style.maxWidth = Math.max(rect.width, 220) + 'px';
+        if (showAbove) {
+            DROPDOWN.style.top = '';
+            DROPDOWN.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
+        } else {
+            DROPDOWN.style.bottom = '';
+            DROPDOWN.style.top = (rect.bottom + 4) + 'px';
+        }
+        renderDropdownItems();
+        DROPDOWN.classList.add('visible');
+    }
+
+    function renderDropdownItems() {
+        DROPDOWN.innerHTML = '';
+        dropdownMatches.forEach((match, i) => {
+            const item = document.createElement('div');
+            item.className = 'autocomplete-item' + (i === dropdownActiveIndex ? ' active' : '');
+            const label = document.createElement('span');
+            label.textContent = match;
+            item.appendChild(label);
+            if (i === 0) {
+                const hint = document.createElement('span');
+                hint.className = 'autocomplete-item-hint';
+                hint.textContent = 'Tab ↵';
+                item.appendChild(hint);
+            }
+            item.onmousedown = (e) => {
+                e.preventDefault(); // don't blur editor
+                dropdownActiveIndex = i;
+                acceptFromDropdown(dropdownBlock, match);
+            };
+            DROPDOWN.appendChild(item);
+        });
+        if (dropdownMatches.length > 1) {
+            const footer = document.createElement('div');
+            footer.className = 'autocomplete-footer';
+            footer.textContent = '↑↓ navigate · Tab/↵ accept · Esc dismiss';
+            DROPDOWN.appendChild(footer);
+        }
+        // Scroll active item into view
+        const activeEl = DROPDOWN.querySelector('.active');
+        if (activeEl) activeEl.scrollIntoView({ block: 'nearest' });
+    }
+
+    function hideDropdown() {
+        DROPDOWN.classList.remove('visible');
+        dropdownMatches = [];
+        dropdownBlock = null;
+        dropdownActiveIndex = 0;
+    }
+
+    function acceptFromDropdown(block, value) {
+        if (!block || !value) return;
+        const existingSugg = block.querySelector('.suggestion');
+        if (existingSugg) existingSugg.remove();
+        // Replace entire block text with selected value
+        const textNode = block.firstChild && block.firstChild.nodeType === 3 ? block.firstChild : null;
+        if (textNode) {
+            textNode.textContent = value;
+        } else {
+            block.innerText = value;
+        }
+        // Move cursor to end
+        const range = document.createRange();
+        const sel = window.getSelection();
+        range.selectNodeContents(block);
+        range.collapse(false);
+        sel.removeAllRanges();
+        sel.addRange(range);
+        hideDropdown();
+        triggerSave();
     }
 
     function acceptSuggestion(block, span) {
         const text = span.textContent;
         span.remove();
+        hideDropdown();
         document.execCommand('insertText', false, text);
     }
 
