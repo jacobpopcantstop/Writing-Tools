@@ -724,6 +724,11 @@
 
                 svgContent += '</svg>';
 
+                // Replace fixed pixel dimensions with viewBox-only so print scales properly
+                const scaledSvg = svgContent
+                    .replace(/width="\d+"/, `width="100%"`)
+                    .replace(/height="\d+"/, `height="auto"`);
+
                 printWindow.document.write(`
                     <!DOCTYPE html>
                     <html>
@@ -731,18 +736,16 @@
                         <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5' fill='%23fd19c8'/><polygon points='50,20 80,37.5 80,62.5 50,80 20,62.5 20,37.5' fill='%23da70d6' opacity='0.6'/></svg>">
                         <title>BeatHive - ${sketchName || 'Untitled'}</title>
                         <style>
-                            body { margin: 0; padding: 20px; display: flex; justify-content: center; }
+                            body { margin: 0; padding: 20px; }
+                            svg { display: block; max-width: 100%; height: auto; margin: 0 auto; }
                             @media print {
                                 body { padding: 0; }
-                                svg { max-width: 100%; height: auto; }
                             }
                         </style>
                     </head>
                     <body>
-                        <div>
-                            <h1 style="text-align: center; font-family: sans-serif; margin-bottom: 20px;">${sketchName || 'Untitled Beat Map'}</h1>
-                            ${svgContent}
-                        </div>
+                        <h1 style="text-align: center; font-family: sans-serif; margin-bottom: 20px;">${sketchName || 'Untitled Beat Map'}</h1>
+                        ${scaledSvg}
                     </body>
                     </html>
                 `);
