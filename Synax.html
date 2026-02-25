@@ -271,7 +271,70 @@
             ]
         };
 
+        const EXPANDED_LIBRARY = {
+            nouns: [
+                "afterimage", "anchor", "anthem", "archive", "avalanche", "backdrop", "ballast", "blueprint", "boundary", "breakwater",
+                "cathedral", "chimera", "chronicle", "constellation", "crossroads", "crucible", "current", "daedalus", "daybreak", "decree",
+                "delta", "drift", "embassy", "ember", "engine", "estuary", "fable", "faultline", "fjord", "foundry",
+                "frontier", "galaxy", "gambit", "gatekeeper", "genesis", "gravity", "harbor", "hinterland", "hush", "hybrid",
+                "icon", "inlet", "instance", "junction", "keystone", "keyhole", "kinship", "ledger", "lore", "maelstrom",
+                "marrow", "meadow", "memory", "meridian", "mirage", "network", "nightfall", "oath", "outpost", "overpass",
+                "passage", "pathway", "pendulum", "pilgrim", "plateau", "portal", "prelude", "quarry", "quiver", "radius",
+                "rainfall", "ramification", "refrain", "rift", "rookery", "sanction", "seam", "shrine", "signal", "solstice",
+                "spectrum", "spiral", "storyboard", "stronghold", "substrate", "threshold", "tideline", "tidepool", "timber", "trail",
+                "trajectory", "undertow", "uplink", "uplift", "vault", "waypoint", "weather", "wellspring", "wildfire", "yardstick"
+            ],
+            verbs: [
+                "adapt", "anchor", "arc", "arrange", "attune", "balance", "band", "bend", "bind", "braid",
+                "broaden", "brush", "build", "carry", "center", "chase", "chisel", "circle", "coax", "cohere",
+                "collect", "comb", "compass", "compose", "connect", "contain", "convert", "curve", "deepen", "derive",
+                "dovetail", "draft", "draw", "drift", "echo", "edify", "elevate", "entwine", "etch", "evoke",
+                "expand", "extend", "filter", "fine-tune", "flash", "fold", "follow", "gather", "glide", "glow",
+                "guide", "hatch", "hold", "hone", "hover", "immerse", "imprint", "interlace", "join", "launch",
+                "lean", "lift", "link", "map", "marshal", "measure", "merge", "modulate", "nudge", "open",
+                "orient", "outline", "paint", "pair", "phase", "place", "plot", "polish", "prime", "pulse",
+                "reach", "reflect", "reframe", "reshape", "route", "scale", "scan", "seed", "shape", "shift",
+                "sketch", "stabilize", "stage", "steer", "stitch", "streamline", "survey", "thread", "tilt", "trace"
+            ],
+            adjectives: [
+                "adaptive", "agile", "airborne", "amber", "arresting", "balanced", "bare", "baroque", "basalt", "blunt",
+                "brisk", "bronze", "calm", "candid", "charred", "chiselled", "clean", "clear", "coastal", "compact",
+                "concrete", "cool", "corded", "dense", "direct", "dusty", "elastic", "electric", "elegant", "faint",
+                "feathered", "fierce", "filigreed", "fluid", "focused", "gentle", "glassy", "granular", "grounded", "hard-edged",
+                "hushed", "icy", "inked", "intense", "jagged", "kinetic", "lean", "lived-in", "loose", "magnetic",
+                "matte", "measured", "metallic", "migratory", "minimal", "modular", "muted", "nimble", "nuanced", "opaline",
+                "ornate", "patient", "pebbled", "precise", "quiet", "raw", "restless", "rough", "satin", "scarlet",
+                "severe", "silken", "slate", "slow-burn", "soft", "steady", "stony", "supple", "tactile", "taut",
+                "tempered", "textured", "tidal", "timeless", "translucent", "trim", "vivid", "volcanic", "weathered", "wiry"
+            ],
+            actors: [
+                "The Archivist", "The Cartographer", "The Courier", "The Composer", "The Curator", "The Doubter", "The Envoy", "The Fisher",
+                "The Guide", "The Host", "The Interpreter", "The Locksmith", "The Marshal", "The Mediator", "The Naturalist", "The Negotiator",
+                "The Operator", "The Organizer", "The Outsider", "The Patron", "The Performer", "The Pilot", "The Planner", "The Poet",
+                "The Preacher", "The Quartermaster", "The Raconteur", "The Ranger", "The Recorder", "The Referee", "The Restorer",
+                "The Riveter", "The Sailor", "The Sculptor", "The Seeker", "The Signalman", "The Skipper", "The Smuggler", "The Steward",
+                "The Storyteller", "The Surveyor", "The Teacher", "The Translator", "The Trickster", "The Undertaker", "The Unifier",
+                "The Watcher", "The Wayfinder", "The Welder", "The Woodcutter", "The Writer"
+            ],
+            settings: [
+                "Airfield at Dawn", "Alpine Pass", "Amber Archive", "Arcade Basement", "Arid Canyon", "Ashen Quarry", "Beacon Tower", "Boardwalk at Night",
+                "Border Checkpoint", "Botanical Conservatory", "Bridge Overpass", "Canal District", "Cedar Cabin", "Ceramic Workshop", "Cliffside Path", "Cloud Forest",
+                "Coastal Highway", "Concrete Underpass", "Copper Mine", "Courtyard Fountain", "Desert Observatory", "Dockyard", "Embankment", "Engine Room",
+                "Estuary Marsh", "Factory Atrium", "Ferry Terminal", "Floodplain", "Forest Lookout", "Freight Yard", "Garden Annex", "Glasshouse",
+                "Gravel Lot", "Harbor Breakwater", "Hilltop Shrine", "Industrial Loft", "Inner Courtyard", "Irrigation Ditch", "Island Causeway", "Jetty",
+                "Lakeside Pier", "Lantern Alley", "Lighthouse Keep", "Maintenance Tunnel", "Marketplace Arcade", "Mountain Switchback", "Night Train Platform", "Old Amphitheater",
+                "Orchard Row", "Parking Garage Roof", "Pine Hollow", "Plaza Steps", "Power Substation", "Rainy Bus Depot", "Reservoir Edge", "Research Annex",
+                "River Delta", "Salt Flats", "Seaside Promenade", "Service Corridor", "Ship Graveyard", "Signal Hill", "Studio Backlot", "Terraced Fields"
+            ]
+        };
+
+        Object.keys(LOCAL_LIBRARY).forEach((key) => {
+            const merged = [...LOCAL_LIBRARY[key], ...(EXPANDED_LIBRARY[key] || [])];
+            LOCAL_LIBRARY[key] = [...new Set(merged)];
+        });
+
         const DATAMUSE_API = 'https://api.datamuse.com/words';
+        const API_POOL_KEY = 'writingtools_synax_api_pool_v1';
         const getRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
         // Diverse seed concepts for API-powered serendipity
@@ -369,6 +432,7 @@
             const [loading, setLoading] = useState(false);
             const [contextInput, setContextInput] = useState('');
             const [definition, setDefinition] = useState(null);
+            const [definitionLoading, setDefinitionLoading] = useState(false);
             const [showCanvas, setShowCanvas] = useState(false);
             const [showSettings, setShowSettings] = useState(false);
             const [serendipityCount, setSerendipityCount] = useState(4);
@@ -403,6 +467,7 @@
 
             // Refs
             const textareaRef = useRef(null);
+            const serendipityPoolRef = useRef({ nouns: [], verbs: [], adjectives: [], updatedAt: 0 });
 
             // --- EFFECTS ---
 
@@ -427,6 +492,7 @@
 
             // Initial Load
             useEffect(() => {
+                loadApiPoolFromStorage();
                 if (words.length === 0) generate();
             }, []);
 
@@ -446,6 +512,12 @@
                 window.addEventListener('keydown', handleKeyPress);
                 return () => window.removeEventListener('keydown', handleKeyPress);
             }, [mode, contextInput, offlineMode, serendipityCount, showCanvas]);
+
+            useEffect(() => {
+                if (mode === 'random' && !offlineMode) {
+                    hydrateSerendipityApiPool().catch(() => {});
+                }
+            }, [mode, offlineMode]);
 
             // --- LOGIC ---
 
@@ -469,10 +541,91 @@
             const fetchDatamuse = async (params) => {
                 if (offlineMode) throw new Error("Offline Mode Enforced");
                 const query = new URLSearchParams(params).toString();
-                const res = await fetch(`${DATAMUSE_API}?${query}&max=40`);
+                const max = params.max || 40;
+                const res = await fetch(`${DATAMUSE_API}?${query}&max=${max}`);
                 if (!res.ok) throw new Error('API Error');
                 const data = await res.json();
                 return data.map(d => d.word);
+            };
+
+            const fetchDatamuseRaw = async (params) => {
+                if (offlineMode) throw new Error("Offline Mode Enforced");
+                const query = new URLSearchParams(params).toString();
+                const max = params.max || 250;
+                const res = await fetch(`${DATAMUSE_API}?${query}&max=${max}`);
+                if (!res.ok) throw new Error('API Error');
+                return await res.json();
+            };
+
+            const loadApiPoolFromStorage = () => {
+                try {
+                    const raw = localStorage.getItem(API_POOL_KEY);
+                    if (!raw) return;
+                    const parsed = JSON.parse(raw);
+                    if (!parsed || !parsed.nouns || !parsed.verbs || !parsed.adjectives) return;
+                    serendipityPoolRef.current = {
+                        nouns: Array.isArray(parsed.nouns) ? parsed.nouns : [],
+                        verbs: Array.isArray(parsed.verbs) ? parsed.verbs : [],
+                        adjectives: Array.isArray(parsed.adjectives) ? parsed.adjectives : [],
+                        updatedAt: parsed.updatedAt || 0
+                    };
+                } catch (_) {}
+            };
+
+            const saveApiPoolToStorage = () => {
+                try {
+                    localStorage.setItem(API_POOL_KEY, JSON.stringify(serendipityPoolRef.current));
+                } catch (_) {}
+            };
+
+            const hydrateSerendipityApiPool = async (force = false) => {
+                if (offlineMode) return;
+                const pool = serendipityPoolRef.current;
+                const now = Date.now();
+                const freshEnough = (now - (pool.updatedAt || 0)) < 6 * 60 * 60 * 1000;
+                const hasDepth = pool.nouns.length > 250 && pool.verbs.length > 200 && pool.adjectives.length > 200;
+                if (!force && freshEnough && hasDepth) return;
+
+                const letters = 'abcdefghijklmnopqrstuvwxyz'.split('');
+                const picks = [];
+                while (picks.length < 5) {
+                    const letter = letters[Math.floor(Math.random() * letters.length)];
+                    if (!picks.includes(letter)) picks.push(letter);
+                }
+
+                const requests = picks.map(letter =>
+                    fetchDatamuseRaw({ sp: `${letter}*`, md: 'p', max: 350 }).catch(() => [])
+                );
+
+                const rawBatches = await Promise.all(requests);
+                const buckets = { nouns: new Set(pool.nouns), verbs: new Set(pool.verbs), adjectives: new Set(pool.adjectives) };
+
+                rawBatches.flat().forEach(item => {
+                    if (!item || !item.word) return;
+                    const word = String(item.word).toLowerCase().trim();
+                    if (!/^[a-z][a-z-]{2,}$/.test(word)) return;
+                    const tags = Array.isArray(item.tags) ? item.tags : [];
+                    if (tags.includes('n')) buckets.nouns.add(word);
+                    if (tags.includes('v')) buckets.verbs.add(word);
+                    if (tags.includes('adj')) buckets.adjectives.add(word);
+                });
+
+                serendipityPoolRef.current = {
+                    nouns: [...buckets.nouns].slice(-2500),
+                    verbs: [...buckets.verbs].slice(-2000),
+                    adjectives: [...buckets.adjectives].slice(-2000),
+                    updatedAt: now
+                };
+                saveApiPoolToStorage();
+            };
+
+            const pickSerendipityWord = (category) => {
+                const pool = serendipityPoolRef.current[category] || [];
+                if (pool.length > 0) {
+                    const filtered = pool.filter(w => !recentWords.includes(w.toLowerCase()));
+                    return getRandom(filtered.length > 8 ? filtered : pool);
+                }
+                return '';
             };
 
             const addToHistory = (newSet) => {
@@ -506,12 +659,12 @@
                 let newWord = "";
 
                 // Helper to get random word by type with repetition prevention
-                if (type.includes('Noun')) newWord = getRandomAvoidRecent(LOCAL_LIBRARY.nouns);
-                else if (type.includes('Verb')) newWord = getRandomAvoidRecent(LOCAL_LIBRARY.verbs);
-                else if (type.includes('Adjective')) newWord = getRandomAvoidRecent(LOCAL_LIBRARY.adjectives);
+                if (type.includes('Noun')) newWord = (!offlineMode ? pickSerendipityWord('nouns') : '') || getRandomAvoidRecent(LOCAL_LIBRARY.nouns);
+                else if (type.includes('Verb')) newWord = (!offlineMode ? pickSerendipityWord('verbs') : '') || getRandomAvoidRecent(LOCAL_LIBRARY.verbs);
+                else if (type.includes('Adjective')) newWord = (!offlineMode ? pickSerendipityWord('adjectives') : '') || getRandomAvoidRecent(LOCAL_LIBRARY.adjectives);
                 else if (type.includes('Actor')) newWord = getRandomAvoidRecent(LOCAL_LIBRARY.actors);
                 else if (type.includes('Setting')) newWord = getRandomAvoidRecent(LOCAL_LIBRARY.settings);
-                else newWord = getRandomAvoidRecent(LOCAL_LIBRARY.nouns); // Fallback for wildcards/other
+                else newWord = (!offlineMode ? pickSerendipityWord('nouns') : '') || getRandomAvoidRecent(LOCAL_LIBRARY.nouns); // Fallback for wildcards/other
 
                 // Track this swapped word to prevent immediate repetition
                 setRecentWords(prev => [...prev, newWord.toLowerCase()].slice(-REPETITION_COOLDOWN * 4));
@@ -614,23 +767,32 @@
                         }
                     }
                 } else if (mode === 'triad') {
-                    let actor, action, setting;
-                    if (offlineMode) {
-                    actor = getRandomAvoidRecent(LOCAL_LIBRARY.actors);
-                    action = getRandomAvoidRecent(LOCAL_LIBRARY.verbs);
-                    setting = getRandomAvoidRecent(LOCAL_LIBRARY.settings);
-                    } else {
-                    try {
-                        const actors = await fetchDatamuse({ ml: 'character', max: 50 });
-                        actor = getRandomAvoidRecent(actors) || getRandomAvoidRecent(LOCAL_LIBRARY.actors);
-                        const settings = await fetchDatamuse({ ml: 'place', max: 50 });
-                        setting = getRandomAvoidRecent(settings) || getRandomAvoidRecent(LOCAL_LIBRARY.settings);
-                        action = getRandomAvoidRecent(LOCAL_LIBRARY.verbs);
-                    } catch (e) {
-                        actor = getRandomAvoidRecent(LOCAL_LIBRARY.actors);
-                        action = getRandomAvoidRecent(LOCAL_LIBRARY.verbs);
-                        setting = getRandomAvoidRecent(LOCAL_LIBRARY.settings);
-                    }
+                    let actor = getRandomAvoidRecent(LOCAL_LIBRARY.actors);
+                    let action = getRandomAvoidRecent(LOCAL_LIBRARY.verbs);
+                    let setting = getRandomAvoidRecent(LOCAL_LIBRARY.settings);
+
+                    // Narrative mode should stay coherent and cinematic by default.
+                    // API enrichment is optional and only used if we can find clear verbs.
+                    if (!offlineMode && contextInput.trim()) {
+                        try {
+                            const contextSeed = contextInput.trim().toLowerCase();
+                            const relatedRaw = await fetchDatamuseRaw({ ml: contextSeed, md: 'p', max: 120 });
+                            const contextVerbs = relatedRaw
+                                .filter(item => item && item.word && Array.isArray(item.tags) && item.tags.includes('v'))
+                                .map(item => String(item.word).toLowerCase())
+                                .filter(word => /^[a-z-]{4,}$/.test(word));
+
+                            if (contextVerbs.length > 0) {
+                                action = getRandomAvoidRecent(contextVerbs);
+                            }
+
+                            const matchingSetting = LOCAL_LIBRARY.settings.find(s => s.toLowerCase().includes(contextSeed));
+                            if (matchingSetting) {
+                                setting = matchingSetting;
+                            }
+                        } catch (_) {
+                            // Keep curated fallback if API enrichment fails.
+                        }
                     }
                     newWords = [
                     { word: actor, type: 'The Actor' },
@@ -736,20 +898,10 @@
             };
 
             const fetchDefinition = async (word) => {
-                const cleanWord = word.replace(/^The\s+/i, '');
-                setLoading(true);
-                try {
-                const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${cleanWord}`);
-                const data = await res.json();
-                if (data && data[0]) {
-                    setDefinition(data[0]);
-                } else {
-                    setDefinition({ word: cleanWord, meanings: [] });
-                }
-                } catch (e) {
-                setDefinition({ word: cleanWord, meanings: [] });
-                }
-                setLoading(false);
+                const cleanWord = word.replace(/^The\s+/i, '').trim();
+                if (!cleanWord) return;
+                const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(`${cleanWord} definition`)}`;
+                window.open(searchUrl, '_blank', 'noopener,noreferrer');
             };
 
             const clearHistory = () => {

@@ -396,6 +396,7 @@
             if (sorted.length < 2) return null;
 
             const pathD = sorted.map((c, i) => {
+                // Throughline should pass through the actual center of each adjacent hex.
                 const x = c.q * HEX_WIDTH + (c.r % 2 === 0 ? 0 : HEX_WIDTH / 2);
                 const y = c.r * VERT_SPACING;
                 return (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
@@ -622,29 +623,42 @@
                 setTimeout(() => setSaveStatus('ready'), 2000);
             }, [user]);
 
+            const getCellContentText = useCallback((cell) => {
+                if (!cell) return '';
+                const modern = typeof cell.content === 'string' ? cell.content : '';
+                const legacy = typeof cell.text === 'string' ? cell.text : '';
+                return (modern || legacy).trim();
+            }, []);
+
             const handlePrint = useCallback(() => {
-                // Calculate bounds of used hexes
-                const usedCells = cells.filter(c => c.text || c.type !== 'setup');
+                const usedCells = cells.filter(c => getCellContentText(c).length > 0 || c.type !== 'setup');
                 if (usedCells.length === 0) {
                     alert('No content to print. Add some beats first!');
                     return;
                 }
 
-                // Calculate center of content
+                const printWindow = window.open('', '_blank');
+                if (!printWindow) {
+                    alert('Please allow popups to open the print preview.');
+                    return;
+                }
+
                 const qValues = usedCells.map(c => c.q);
                 const rValues = usedCells.map(c => c.r);
-                const centerQ = Math.round((Math.min(...qValues) + Math.max(...qValues)) / 2);
-                const centerR = Math.round((Math.min(...rValues) + Math.max(...rValues)) / 2);
+                const minQ = Math.min(...qValues) - 1;
+                const maxQ = Math.max(...qValues) + 1;
+                const minR = Math.min(...rValues) - 1;
+                const maxR = Math.max(...rValues) + 1;
 
-                // Force full page grid (approx 10x12 hexes to fill print paper)
-                const minQ = centerQ - 5;
-                const maxQ = centerQ + 5;
-                const minR = centerR - 6;
-                const maxR = centerR + 6;
+                const qRange = Math.max(1, maxQ - minQ + 1);
+                const rRange = Math.max(1, maxR - minR + 1);
 
-                // Create print window with centered, maximized hexes
-                const printWindow = window.open('', '_blank');
-                const hexSize = 80;
+                // Dynamically maximize hex size based on content bounds.
+                const targetWidth = 1500;
+                const targetHeight = 980;
+                const maxByWidth = targetWidth / (Math.sqrt(3) * (qRange + 2));
+                const maxByHeight = targetHeight / (1.5 * rRange + 2);
+                const hexSize = Math.max(42, Math.min(130, Math.floor(Math.min(maxByWidth, maxByHeight))));
                 const hexWidth = Math.sqrt(3) * hexSize;
                 const hexHeight = 2 * hexSize;
                 const vertSpacing = hexHeight * 0.75;
@@ -659,12 +673,12 @@
                 };
 
                 const hexToPixel = (q, r) => ({
-                    x: hexWidth * (q + r / 2) - hexWidth * (minQ + minR / 2) + hexSize + 40,
-                    y: vertSpacing * r - vertSpacing * minR + hexSize + 40
+                    x: (q - minQ) * hexWidth + ((r % 2 === 0) ? 0 : hexWidth / 2) + hexSize + 40,
+                    y: (r - minR) * vertSpacing + hexSize + 40
                 });
 
-                const width = (maxQ - minQ + 1) * hexWidth + hexSize * 2 + 80;
-                const height = (maxR - minR + 1) * vertSpacing + hexSize * 2 + 80;
+                const width = (qRange + 2) * hexWidth + hexSize * 2;
+                const height = (rRange + 2) * vertSpacing + hexSize * 2;
 
                 let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`;
 
@@ -673,7 +687,7 @@
                     for (let r = minR; r <= maxR; r++) {
                         const { x, y } = hexToPixel(q, r);
                         const cell = cells.find(c => c.q === q && c.r === r);
-                        const hasContent = cell && (cell.text || cell.type !== 'setup');
+                        const hasContent = cell && (getCellContentText(cell).length > 0 || cell.type !== 'setup');
 
                         if (!hasContent) {
                             svgContent += `<polygon points="${getHexPoints(x, y, hexSize)}" fill="none" stroke="#ccc" stroke-width="1" stroke-dasharray="5,5"/>`;
@@ -691,18 +705,20 @@
                     svgContent += `<polygon points="${getHexPoints(x, y, hexSize)}" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2"/>`;
 
                     // Add text
-                    if (cell.text) {
-                        const lines = cell.text.split('\n').slice(0, 4);
-                        const lineHeight = 14;
+                    const cellText = getCellContentText(cell);
+                    if (cellText) {
+                        const lines = cellText.split('\n').slice(0, 4);
+                        const lineHeight = Math.max(12, Math.floor(hexSize * 0.17));
                         const startY = y - (lines.length - 1) * lineHeight / 2;
                         lines.forEach((line, i) => {
-                            const truncated = line.length > 20 ? line.substring(0, 17) + '...' : line;
-                            svgContent += `<text x="${x}" y="${startY + i * lineHeight}" text-anchor="middle" font-size="11" font-family="Inter, sans-serif" fill="#000">${truncated}</text>`;
+                            const maxChars = Math.max(14, Math.floor(hexSize / 4));
+                            const truncated = line.length > maxChars ? line.substring(0, maxChars - 3) + '...' : line;
+                            svgContent += `<text x="${x}" y="${startY + i * lineHeight}" text-anchor="middle" font-size="${Math.max(9, Math.floor(hexSize * 0.14))}" font-family="Inter, sans-serif" fill="#000">${truncated}</text>`;
                         });
                     }
 
                     // Add beat type label
-                    svgContent += `<text x="${x}" y="${y + hexSize - 20}" text-anchor="middle" font-size="8" font-family="Inter, sans-serif" fill="${strokeColor}" font-weight="bold">${beatType.label.toUpperCase()}</text>`;
+                    svgContent += `<text x="${x}" y="${y + hexSize - Math.max(14, Math.floor(hexSize * 0.18))}" text-anchor="middle" font-size="${Math.max(8, Math.floor(hexSize * 0.1))}" font-family="Inter, sans-serif" fill="${strokeColor}" font-weight="bold">${beatType.label.toUpperCase()}</text>`;
                 });
 
                 svgContent += '</svg>';
@@ -711,6 +727,7 @@
                     <!DOCTYPE html>
                     <html>
                     <head>
+                        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5' fill='%23fd19c8'/><polygon points='50,20 80,37.5 80,62.5 50,80 20,62.5 20,37.5' fill='%23da70d6' opacity='0.6'/></svg>">
                         <title>BeatHive - ${sketchName || 'Untitled'}</title>
                         <style>
                             body { margin: 0; padding: 20px; display: flex; justify-content: center; }
@@ -730,8 +747,8 @@
                 `);
                 printWindow.document.close();
                 printWindow.focus();
-                setTimeout(() => printWindow.print(), 250);
-            }, [cells, sketchName]);
+                printWindow.onload = () => setTimeout(() => printWindow.print(), 150);
+            }, [cells, sketchName, getCellContentText]);
 
             const handleNewMap = async () => {
                 setIsCreating(true);
@@ -904,6 +921,31 @@
             const centerY = dimensions.h / 2.2;
 
             const selectedCell = cells.find(c => c.q === selection.q && c.r === selection.r);
+            const beatMetrics = useMemo(() => {
+                const withContent = cells.filter(c => getCellContentText(c).length > 0);
+                const storyBeats = withContent.filter(c => c.type !== 'note');
+                const distinctTypes = new Set(storyBeats.map(c => c.type)).size;
+                const momentum = Math.min(100, Math.round((storyBeats.length * 11) + (distinctTypes * 9)));
+                return { withContent: withContent.length, storyBeats: storyBeats.length, distinctTypes, momentum };
+            }, [cells, getCellContentText]);
+
+            const seedStarterArc = useCallback(() => {
+                const base = [
+                    { q: 0, r: 0, type: 'setup', content: "ORDINARY WORLD\nWho are we following and what do they want?" },
+                    { q: 0, r: 1, type: 'inciting', content: "INCITING INCIDENT\nSomething forces a change of plan." },
+                    { q: 0, r: 2, type: 'heightening', content: "MIDPOINT ESCALATION\nRaise the cost and reveal new information." },
+                    { q: 0, r: 3, type: 'heightening', content: "CRISIS\nThe worst option becomes the only option." },
+                    { q: 0, r: 4, type: 'blowoff', content: "RESOLUTION\nHow are they changed by what happened?" }
+                ];
+                setCells(base);
+                save(base);
+                setSelection({ q: 0, r: 0 });
+            }, [save]);
+
+            const dismissImmersionTips = useCallback(() => {
+                localStorage.setItem('writingtools_beathive_immersive_seen', '1');
+                setShowImmersionTips(false);
+            }, []);
 
             // Optimization 4.1: Memoize Grid Generation
             const visibleGrid = useMemo(() => {
@@ -935,8 +977,21 @@
                             <input value={sketchName} onChange={(e) => { setSketchName(e.target.value); save(null, e.target.value); }} aria-label="Project Name" className="bg-transparent font-display font-bold text-lg outline-none w-48 sm:w-64" placeholder="Untitled Hive" />
                         </div>
                         <div className="flex items-center gap-4">
+                            <div className={`hidden lg:flex items-center gap-3 px-3 py-2 rounded-xl border ${theme === 'dark' ? 'border-white/10 bg-black/30' : 'border-[#432818]/15 bg-white/50'}`}>
+                                <div className="text-[9px] font-black uppercase tracking-[0.18em] opacity-70">Momentum</div>
+                                <div className="w-20 h-1.5 rounded-full overflow-hidden bg-current/20">
+                                    <div className="h-full rounded-full transition-all duration-500" style={{ width: `${beatMetrics.momentum}%`, background: 'linear-gradient(90deg, #6366f1, #a855f7)' }}></div>
+                                </div>
+                                <div className="text-[10px] font-black tabular-nums">{beatMetrics.momentum}</div>
+                            </div>
                             <div className="flex items-center gap-2 px-2">
-                                <Icon name="zoomOut" size={12} className="opacity-50"/>
+                                <button
+                                    onClick={() => setZoom(z => Math.max(0.1, z - 0.1))}
+                                    aria-label="Zoom out"
+                                    className="p-1 rounded hover:bg-current/10 transition-colors"
+                                >
+                                    <Icon name="zoomOut" size={12} className="opacity-70"/>
+                                </button>
                                 <input 
                                     type="range" min="0.1" max="3" step="0.1" 
                                     value={zoom} 
@@ -944,7 +999,13 @@
                                     aria-label="Zoom Level"
                                     className="w-20 h-1 bg-current opacity-20 rounded-lg appearance-none cursor-pointer"
                                 />
-                                <Icon name="zoomIn" size={12} className="opacity-50"/>
+                                <button
+                                    onClick={() => setZoom(z => Math.min(3.0, z + 0.1))}
+                                    aria-label="Zoom in"
+                                    className="p-1 rounded hover:bg-current/10 transition-colors"
+                                >
+                                    <Icon name="zoomIn" size={12} className="opacity-70"/>
+                                </button>
                             </div>
                             <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} aria-label="Toggle Theme" className="p-2 opacity-50 hover:opacity-100"><Icon name={theme === 'dark' ? 'sun' : 'moon'} size={20}/></button>
                             <button onClick={handlePrint} aria-label="Print" className="p-2 opacity-50 hover:opacity-100"><Icon name="printer" size={20}/></button>
@@ -997,6 +1058,11 @@
                                 <div className={`px-5 py-3 rounded-full border text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl ${theme === 'dark' ? 'bg-black/80 border-white/10 text-white/50' : 'bg-white/80 border-black/5 text-black/50'}`}>
                                     {selection.q !== null ? 'Node Selected' : 'Hive Ready'}
                                 </div>
+                                {beatMetrics.storyBeats < 3 && (
+                                    <div className={`px-4 py-2 rounded-xl text-[10px] font-bold tracking-wider uppercase ${theme === 'dark' ? 'bg-black/70 border border-white/10 text-white/60' : 'bg-white/85 border border-black/10 text-black/60'}`}>
+                                        Add 3 beats to unlock rhythm
+                                    </div>
+                                )}
                             </div>
 
                             {/* Minimap */}
@@ -1006,46 +1072,49 @@
                                     const clickX = e.clientX - rect.left;
                                     const clickY = e.clientY - rect.top;
 
-                                    // Calculate bounds
-                                    const qs = cells.map(c => c.q);
-                                    const rs = cells.map(c => c.r);
-                                    const minQ = Math.min(...qs), maxQ = Math.max(...qs);
-                                    const minR = Math.min(...rs), maxR = Math.max(...rs);
-                                    const padding = 2;
+                                    const points = cells.map(c => ({
+                                        q: c.q,
+                                        r: c.r,
+                                        x: c.q * HEX_WIDTH + (c.r % 2 === 0 ? 0 : HEX_WIDTH / 2),
+                                        y: c.r * VERT_SPACING
+                                    }));
+                                    const minX = Math.min(...points.map(p => p.x)) - HEX_WIDTH;
+                                    const maxX = Math.max(...points.map(p => p.x)) + HEX_WIDTH;
+                                    const minY = Math.min(...points.map(p => p.y)) - HEX_HEIGHT;
+                                    const maxY = Math.max(...points.map(p => p.y)) + HEX_HEIGHT;
 
-                                    const rangeQ = (maxQ - minQ + padding * 2) || 1;
-                                    const rangeR = (maxR - minR + padding * 2) || 1;
+                                    const worldX = minX + (clickX / 150) * (maxX - minX || 1);
+                                    const worldY = minY + (clickY / 120) * (maxY - minY || 1);
+                                    const snappedR = Math.round(worldY / VERT_SPACING);
+                                    const snappedQ = Math.round((worldX - (snappedR % 2 === 0 ? 0 : HEX_WIDTH / 2)) / HEX_WIDTH);
+                                    const snappedX = snappedQ * HEX_WIDTH + (snappedR % 2 === 0 ? 0 : HEX_WIDTH / 2);
+                                    const snappedY = snappedR * VERT_SPACING;
 
-                                    // Map click to world coordinates
-                                    const targetQ = minQ - padding + (clickX / 150) * rangeQ;
-                                    const targetR = minR - padding + (clickY / 120) * rangeR;
-
-                                    const worldX = targetQ * HEX_WIDTH + (Math.round(targetR) % 2 === 0 ? 0 : HEX_WIDTH / 2);
-                                    const worldY = targetR * VERT_SPACING;
-
-                                    setPan({ x: -worldX * zoom, y: -worldY * zoom });
-                                    panRef.current = { x: -worldX * zoom, y: -worldY * zoom };
+                                    setPan({ x: -snappedX * zoom, y: -snappedY * zoom });
+                                    panRef.current = { x: -snappedX * zoom, y: -snappedY * zoom };
                                 }}>
                                     <svg width="150" height="120" style={{ display: 'block' }}>
                                         {(() => {
-                                            const qs = cells.map(c => c.q);
-                                            const rs = cells.map(c => c.r);
-                                            const minQ = Math.min(...qs), maxQ = Math.max(...qs);
-                                            const minR = Math.min(...rs), maxR = Math.max(...rs);
-                                            const padding = 2;
+                                            const points = cells.map(c => ({
+                                                q: c.q,
+                                                r: c.r,
+                                                x: c.q * HEX_WIDTH + (c.r % 2 === 0 ? 0 : HEX_WIDTH / 2),
+                                                y: c.r * VERT_SPACING,
+                                                type: c.type
+                                            }));
+                                            const minX = Math.min(...points.map(p => p.x)) - HEX_WIDTH;
+                                            const maxX = Math.max(...points.map(p => p.x)) + HEX_WIDTH;
+                                            const minY = Math.min(...points.map(p => p.y)) - HEX_HEIGHT;
+                                            const maxY = Math.max(...points.map(p => p.y)) + HEX_HEIGHT;
+                                            const rangeX = (maxX - minX) || 1;
+                                            const rangeY = (maxY - minY) || 1;
 
-                                            const rangeQ = (maxQ - minQ + padding * 2) || 1;
-                                            const rangeR = (maxR - minR + padding * 2) || 1;
-                                            const scaleX = 150 / rangeQ;
-                                            const scaleY = 120 / rangeR;
-                                            const scale = Math.min(scaleX, scaleY) * 0.8;
-
-                                            return cells.map(c => {
-                                                const nx = (c.q - minQ + padding) * scale + 10;
-                                                const ny = (c.r - minR + padding) * scale + 10;
-                                                const typeData = BEAT_TYPES.find(t => t.id === c.type) || BEAT_TYPES[4];
+                                            return points.map(p => {
+                                                const nx = ((p.x - minX) / rangeX) * 146 + 2;
+                                                const ny = ((p.y - minY) / rangeY) * 116 + 2;
+                                                const typeData = BEAT_TYPES.find(t => t.id === p.type) || BEAT_TYPES[4];
                                                 const fill = theme === 'dark' ? typeData.color.dark : typeData.color.light;
-                                                return <circle key={`mm-${c.q}-${c.r}`} cx={nx} cy={ny} r={4} fill={fill} />;
+                                                return <circle key={`mm-${p.q}-${p.r}`} cx={nx} cy={ny} r={3.6} fill={fill} />;
                                             });
                                         })()}
                                     </svg>
@@ -1217,6 +1286,42 @@
                             </div>
                         </aside>
                     </main>
+
+                    {showImmersionTips && (
+                        <div className="absolute inset-0 z-[120] flex items-center justify-center p-6" style={{ background: theme === 'dark' ? 'rgba(0,0,0,0.65)' : 'rgba(26,26,26,0.45)' }}>
+                            <div className={`w-full max-w-xl rounded-3xl border shadow-2xl p-7 md:p-8 ${theme === 'dark' ? 'bg-black/90 border-white/10' : 'bg-[#f5efe4]/95 border-[#432818]/15'}`}>
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center"><Icon name="zap" size={16} /></div>
+                                    <h2 className="font-display text-xl">Ignite BeatHive</h2>
+                                </div>
+                                <p className="text-sm opacity-75 leading-relaxed mb-5">
+                                    Quick audit pass: your map is strongest when it has a clear spine, escalating midpoint, and an ending beat with consequence.
+                                </p>
+                                <div className={`rounded-2xl p-4 mb-6 text-xs leading-relaxed ${theme === 'dark' ? 'bg-white/5' : 'bg-white/70'}`}>
+                                    <div className="font-black uppercase tracking-[0.15em] mb-2 opacity-60">Suggested Flow</div>
+                                    1. Seed five beats with a beginning-middle-end arc.
+                                    <br />
+                                    2. Add at least one `Subversion` or `Hidden Info` tag.
+                                    <br />
+                                    3. Keep momentum above 60 before expanding sideways.
+                                </div>
+                                <div className="flex flex-col sm:flex-row gap-3">
+                                    <button
+                                        onClick={() => { seedStarterArc(); dismissImmersionTips(); }}
+                                        className="flex-1 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-widest transition-all"
+                                    >
+                                        Start With Arc
+                                    </button>
+                                    <button
+                                        onClick={dismissImmersionTips}
+                                        className={`flex-1 py-3 px-4 rounded-xl border font-bold text-xs uppercase tracking-widest transition-all ${theme === 'dark' ? 'border-white/15 hover:bg-white/5' : 'border-[#432818]/20 hover:bg-black/5'}`}
+                                    >
+                                        Continue Current Map
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     <footer className={`h-12 px-8 flex items-center justify-between border-t border-inherit bg-current/5 text-[10px] font-bold opacity-40 uppercase tracking-widest`}>
                         <div className="flex gap-6">

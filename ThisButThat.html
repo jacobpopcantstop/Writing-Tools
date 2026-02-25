@@ -222,6 +222,7 @@
             loading: false,
             contextExpanded: false // NEW: Track context expansion
         };
+        const CACHE_KEY = 'thisButThat_cachedTwists_v2';
 
         // --- Init ---
         document.addEventListener('DOMContentLoaded', () => {
@@ -241,6 +242,48 @@
             }
             applyThemeState();
         });
+
+        function getCachedTwistBatches() {
+            try {
+                const raw = localStorage.getItem(CACHE_KEY);
+                if (!raw) return [];
+                const parsed = JSON.parse(raw);
+                if (!Array.isArray(parsed)) return [];
+                return parsed.filter(item =>
+                    item &&
+                    item.topic &&
+                    typeof item.topic.text === 'string' &&
+                    Array.isArray(item.twists) &&
+                    item.twists.length > 0
+                );
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveCurrentSessionToCache() {
+            const currentTopic = state.topics[state.selectedIndex];
+            if (!currentTopic || state.twists.length === 0) return;
+
+            const normalizedTwists = state.twists.map(t => String(t).trim()).filter(Boolean);
+            if (normalizedTwists.length === 0) return;
+
+            const signature = `${currentTopic.text}::${normalizedTwists.join('||')}`;
+            const cached = getCachedTwistBatches();
+            const withoutDupes = cached.filter(item => item.signature !== signature);
+            const next = [
+                ...withoutDupes,
+                {
+                    id: Date.now(),
+                    timestamp: new Date().toISOString(),
+                    signature,
+                    topic: currentTopic,
+                    twists: normalizedTwists
+                }
+            ].slice(-250);
+
+            localStorage.setItem(CACHE_KEY, JSON.stringify(next));
+        }
 
         // --- Theme ---
         function applyThemeState() {
@@ -279,14 +322,7 @@
             setLoading(true);
 
             // Cache current twists before fetching new topics
-            if (state.twists.length > 0 && state.topics[state.selectedIndex]) {
-                const cacheKey = 'thisButThat_cachedTwists';
-                const cached = {
-                    topic: state.topics[state.selectedIndex],
-                    twists: state.twists
-                };
-                localStorage.setItem(cacheKey, JSON.stringify(cached));
-            }
+            saveCurrentSessionToCache();
 
             // Manually inject skeletons
             const grid = document.getElementById('topic-grid');
@@ -514,7 +550,7 @@
             }
             
             const hasItems = state.twists.length > 0;
-            const hasCachedItems = localStorage.getItem('thisButThat_cachedTwists') !== null;
+            const hasCachedItems = getCachedTwistBatches().length > 0;
             const saveBtn = document.getElementById('btn-save');
             const exportBtn = document.getElementById('btn-export');
             const copyBtn = document.getElementById('btn-copy');
@@ -689,19 +725,23 @@
             }
         }
 
-        function formatExport() {
-            let currentTopic = state.topics[state.selectedIndex];
-            let twists = state.twists;
+        function formatExport(options = {}) {
+            const compact = !!options.compact;
+            const batches = getCachedTwistBatches();
+            const currentTopic = state.topics[state.selectedIndex];
+            const currentTwists = state.twists.map(t => String(t).trim()).filter(Boolean);
 
-            // Fall back to cached twists if current session is empty
-            if (twists.length === 0) {
-                const cached = localStorage.getItem('thisButThat_cachedTwists');
-                if (cached) {
-                    try {
-                        const parsed = JSON.parse(cached);
-                        currentTopic = parsed.topic;
-                        twists = parsed.twists;
-                    } catch(e) {}
+            if (currentTopic && currentTwists.length > 0) {
+                const signature = `${currentTopic.text}::${currentTwists.join('||')}`;
+                const alreadyCached = batches.some(batch => batch.signature === signature);
+                if (!alreadyCached) {
+                    batches.push({
+                        id: Date.now(),
+                        timestamp: new Date().toISOString(),
+                        signature,
+                        topic: currentTopic,
+                        twists: currentTwists
+                    });
                 }
             }
 
@@ -740,9 +780,32 @@
         }
 
         function exportEmail() {
-            const data = formatExport();
+            const fullData = formatExport({ compact: false });
+            const compactData = formatExport({ compact: true });
+            const data = compactData || fullData;
             if(!data) return;
-            window.open(`mailto:?subject=${encodeURIComponent(data.subject)}&body=${encodeURIComponent(data.body)}`);
+
+            const gmailBase = 'https://mail.google.com/mail/?view=cm&fs=1';
+            const encodedSubject = encodeURIComponent(data.subject);
+            let bodyForUrl = data.body;
+            let wasTrimmed = false;
+
+            if (bodyForUrl.length > 1600) {
+                wasTrimmed = true;
+                bodyForUrl = `${bodyForUrl.slice(0, 1500)}\n\n[Truncated for Gmail URL length. Full export copied to clipboard.]`;
+            }
+
+            const encodedBody = encodeURIComponent(bodyForUrl);
+            const gmailUrl = `${gmailBase}&su=${encodedSubject}&body=${encodedBody}`;
+
+            if (fullData && (wasTrimmed || fullData.body.length > bodyForUrl.length)) {
+                navigator.clipboard.writeText(fullData.body).catch(() => {});
+            }
+
+            const win = window.open(gmailUrl, '_blank', 'noopener,noreferrer');
+            if (!win) {
+                window.location.href = gmailUrl;
+            }
         }
 
         function copyToClipboard() {

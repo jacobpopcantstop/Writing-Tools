@@ -2,7 +2,7 @@
 <html lang="en" id="main-html" data-wt-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PaperCut | PDF Editor & Converter</title>
 
     <!-- Favicon -->
@@ -641,13 +641,27 @@
             state.documents.forEach(doc => {
                 const el = document.createElement('div');
                 el.className = 'file-item' + (doc.id === state.activeDocId ? ' active' : '');
-                el.innerHTML = `
-                    <i data-lucide="file-text" style="width: 14px; height: 14px;"></i>
-                    <span class="file-name" title="${doc.fileName}">${doc.fileName}</span>
-                    <i data-lucide="x" class="remove-file" style="width: 14px; height: 14px;"></i>
-                `;
+                const icon = document.createElement('i');
+                icon.setAttribute('data-lucide', 'file-text');
+                icon.style.width = '14px';
+                icon.style.height = '14px';
+
+                const name = document.createElement('span');
+                name.className = 'file-name';
+                name.title = doc.fileName;
+                name.textContent = doc.fileName;
+
+                const remove = document.createElement('i');
+                remove.setAttribute('data-lucide', 'x');
+                remove.className = 'remove-file';
+                remove.style.width = '14px';
+                remove.style.height = '14px';
+
+                el.appendChild(icon);
+                el.appendChild(name);
+                el.appendChild(remove);
                 el.onclick = () => setActiveDoc(doc.id);
-                el.querySelector('.remove-file').onclick = (e) => {
+                remove.onclick = (e) => {
                     e.stopPropagation();
                     removeDoc(doc.id);
                 };
@@ -735,10 +749,26 @@
                 ctx.fillStyle = 'white'; ctx.fillRect(0, 0, canvas.width, canvas.height);
                 
                 await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-                
-                thumbDiv.innerHTML = `<div class="thumbnail-number">${logicalPageNum}</div>
-                    <div class="thumbnail-actions"><button class="thumb-btn" onclick="event.stopPropagation(); rotatePage(-90, ${logicalPageNum});" title="Rotate"><i data-lucide="rotate-ccw" style="width: 12px; height: 12px;"></i></button></div>`;
+
+                const numberBadge = document.createElement('div');
+                numberBadge.className = 'thumbnail-number';
+                numberBadge.textContent = logicalPageNum;
+
+                const actions = document.createElement('div');
+                actions.className = 'thumbnail-actions';
+                const rotateBtn = document.createElement('button');
+                rotateBtn.className = 'thumb-btn';
+                rotateBtn.title = 'Rotate';
+                rotateBtn.innerHTML = `<i data-lucide="rotate-ccw" style="width: 12px; height: 12px;"></i>`;
+                rotateBtn.onclick = (event) => {
+                    event.stopPropagation();
+                    rotatePage(-90, logicalPageNum);
+                };
+                actions.appendChild(rotateBtn);
+
                 thumbDiv.prepend(canvas);
+                thumbDiv.appendChild(numberBadge);
+                thumbDiv.appendChild(actions);
                 dom.thumbnails.appendChild(thumbDiv);
             }
             if (typeof lucide !== 'undefined') lucide.createIcons();
@@ -978,10 +1008,12 @@
         }
 
         // --- Other Ops ---
-        function rotatePage(degrees) {
+        function rotatePage(degrees, logicalPageNum = null) {
             const doc = getActiveDoc();
             if(!doc) return;
-            const originalPageNum = getOriginalPageNumber(doc);
+            const targetPage = logicalPageNum || doc.currentPage;
+            if (targetPage < 1 || targetPage > doc.totalPages) return;
+            const originalPageNum = doc.pageMapping[targetPage - 1];
             
             if (!doc.pageRotations[originalPageNum]) doc.pageRotations[originalPageNum] = 0;
             doc.pageRotations[originalPageNum] = (doc.pageRotations[originalPageNum] + degrees) % 360;
@@ -1145,6 +1177,10 @@
 
         async function performConversion() {
             const selected = document.querySelector('.convert-option.selected');
+            if (!selected) {
+                alert('Select a conversion format first.');
+                return;
+            }
             const format = selected.dataset.format;
             showLoading(true); closeConvertModal();
             try {

@@ -86,6 +86,10 @@
       0%, 100% { opacity: 0.15; }
       50% { opacity: 0.25; }
     }
+    @keyframes ambient-drift {
+      0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+      50% { transform: translate3d(0, -10px, 0) scale(1.03); }
+    }
     @keyframes score-pop {
       0% { transform: scale(1); }
       50% { transform: scale(1.08); }
@@ -106,6 +110,7 @@
     .animate-spark-burst { animation: spark-burst ease-out forwards; }
     .animate-spark-spiral { animation: spark-spiral linear forwards; }
     .animate-breathe { animation: breathe 4s var(--ease-in-out-sine) infinite; }
+    .animate-ambient-drift { animation: ambient-drift 10s var(--ease-in-out-sine) infinite; }
     .animate-score-pop { animation: score-pop 0.4s var(--ease-out-expo); }
 
     /* Staggered animations */
@@ -320,6 +325,10 @@ const THEMES = {
       return Math.floor(Math.random() * (CONSTANTS.MAX_SPARK_INTERVAL - CONSTANTS.MIN_SPARK_INTERVAL + 1) + CONSTANTS.MIN_SPARK_INTERVAL);
     }
 
+    function getScorePerRing() {
+      return Math.max(1, Math.floor(CONSTANTS.SCORE_PER_RING * CONSTANTS.RING_FILL_FACTOR));
+    }
+
     function generateSparks(count) {
       const types = ['float', 'twinkle', 'burst', 'spiral'];
       const shapes = ['circle', 'star', 'diamond'];
@@ -495,9 +504,46 @@ const THEMES = {
       }).join('');
     }
 
+    function getRingStats() {
+      const scorePerRing = getScorePerRing();
+      const totalRings = Math.floor(state.score / scorePerRing);
+      const activeProgress = (state.score % scorePerRing) / scorePerRing;
+      return { totalRings, activeProgress };
+    }
+
+    function renderRingMeter(t) {
+      const { totalRings, activeProgress } = getRingStats();
+      const maxR = 52;
+      const minR = 20;
+      const activeRadius = maxR - ((maxR - minR) * activeProgress);
+      const circumference = 2 * Math.PI * activeRadius;
+      const offset = circumference * (1 - activeProgress);
+
+      return `
+        <div class="flex items-center gap-4">
+          <svg width="150" height="150" viewBox="0 0 150 150" class="shrink-0">
+            <circle cx="75" cy="75" r="56" fill="none" stroke="${t.border}" stroke-width="1.5" opacity="0.35"></circle>
+            <circle cx="75" cy="75" r="14" fill="${t.accentLight}" opacity="0.8"></circle>
+            <g transform="rotate(-90 75 75)">
+              <circle id="ring-track" cx="75" cy="75" r="${activeRadius.toFixed(3)}" fill="none" stroke="${t.border}" stroke-width="6" opacity="0.4"></circle>
+              <circle id="ring-active" cx="75" cy="75" r="${activeRadius.toFixed(3)}" fill="none" stroke="${t.accent}" stroke-width="6" stroke-linecap="round" stroke-dasharray="${circumference.toFixed(3)}" stroke-dashoffset="${offset.toFixed(3)}" style="transition: r 220ms ease, stroke-dashoffset 120ms linear, stroke-dasharray 220ms ease;"></circle>
+            </g>
+          </svg>
+          <div>
+            <div id="ring-count" class="text-4xl md:text-5xl font-light tracking-tight tabular-nums">${totalRings}</div>
+            <div class="text-[10px] font-sans tracking-[0.22em] uppercase opacity-50 mt-1">Rings Completed</div>
+            <div id="ring-meta" class="text-[10px] font-sans tracking-widest uppercase mt-3" style="color:${t.accent}; opacity:0.8;">
+              Active Ring ${Math.round(activeProgress * 100)}%
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
     function renderEndScreen(t) {
       const highScores = getHighScores();
       const wpm = Math.floor((state.wordCount / (state.totalTime / 60)) || 0);
+      const ringsCompleted = Math.floor(state.score / getScorePerRing());
       const isNewBest = state.score >= (highScores[0]?.score || 0) && state.history.length > 1;
       
       return `
@@ -542,6 +588,10 @@ const THEMES = {
                 <div class="text-3xl font-light mb-1">${wpm}</div>
                 <div class="text-[10px] uppercase tracking-[0.2em] opacity-40 font-sans">WPM</div>
               </div>
+            </div>
+            <div class="animate-slide-up stagger-3 mb-8 text-center">
+              <div class="text-xs uppercase tracking-[0.2em] opacity-40 font-sans mb-1">Rings Completed</div>
+              <div class="text-3xl font-light" style="color:${t.accent};">${ringsCompleted}</div>
             </div>
 
             <div class="animate-slide-up stagger-3 mb-10 p-5 rounded-2xl" style="background: ${t.accentLight};">
@@ -716,7 +766,7 @@ const THEMES = {
         <div class="min-h-screen transition-colors duration-1000 selection-${state.theme} flex flex-col items-center p-6 md:p-12 lg:p-16 overflow-hidden relative" style="color: ${t.text};">
           
           <!-- Ambient background glow -->
-          <div class="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] pointer-events-none opacity-30 animate-breathe" 
+          <div class="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] pointer-events-none opacity-30 animate-breathe animate-ambient-drift" 
             style="background: radial-gradient(ellipse at center, ${t.sparkColor} 0%, transparent 70%); filter: blur(60px);">
           </div>
 
@@ -817,13 +867,16 @@ const THEMES = {
               ` : ''}
             </div>
 
-            <!-- Score & Time display -->
-            <div class="flex justify-between items-end mb-10 px-1">
-              <div class="flex items-baseline gap-4">
-                <div id="score-display" class="text-4xl md:text-5xl font-light tracking-tight tabular-nums transition-all duration-300">${state.displayScore.toLocaleString()}</div>
-                <div id="combo-display" class="text-[10px] font-sans tracking-widest uppercase transition-all duration-500 flex items-center gap-2" 
-                  style="opacity: ${state.sparks.length > 0 ? 1 : (state.combo > 10 ? 0.4 : 0)}; transform: translateY(${state.sparks.length > 0 ? '-4px' : '0'});">
-                  ${state.sparks.length > 0 ? `<span style="color: ${t.accent};">${icons.sparkles}</span> Spark!` : `${Math.floor(state.combo / CONSTANTS.COMBO_THRESHOLD) + 1}× flow`}
+            ${state.gameState !== 'ended' && !state.showStats ? `
+              <!-- Ring Meter & Time -->
+              <div class="flex justify-between items-start mb-10 px-1">
+                ${renderRingMeter(t)}
+                <div class="text-right">
+                  <div id="time-display" class="text-sm tracking-widest opacity-40 font-sans tabular-nums mb-2">${formatTime(state.totalTime)}</div>
+                  <div id="combo-display" class="text-[10px] font-sans tracking-widest uppercase transition-all duration-500 flex items-center gap-2 justify-end"
+                    style="opacity: ${state.sparks.length > 0 ? 1 : (state.combo > 10 ? 0.45 : 0)}; transform: translateY(${state.sparks.length > 0 ? '-3px' : '0'});">
+                    ${state.sparks.length > 0 ? `<span style="color: ${t.accent};">${icons.sparkles}</span> Spark!` : `${Math.floor(state.combo / CONSTANTS.COMBO_THRESHOLD) + 1}× flow`}
+                  </div>
                 </div>
               </div>
               <div class="flex items-center gap-4">
@@ -872,7 +925,10 @@ const THEMES = {
       dom.textarea = document.getElementById('main-textarea');
       dom.overlay = document.getElementById('text-overlay');
       dom.flowBar = document.getElementById('flow-bar');
-      dom.scoreDisplay = document.getElementById('score-display');
+      dom.ringCount = document.getElementById('ring-count');
+      dom.ringMeta = document.getElementById('ring-meta');
+      dom.ringActive = document.getElementById('ring-active');
+      dom.ringTrack = document.getElementById('ring-track');
       dom.timeDisplay = document.getElementById('time-display');
       dom.comboDisplay = document.getElementById('combo-display');
       dom.sparksContainer = document.getElementById('sparks-container');
@@ -940,7 +996,6 @@ const THEMES = {
 
     function triggerSpark(currentWordCount) {
       state.targetFlow = Math.min(100, state.targetFlow + 40);
-      state.score += 500;
 
       const targetIndex = currentWordCount - 1;
       state.sparkedWords[targetIndex] = true;
@@ -975,10 +1030,12 @@ const THEMES = {
       state.gameState = 'ended';
       state.displayScore = Math.floor(state.score); // Final update
       const finalWords = state.text.trim().split(/\s+/).filter(w => w.length > 0).length;
+      const ringsCompleted = Math.floor(state.score / getScorePerRing());
       const session = {
         id: Date.now(),
         date: new Date().toISOString(),
         score: Math.floor(state.score),
+        rings: ringsCompleted,
         words: finalWords,
         time: Math.floor(state.totalTime),
         wpm: Math.floor((finalWords / (state.totalTime / 60)) || 0),

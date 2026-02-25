@@ -524,6 +524,7 @@
         'parenthetical': 'Parenthetical',
         'transition': 'Transition'
     };
+    const SCENE_TIME_HINTS = ['DAY.', 'NIGHT.', 'DUSK.', 'DAWN.', 'CONTINUOUS.', 'LATER.'];
 
     let characterSet = new Set();
     let locationSet = new Set();
@@ -786,6 +787,7 @@
         if (type === 'parenthetical' && div.firstChild) range.setStart(div.firstChild, 1);
         sel.removeAllRanges();
         sel.addRange(range);
+        applyLineBootstrapSuggestion(div, type, afterBlock);
         div.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
