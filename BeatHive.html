@@ -436,6 +436,7 @@
             const [sidebarOpen, setSidebarOpen] = useState(true);
             const [isCreating, setIsCreating] = useState(false);
             const [saveStatus, setSaveStatus] = useState('ready');
+            const [showImmersionTips, setShowImmersionTips] = useState(() => !localStorage.getItem('writingtools_beathive_immersive_seen'));
 
             // Refs
             const keysPressed = useRef({});
