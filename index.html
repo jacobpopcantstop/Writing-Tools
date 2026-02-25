@@ -209,8 +209,10 @@
       border-radius: 10px;
       display: grid;
       place-items: center;
-      background: color-mix(in srgb, var(--accent) 15%, transparent);
-      color: var(--accent);
+      overflow: hidden;
+    }
+    .icon-shell img {
+      border-radius: 6px;
     }
 
     .card h2 {
@@ -334,7 +336,7 @@
         <div class="cards" id="tools">
           <a class="card" href="Synax.html" target="_blank" rel="noopener">
             <div>
-              <div class="card-top"><div class="icon-shell"><i data-lucide="sparkles" style="width:18px;height:18px"></i></div></div>
+              <div class="card-top"><div class="icon-shell"><img src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fd19c8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='3'/><path d='M12 12 L6 6'/><path d='M12 12 L18 6'/><path d='M12 12 L12 20'/><circle cx='6' cy='6' r='1.5' fill='%23fd19c8' stroke='none'/><circle cx='18' cy='6' r='1.5' fill='%23fd19c8' stroke='none'/><circle cx='12' cy='20' r='1.5' fill='%23fd19c8' stroke='none'/></svg>" width="22" height="22" alt="Synax"></div></div>
               <h2>Synax</h2>
               <p>Contextual concept generator with serendipity and narrative prompts.</p>
             </div>
@@ -343,7 +345,7 @@
 
           <a class="card" href="ThisButThat.html" target="_blank" rel="noopener">
             <div>
-              <div class="card-top"><div class="icon-shell"><i data-lucide="git-branch" style="width:18px;height:18px"></i></div></div>
+              <div class="card-top"><div class="icon-shell"><img src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='12' fill='%23fd19c8'/><text x='50' y='68' font-size='50' font-weight='bold' fill='white' text-anchor='middle'>?</text></svg>" width="22" height="22" alt="ThisButThat"></div></div>
               <h2>ThisButThat</h2>
               <p>Turn topical material into twist-driven comedic premises quickly.</p>
             </div>
@@ -352,7 +354,7 @@
 
           <a class="card" href="Joterie.html" target="_blank" rel="noopener">
             <div>
-              <div class="card-top"><div class="icon-shell"><i data-lucide="zap" style="width:18px;height:18px"></i></div></div>
+              <div class="card-top"><div class="icon-shell"><img src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='25' fill='%23000000'/><path d='M54 15L24 55h28l-4 30 30-40H50l4-30z' fill='%23fd19c8' stroke='%23fd19c8' stroke-width='4' stroke-linejoin='round'/></svg>" width="22" height="22" alt="Joterie"></div></div>
               <h2>Joterie</h2>
               <p>Timed sprint ideation to break inertia and force forward motion.</p>
             </div>
@@ -366,7 +368,7 @@
         <div class="cards">
           <a class="card" href="BeatHive.html" target="_blank" rel="noopener">
             <div>
-              <div class="card-top"><div class="icon-shell"><i data-lucide="hexagon" style="width:18px;height:18px"></i></div></div>
+              <div class="card-top"><div class="icon-shell"><img src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5' fill='%23fd19c8'/><polygon points='50,20 80,37.5 80,62.5 50,80 20,62.5 20,37.5' fill='%23da70d6' opacity='0.6'/></svg>" width="22" height="22" alt="BeatHive"></div></div>
               <h2>BeatHive</h2>
               <p>Hex-based beat mapping with rapid movement and structural iteration.</p>
             </div>
@@ -375,7 +377,7 @@
 
           <a class="card" href="WitherNaught.html" target="_blank" rel="noopener">
             <div>
-              <div class="card-top"><div class="icon-shell"><i data-lucide="wind" style="width:18px;height:18px"></i></div></div>
+              <div class="card-top"><div class="icon-shell"><img src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23050505'/><path d='M35 78 Q62 48 68 22' stroke='%23da70d6' stroke-width='5.5' stroke-linecap='round' fill='none'/><path d='M35 78 Q55 58 65 38' stroke='%23da70d6' stroke-width='3.5' stroke-linecap='round' fill='none' opacity='0.6'/><path d='M35 78 L68 22' stroke='%23da70d6' stroke-width='2' stroke-linecap='round' fill='none' opacity='0.3'/><circle cx='68' cy='22' r='4' fill='%23da70d6'/></svg>" width="22" height="22" alt="WitherNaught"></div></div>
               <h2>WitherNaught</h2>
               <p>Pressure-based drafting game that rewards sustained writing flow.</p>
             </div>
@@ -384,7 +386,7 @@
 
           <a class="card" href="Wribbon.html" target="_blank" rel="noopener">
             <div>
-              <div class="card-top"><div class="icon-shell"><i data-lucide="feather" style="width:18px;height:18px"></i></div></div>
+              <div class="card-top"><div class="icon-shell"><img src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23000000'/><text y='.9em' font-size='90' font-weight='bold' fill='%23fd19c8'>W</text></svg>" width="22" height="22" alt="Wribbon"></div></div>
               <h2>Wribbon</h2>
               <p>Low-friction drafting for clean pages and consistent momentum.</p>
             </div>
@@ -398,7 +400,7 @@
         <div class="cards">
           <a class="card" href="Courius.html" target="_blank" rel="noopener">
             <div>
-              <div class="card-top"><div class="icon-shell"><i data-lucide="clapperboard" style="width:18px;height:18px"></i></div></div>
+              <div class="card-top"><div class="icon-shell"><img src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='5' y='30' width='90' height='65' rx='5' fill='%23000000'/><rect x='5' y='10' width='90' height='25' fill='%23000000'/><rect x='5' y='10' width='18' height='25' fill='%23fd19c8' transform='skewX(-15)'/><rect x='28' y='10' width='18' height='25' fill='%23fd19c8' transform='skewX(-15)'/><rect x='51' y='10' width='18' height='25' fill='%23fd19c8' transform='skewX(-15)'/><rect x='74' y='10' width='18' height='25' fill='%23fd19c8' transform='skewX(-15)'/><line x1='15' y1='50' x2='85' y2='50' stroke='%23fd19c8' stroke-width='3'/><line x1='15' y1='65' x2='70' y2='65' stroke='%23fd19c8' stroke-width='2'/><line x1='15' y1='80' x2='55' y2='80' stroke='%23fd19c8' stroke-width='2'/></svg>" width="22" height="22" alt="Courius"></div></div>
               <h2>Courius</h2>
               <p>Screenplay editor with FDX import/export and format-safe writing lanes.</p>
             </div>
@@ -407,7 +409,7 @@
 
           <a class="card" href="PaperCut.html" target="_blank" rel="noopener">
             <div>
-              <div class="card-top"><div class="icon-shell"><i data-lucide="scissors" style="width:18px;height:18px"></i></div></div>
+              <div class="card-top"><div class="icon-shell"><img src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23fd19c8'/><path d='M25 20h50c3 0 5 2 5 5v50c0 3-2 5-5 5H25c-3 0-5-2-5-5V25c0-3 2-5 5-5z' fill='%23050505'/><path d='M35 35h30M35 50h20M35 65h25' stroke='%23fae84f' stroke-width='4' stroke-linecap='round'/></svg>" width="22" height="22" alt="PaperCut"></div></div>
               <h2>PaperCut</h2>
               <p>Edit, annotate, split, merge, and convert PDFs without leaving the suite.</p>
             </div>
