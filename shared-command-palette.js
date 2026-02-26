@@ -85,6 +85,15 @@
         run: function () { actions.exportPrimary(); }
       });
     }
+    if (actions && typeof actions.handoffPrimary === 'function') {
+      list.unshift({
+        id: 'handoff-current',
+        title: 'Send Current Session Forward',
+        desc: 'Run this tool\'s primary downstream handoff',
+        keys: 'handoff send beat hive courius next',
+        run: function () { actions.handoffPrimary(); }
+      });
+    }
     return list;
   }
 

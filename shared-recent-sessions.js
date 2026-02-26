@@ -10,6 +10,19 @@
     return s.length > maxLen ? s.slice(0, maxLen) + '...' : s;
   }
 
+  function relativeTime(timestamp) {
+    if (!timestamp) return '';
+    var delta = Date.now() - timestamp;
+    var minutes = Math.round(delta / 60000);
+    if (minutes < 1) return 'just now';
+    if (minutes < 60) return minutes + 'm ago';
+    var hours = Math.round(minutes / 60);
+    if (hours < 24) return hours + 'h ago';
+    var days = Math.round(hours / 24);
+    if (days < 7) return days + 'd ago';
+    return new Date(timestamp).toLocaleDateString();
+  }
+
   function list() {
     var out = [];
 
@@ -23,7 +36,8 @@
           title: 'Wribbon Draft',
           meta: wribbonWords + ' words cached',
           path: 'Wribbon.html',
-          updatedAt: 0
+          updatedAt: 0,
+          updatedLabel: ''
         });
       }
     } catch (_) {}
@@ -38,7 +52,8 @@
           title: 'Courius Script',
           meta: couriusWords + ' words in screenplay buffer',
           path: 'Courius.html',
-          updatedAt: 0
+          updatedAt: 0,
+          updatedLabel: ''
         });
       }
     } catch (_) {}
@@ -56,12 +71,14 @@
           ? recentBeat.cells.filter(function (c) { return c && c.content && String(c.content).trim(); }).length
           : 0;
         out.push({
+          signature: recentBeat && recentBeat.id ? String(recentBeat.id) : '',
           id: 'recent-beathive',
           tool: 'BeatHive',
           title: trimTitle((recentBeat && recentBeat.name) || 'Untitled Hive', 28),
           meta: beatCount + ' populated beats',
           path: 'BeatHive.html',
-          updatedAt: new Date(recentBeat && (recentBeat.updatedAt || recentBeat.createdAt) || 0).getTime() || 0
+          updatedAt: new Date(recentBeat && (recentBeat.updatedAt || recentBeat.createdAt) || 0).getTime() || 0,
+          updatedLabel: ''
         });
       }
     } catch (_) {}
@@ -78,7 +95,8 @@
           title: 'WitherNaught Session',
           meta: sessionWords > 0 ? ('last session ' + sessionWords + ' words') : 'resume session flow',
           path: 'WitherNaught.html',
-          updatedAt: new Date(latest.date || 0).getTime() || 0
+          updatedAt: new Date(latest.date || 0).getTime() || 0,
+          updatedLabel: ''
         });
       }
     } catch (_) {}
@@ -93,7 +111,8 @@
           title: 'Synax Idea Canvas',
           meta: synaxWords + ' words in editor',
           path: 'Synax.html',
-          updatedAt: 0
+          updatedAt: 0,
+          updatedLabel: ''
         });
       }
     } catch (_) {}
@@ -110,7 +129,8 @@
           title: trimTitle(recentArchive.prompt || 'Joterie Harvest', 28),
           meta: keepCount + ' kept cards',
           path: 'Joterie.html',
-          updatedAt: new Date(recentArchive.date || 0).getTime() || 0
+          updatedAt: new Date(recentArchive.date || 0).getTime() || 0,
+          updatedLabel: ''
         });
       }
     } catch (_) {}
@@ -128,12 +148,17 @@
           title: trimTitle(latestTopic, 28),
           meta: twistCount + ' twists cached',
           path: 'ThisButThat.html',
-          updatedAt: new Date(latestBatch.timestamp || 0).getTime() || 0
+          updatedAt: new Date(latestBatch.timestamp || 0).getTime() || 0,
+          updatedLabel: ''
         });
       }
     } catch (_) {}
-
-    return out.sort(function (a, b) { return (b.updatedAt || 0) - (a.updatedAt || 0); });
+    return out
+      .sort(function (a, b) { return (b.updatedAt || 0) - (a.updatedAt || 0); })
+      .map(function (item) {
+        item.updatedLabel = relativeTime(item.updatedAt || 0);
+        return item;
+      });
   }
 
   window.WTRecentSessions = {

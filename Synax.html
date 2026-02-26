@@ -962,15 +962,6 @@
                 URL.revokeObjectURL(url);
             }, [editorContent]);
 
-            useEffect(() => {
-                window.WTToolActions = {
-                    exportPrimary: downloadEditorMarkdown
-                };
-                return () => {
-                    try { delete window.WTToolActions; } catch (_) {}
-                };
-            }, [downloadEditorMarkdown]);
-
             const sendToBeatHive = () => {
                 const topTopic = contextInput.trim() || (words[0]?.word || '').trim();
                 const constraints = words
@@ -980,6 +971,16 @@
                 publishContext({ topic: topTopic, constraints });
                 window.open('BeatHive.html', '_blank', 'noopener');
             };
+
+            useEffect(() => {
+                window.WTToolActions = {
+                    exportPrimary: downloadEditorMarkdown,
+                    handoffPrimary: sendToBeatHive
+                };
+                return () => {
+                    try { delete window.WTToolActions; } catch (_) {}
+                };
+            }, [downloadEditorMarkdown, sendToBeatHive]);
 
             return (
                 <div className={`min-h-screen transition-colors duration-700 ease-in-out ${darkMode ? 'bg-[#000000] text-slate-300' : 'bg-[#f8f5f0] text-slate-800'} font-sans overflow-hidden flex flex-col relative`}>

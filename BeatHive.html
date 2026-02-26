@@ -1024,7 +1024,8 @@
             }, [cells, getCellContentText, sketchName, sharedContext.topic, couriusMode]);
             useEffect(() => {
                 window.WTToolActions = {
-                    exportPrimary: () => sendMapToCourius()
+                    exportPrimary: () => sendMapToCourius(),
+                    handoffPrimary: () => sendMapToCourius()
                 };
                 return () => {
                     try { delete window.WTToolActions; } catch (_) {}

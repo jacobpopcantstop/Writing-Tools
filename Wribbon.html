@@ -1251,7 +1251,8 @@
         window.addEventListener('DOMContentLoaded', () => {
             app.init();
             window.WTToolActions = {
-                exportPrimary: () => app.download('txt')
+                exportPrimary: () => app.download('txt'),
+                handoffPrimary: () => app.sendToCourius()
             };
         });
     </script>

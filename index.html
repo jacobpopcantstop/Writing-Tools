@@ -378,6 +378,13 @@
       font-size: 13px;
       line-height: 1.35;
     }
+    .recent-stamp {
+      font: 700 10px/1 "IBM Plex Mono", monospace;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-2);
+      opacity: .8;
+    }
     .recent-open {
       justify-self: start;
       border: 1px solid var(--line);
@@ -582,7 +589,7 @@
       </div>
     </section>
 
-    <section class="recent-browser" aria-label="Recent Sessions">
+    <section id="recent-sessions" class="recent-browser" aria-label="Recent Sessions">
       <div class="context-head">
         <h3>Recent Sessions</h3>
         <span class="card-cta">Resume without searching</span>
@@ -823,6 +830,7 @@
           <div class="recent-tool">${session.tool}</div>
           <div class="recent-title">${session.title}</div>
           <div class="recent-meta">${session.meta}</div>
+          <div class="recent-stamp">${session.updatedLabel || 'local cache'}</div>
           <button type="button" class="recent-open" data-recent-path="${session.path}">Open</button>
         </div>
       `).join('');
@@ -852,10 +860,6 @@
             toggleTheme: () => toggleTheme()
           })
         : [];
-
-      function wordCountFromText(text) {
-        return (String(text || '').trim().match(/\S+/g) || []).length;
-      }
 
       function getRecentCommands() {
         const sessions = window.WTRecentSessions && typeof window.WTRecentSessions.list === 'function'

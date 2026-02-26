@@ -43,6 +43,7 @@ Delivered so far in this phase:
 - Added common `export-current` command ID support via `WTToolActions.exportPrimary`.
 - Extended shared palette support to Synax, ThisButThat, Joterie, and PaperCut.
 - Added a visible recent-session browser on `index.html`, backed by shared recent-session discovery.
+- Added broader common action IDs: suite home, recent hub, and tool-specific primary handoff actions where available.
 
 ## Phase 3 (Later): Adaptive Assistance + Structural Intelligence
 Status: Planned
