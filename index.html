@@ -746,7 +746,7 @@
       const list = document.getElementById('cmdk-list');
       if (!root || !input || !list) return;
 
-      const commands = [
+      const baseCommands = [
         { id: 'open-synax', title: 'Open Synax', desc: 'Concept and serendipity ideation', keys: 'idea concept synax', run: () => (window.__wtOpenToolWithContext || ((p) => window.open(p, '_blank', 'noopener')))('Synax.html') },
         { id: 'open-thisbutthat', title: 'Open ThisButThat', desc: 'Twist-based premise generation', keys: 'twist premise thisbutthat', run: () => (window.__wtOpenToolWithContext || ((p) => window.open(p, '_blank', 'noopener')))('ThisButThat.html') },
         { id: 'open-beathive', title: 'Open BeatHive', desc: 'Structure and beat mapping', keys: 'structure map beathive', run: () => (window.__wtOpenToolWithContext || ((p) => window.open(p, '_blank', 'noopener')))('BeatHive.html') },
@@ -757,6 +757,86 @@
         { id: 'toggle-theme', title: 'Toggle Theme', desc: 'Switch between light and dark', keys: 'theme color mode', run: () => toggleTheme() }
       ];
 
+      function openWithContext(path) {
+        (window.__wtOpenToolWithContext || ((p) => window.open(p, '_blank', 'noopener')))(path);
+      }
+
+      function wordCountFromText(text) {
+        return (String(text || '').trim().match(/\S+/g) || []).length;
+      }
+
+      function getRecentCommands() {
+        const out = [];
+        try {
+          const wribbonText = localStorage.getItem('writingtools_wribbon_text') || '';
+          const wribbonWords = wordCountFromText(wribbonText);
+          if (wribbonWords > 0) {
+            out.push({
+              id: 'recent-wribbon',
+              title: 'Resume Wribbon Draft',
+              desc: `${wribbonWords} words cached`,
+              keys: 'recent wribbon resume draft',
+              run: () => openWithContext('Wribbon.html')
+            });
+          }
+        } catch (_) {}
+
+        try {
+          const couriusHtml = localStorage.getItem('writingtools_courius_storage') || '';
+          const couriusWords = wordCountFromText(couriusHtml.replace(/<[^>]+>/g, ' '));
+          if (couriusWords > 0) {
+            out.push({
+              id: 'recent-courius',
+              title: 'Resume Courius Script',
+              desc: `${couriusWords} words in screenplay buffer`,
+              keys: 'recent courius screenplay script',
+              run: () => openWithContext('Courius.html')
+            });
+          }
+        } catch (_) {}
+
+        try {
+          const raw = localStorage.getItem('writingtools_beathive_sketches');
+          const sketches = raw ? JSON.parse(raw) : [];
+          if (Array.isArray(sketches) && sketches.length) {
+            const recent = sketches
+              .slice()
+              .sort((a, b) => (new Date(b.updatedAt || b.createdAt || 0)).getTime() - (new Date(a.updatedAt || a.createdAt || 0)).getTime())[0];
+            const beatCount = Array.isArray(recent.cells) ? recent.cells.filter((c) => (c && c.content && String(c.content).trim())).length : 0;
+            out.push({
+              id: 'recent-beathive',
+              title: `Resume BeatHive: ${String(recent.name || 'Untitled').slice(0, 26)}`,
+              desc: `${beatCount} populated beats`,
+              keys: 'recent beathive beats structure',
+              run: () => openWithContext('BeatHive.html')
+            });
+          }
+        } catch (_) {}
+
+        try {
+          const raw = localStorage.getItem('flowstate_history_v13');
+          const history = raw ? JSON.parse(raw) : [];
+          if (Array.isArray(history) && history.length) {
+            const latest = history[history.length - 1] || {};
+            const words = parseInt(latest.words || 0, 10) || 0;
+            out.push({
+              id: 'recent-withernaught',
+              title: 'Resume WitherNaught',
+              desc: words > 0 ? `last session ${words} words` : 'resume session flow',
+              keys: 'recent withernaught flow draft',
+              run: () => openWithContext('WitherNaught.html')
+            });
+          }
+        } catch (_) {}
+
+        return out;
+      }
+
+      function buildCommands() {
+        return [...getRecentCommands(), ...baseCommands];
+      }
+
+      let commands = buildCommands();
       let filtered = commands.slice();
       let activeIndex = 0;
       let isOpen = false;
@@ -779,6 +859,7 @@
         root.classList.toggle('open', isOpen);
         root.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
         if (isOpen) {
+          commands = buildCommands();
           input.value = '';
           filtered = commands.slice();
           activeIndex = 0;

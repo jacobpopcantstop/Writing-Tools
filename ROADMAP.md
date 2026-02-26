@@ -37,6 +37,7 @@ Delivered so far in this phase:
 - Added global command palette on `index.html` with `Cmd/Ctrl+K`.
 - Added mobile quick-actions button to open the same palette.
 - Added first command set: open core tools with context, save/clear context, and toggle theme.
+- Added unified "recent sessions" commands from BeatHive, Wribbon, WitherNaught, and Courius local state.
 
 ## Phase 3 (Later): Adaptive Assistance + Structural Intelligence
 Status: Planned
