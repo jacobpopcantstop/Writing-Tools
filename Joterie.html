@@ -573,10 +573,25 @@
 
         function exportGmail() {
             const kept = state.sessionCards.filter(c => c.status === 'kept');
-            const subject = encodeURIComponent(`Joterie Harvest: ${state.focusPrompt || 'Untitled'}`);
+            const subjectText = `Joterie Harvest: ${state.focusPrompt || 'Untitled'}`;
             const bodyContent = kept.map((c, i) => `${i + 1}. ${c.text}`).join('\n');
+            const subject = encodeURIComponent(subjectText);
             const body = encodeURIComponent(bodyContent);
-            window.open(`https://mail.google.com/mail/?view=cm&fs=1&su=${subject}&body=${body}`, '_blank');
+            const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&tf=1&su=${subject}&body=${body}`;
+            const mailtoUrl = `mailto:?subject=${encodeURIComponent(subjectText)}&body=${encodeURIComponent(bodyContent)}`;
+
+            let popup = null;
+            try {
+                popup = window.open(gmailUrl, '_blank', 'noopener,noreferrer');
+            } catch (_) {}
+            if (!popup) {
+                window.location.href = gmailUrl;
+                setTimeout(() => {
+                    if (document.visibilityState === 'visible') {
+                        window.location.href = mailtoUrl;
+                    }
+                }, 800);
+            }
         }
 
         // Event Listeners

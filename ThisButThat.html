@@ -812,7 +812,8 @@
             }
 
             const encodedBody = encodeURIComponent(bodyForUrl);
-            const gmailUrl = `${gmailBase}&su=${encodedSubject}&body=${encodedBody}`;
+            const gmailUrl = `${gmailBase}&tf=1&su=${encodedSubject}&body=${encodedBody}`;
+            const mailtoUrl = `mailto:?subject=${encodeURIComponent(data.subject)}&body=${encodeURIComponent(data.body)}`;
 
             if (fullData && (wasTrimmed || fullData.body.length > bodyForUrl.length)) {
                 navigator.clipboard.writeText(fullData.body).catch(() => {});
@@ -821,6 +822,11 @@
             const win = window.open(gmailUrl, '_blank', 'noopener,noreferrer');
             if (!win) {
                 window.location.href = gmailUrl;
+                setTimeout(() => {
+                    if (document.visibilityState === 'visible') {
+                        window.location.href = mailtoUrl;
+                    }
+                }, 800);
             }
         }
 

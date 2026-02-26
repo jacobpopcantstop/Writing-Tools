@@ -939,9 +939,25 @@
             },
 
             emailGmail() {
-                const subject = encodeURIComponent("My Wribbon Writing");
-                const body = encodeURIComponent(this.state.text);
-                window.open(`https://mail.google.com/mail/?view=cm&fs=1&su=${subject}&body=${body}`, '_blank');
+                const subjectText = "My Wribbon Writing";
+                const bodyText = this.state.text;
+                const subject = encodeURIComponent(subjectText);
+                const body = encodeURIComponent(bodyText);
+                const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&tf=1&su=${subject}&body=${body}`;
+                const mailtoUrl = `mailto:?subject=${encodeURIComponent(subjectText)}&body=${encodeURIComponent(bodyText)}`;
+
+                let popup = null;
+                try {
+                    popup = window.open(gmailUrl, '_blank', 'noopener,noreferrer');
+                } catch (_) {}
+                if (!popup) {
+                    window.location.href = gmailUrl;
+                    setTimeout(() => {
+                        if (document.visibilityState === 'visible') {
+                            window.location.href = mailtoUrl;
+                        }
+                    }, 800);
+                }
                 this.toggleExportMenu();
             },
 

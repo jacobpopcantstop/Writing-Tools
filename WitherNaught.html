@@ -451,12 +451,27 @@ const THEMES = {
     function exportToGmail() {
       if (!state.text.trim()) return;
       
-      const subject = encodeURIComponent(`WitherNaught Session - ${new Date().toLocaleDateString()}`);
+      const subjectText = `WitherNaught Session - ${new Date().toLocaleDateString()}`;
+      const subject = encodeURIComponent(subjectText);
       const wpm = Math.floor((state.wordCount / (state.totalTime / 60)) || 0);
       const stats = `[${state.wordCount} words • ${formatTime(state.totalTime)} • ${wpm} WPM • Score: ${Math.floor(state.score).toLocaleString()}]`;
-      const body = encodeURIComponent(`${state.text}\n\n---\n${stats}\nWritten in WitherNaught`);
-      
-      window.open(`https://mail.google.com/mail/?view=cm&fs=1&su=${subject}&body=${body}`, '_blank');
+      const bodyText = `${state.text}\n\n---\n${stats}\nWritten in WitherNaught`;
+      const body = encodeURIComponent(bodyText);
+      const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&tf=1&su=${subject}&body=${body}`;
+      const mailtoUrl = `mailto:?subject=${encodeURIComponent(subjectText)}&body=${encodeURIComponent(bodyText)}`;
+
+      let popup = null;
+      try {
+        popup = window.open(gmailUrl, '_blank', 'noopener,noreferrer');
+      } catch (_) {}
+      if (popup) return;
+
+      window.location.href = gmailUrl;
+      setTimeout(() => {
+        if (document.visibilityState === 'visible') {
+          window.location.href = mailtoUrl;
+        }
+      }, 800);
     }
 
     // ===== RENDER HELPERS =====
