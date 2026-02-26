@@ -40,6 +40,7 @@ Delivered so far in this phase:
 - Added unified "recent sessions" commands from BeatHive, Wribbon, WitherNaught, and Courius local state.
 - Added `shared-commands.js` as a reusable command schema source with stable action IDs.
 - Added shared command palette injection script and wired it into Courius, BeatHive, Wribbon, and WitherNaught.
+- Added common `export-current` command ID support via `WTToolActions.exportPrimary`.
 
 ## Phase 3 (Later): Adaptive Assistance + Structural Intelligence
 Status: Planned

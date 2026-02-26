@@ -1572,6 +1572,10 @@
         document.getElementById('help-modal').classList.toggle('open');
     }
 
+    window.WTToolActions = {
+        exportPrimary: downloadFDX
+    };
+
     // --- Keyboard Shortcuts ---
     window.addEventListener('keydown', (e) => {
         // ? for help (when not typing in editor)

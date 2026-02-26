@@ -1021,6 +1021,14 @@
                 }
                 window.open('Courius.html', '_blank', 'noopener');
             }, [cells, getCellContentText, sketchName, sharedContext.topic, couriusMode]);
+            useEffect(() => {
+                window.WTToolActions = {
+                    exportPrimary: () => sendMapToCourius()
+                };
+                return () => {
+                    try { delete window.WTToolActions; } catch (_) {}
+                };
+            }, [sendMapToCourius]);
 
             const seedStarterArc = useCallback(() => {
                 const base = [

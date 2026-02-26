@@ -124,17 +124,30 @@
   }
 
   function buildBaseCommands() {
+    var list = [];
     if (window.WTCommands && typeof window.WTCommands.build === 'function') {
-      return window.WTCommands.build({
+      list = window.WTCommands.build({
         openTool: openTool,
         saveContext: saveContext,
         clearContext: clearContext,
         toggleTheme: toggleTheme
       });
+    } else {
+      list = [
+        { id: 'open-courius', title: 'Open Courius', desc: 'Screenplay editing and output', keys: 'screenplay courius', run: function () { openTool('Courius.html'); } }
+      ];
     }
-    return [
-      { id: 'open-courius', title: 'Open Courius', desc: 'Screenplay editing and output', keys: 'screenplay courius', run: function () { openTool('Courius.html'); } }
-    ];
+    var actions = window.WTToolActions && typeof window.WTToolActions === 'object' ? window.WTToolActions : null;
+    if (actions && typeof actions.exportPrimary === 'function') {
+      list.unshift({
+        id: 'export-current',
+        title: 'Export Current Session',
+        desc: 'Run this tool\'s primary export action',
+        keys: 'export save download print',
+        run: function () { actions.exportPrimary(); }
+      });
+    }
+    return list;
   }
 
   function injectStyles() {
