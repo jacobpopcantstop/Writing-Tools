@@ -1107,6 +1107,70 @@
         }
     }
 
+    function previousBlockOfType(fromBlock, type) {
+        let node = fromBlock ? fromBlock.previousElementSibling : null;
+        while (node) {
+            if (node.classList && node.classList.contains(type)) return node;
+            node = node.previousElementSibling;
+        }
+        return null;
+    }
+
+    function previousDifferentCharacterName(fromBlock, currentName) {
+        let node = fromBlock ? fromBlock.previousElementSibling : null;
+        while (node) {
+            if (node.classList && node.classList.contains('character')) {
+                const name = getPureText(node).trim().toUpperCase();
+                if (name && name !== currentName) return name;
+            }
+            node = node.previousElementSibling;
+        }
+        return '';
+    }
+
+    function setBootstrapSuggestion(block, suggestionText) {
+        if (!block || !suggestionText) return;
+        block.innerHTML = `<span class="suggestion">${escapeHtml(String(suggestionText).toUpperCase())}</span>`;
+        const range = document.createRange();
+        const sel = window.getSelection();
+        range.selectNodeContents(block);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
+    }
+
+    function applyLineBootstrapSuggestion(block, type, afterBlock) {
+        if (!block || !type) return;
+        if (getPureText(block).trim()) return;
+
+        if (type === 'character') {
+            const lastCharBlock = previousBlockOfType(block, 'character');
+            if (!lastCharBlock) return;
+            const lastName = getPureText(lastCharBlock).trim().toUpperCase();
+            if (!lastName) return;
+            const altName = previousDifferentCharacterName(lastCharBlock, lastName);
+            if (altName) {
+                setBootstrapSuggestion(block, altName);
+            }
+            return;
+        }
+
+        if (type === 'scene-heading') {
+            const source = afterBlock || previousBlockOfType(block, 'scene-heading');
+            const sourceText = source ? getPureText(source).trim().toUpperCase() : '';
+            if (!sourceText) return;
+            const hasDash = /\s-\s/.test(sourceText);
+            if (hasDash) {
+                const timePart = sourceText.split(/\s-\s/).slice(1).join(' - ').trim();
+                if (timePart) {
+                    setBootstrapSuggestion(block, timePart);
+                    return;
+                }
+            }
+            setBootstrapSuggestion(block, SCENE_TIME_HINTS[0]);
+        }
+    }
+
     function createLine(type, afterBlock = null) {
         const div = document.createElement('div');
         setBlockType(div, type);

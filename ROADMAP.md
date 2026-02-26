@@ -4,7 +4,7 @@
 Make the suite feel like one cohesive creative system: shared context, faster cross-tool flow, smarter defaults, and resilient export behavior across desktop/mobile.
 
 ## Phase 1 (Now): Shared Context + Faster Handoffs
-Status: In progress
+Status: Completed
 
 Goals:
 - Introduce one context payload across tools (`topic`, `tone`, `audience`, `constraints`).
@@ -16,10 +16,10 @@ Delivered in this phase:
 - New "Project Context Bus" panel on `index.html` with save/clear + launch actions.
 - `Joterie` now pre-fills prompt from shared context and publishes prompt when session starts.
 - `ThisButThat` now seeds topic fetch from shared context and publishes selected topic back.
-
-Next tasks (Phase 1 completion):
-- Validate import history restore behavior on mobile and desktop.
-- Close Phase 1 with a short QA pass across Courius + BeatHive + Wribbon + WitherNaught.
+- Cross-tool Courius transfer API now supports append/overwrite + persisted import history.
+- Courius now renders per-source import badges and supports import recovery (append/replace).
+- BeatHive, Wribbon, and WitherNaught now use persistent compact Courius mode controls (Append/Replace).
+- QA pass completed across Courius + BeatHive + Wribbon + WitherNaught, including mobile/desktop validation for Courius import panel and restore flow.
 
 ## Phase 2 (Next): Command Palette + Session Navigation
 Status: Planned
