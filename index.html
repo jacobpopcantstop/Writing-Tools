@@ -350,9 +350,57 @@
     }
     .recent-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: 1fr;
       gap: 10px;
       margin-top: 12px;
+    }
+    .recent-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-top: 12px;
+    }
+    .recent-search {
+      flex: 1 1 220px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--bg-soft);
+      color: var(--text);
+      padding: 9px 12px;
+      font: inherit;
+    }
+    .recent-filter {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--card);
+      color: var(--text);
+      padding: 8px 10px;
+      font: 700 10px/1 "IBM Plex Mono", monospace;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .recent-filter.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 10%, var(--card));
+    }
+    .recent-group {
+      display: grid;
+      gap: 10px;
+    }
+    .recent-group-title {
+      font: 700 11px/1.2 "IBM Plex Mono", monospace;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-top: 8px;
+    }
+    .recent-group-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
     }
     .recent-card {
       border: 1px solid var(--line);
@@ -522,7 +570,7 @@
       .context-grid { grid-template-columns: 1fr; }
       .ctx-btn { min-height: 44px; }
       .cmdk-trigger { display: inline-flex; }
-      .recent-grid { grid-template-columns: 1fr; }
+      .recent-group-grid { grid-template-columns: 1fr; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -593,6 +641,13 @@
       <div class="context-head">
         <h3>Recent Sessions</h3>
         <span class="card-cta">Resume without searching</span>
+      </div>
+      <div class="recent-toolbar">
+        <input id="recent-search" class="recent-search" type="text" placeholder="Search recent sessions..." />
+        <button type="button" class="recent-filter active" data-recent-filter="all">All</button>
+        <button type="button" class="recent-filter" data-recent-filter="Ideation">Ideation</button>
+        <button type="button" class="recent-filter" data-recent-filter="Drafting">Drafting</button>
+        <button type="button" class="recent-filter" data-recent-filter="Output">Output</button>
       </div>
       <div id="recent-sessions-grid" class="recent-grid"></div>
       <div id="recent-sessions-empty" class="recent-empty" hidden>No recent local sessions yet.</div>
@@ -812,32 +867,75 @@
       bus.subscribe(paint);
     }
 
+    const recentState = {
+      filter: 'all',
+      query: ''
+    };
+
     function renderRecentSessions() {
       const grid = document.getElementById('recent-sessions-grid');
       const empty = document.getElementById('recent-sessions-empty');
       if (!grid || !empty) return;
-      const sessions = window.WTRecentSessions && typeof window.WTRecentSessions.list === 'function'
+      const allSessions = window.WTRecentSessions && typeof window.WTRecentSessions.list === 'function'
         ? window.WTRecentSessions.list()
         : [];
-      if (!sessions.length) {
+      const filteredSessions = allSessions.filter((session) => {
+        const matchesFilter = recentState.filter === 'all' || session.category === recentState.filter;
+        const q = recentState.query.trim().toLowerCase();
+        const hay = `${session.tool} ${session.title} ${session.meta} ${session.category || ''}`.toLowerCase();
+        const matchesQuery = !q || hay.includes(q);
+        return matchesFilter && matchesQuery;
+      });
+      if (!filteredSessions.length) {
         grid.innerHTML = '';
         empty.hidden = false;
         return;
       }
       empty.hidden = true;
-      grid.innerHTML = sessions.slice(0, 6).map((session) => `
-        <div class="recent-card">
-          <div class="recent-tool">${session.tool}</div>
-          <div class="recent-title">${session.title}</div>
-          <div class="recent-meta">${session.meta}</div>
-          <div class="recent-stamp">${session.updatedLabel || 'local cache'}</div>
-          <button type="button" class="recent-open" data-recent-path="${session.path}">Open</button>
+      const groups = filteredSessions.reduce((acc, session) => {
+        const key = session.category || 'Other';
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(session);
+        return acc;
+      }, {});
+      grid.innerHTML = Object.entries(groups).map(([group, sessions]) => `
+        <div class="recent-group">
+          <div class="recent-group-title">${group}</div>
+          <div class="recent-group-grid">
+            ${sessions.slice(0, 6).map((session) => `
+              <div class="recent-card">
+                <div class="recent-tool">${session.tool}</div>
+                <div class="recent-title">${session.title}</div>
+                <div class="recent-meta">${session.meta}</div>
+                <div class="recent-stamp">${session.updatedLabel || 'local cache'}</div>
+                <button type="button" class="recent-open" data-recent-path="${session.path}">Open</button>
+              </div>
+            `).join('')}
+          </div>
         </div>
       `).join('');
       grid.querySelectorAll('[data-recent-path]').forEach((btn) => {
         btn.addEventListener('click', () => {
           const path = btn.getAttribute('data-recent-path');
           (window.__wtOpenToolWithContext || ((p) => window.open(p, '_blank', 'noopener')))(path);
+        });
+      });
+    }
+
+    function initRecentBrowser() {
+      const search = document.getElementById('recent-search');
+      const filters = Array.from(document.querySelectorAll('[data-recent-filter]'));
+      if (search) {
+        search.addEventListener('input', () => {
+          recentState.query = search.value || '';
+          renderRecentSessions();
+        });
+      }
+      filters.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          recentState.filter = btn.getAttribute('data-recent-filter') || 'all';
+          filters.forEach((item) => item.classList.toggle('active', item === btn));
+          renderRecentSessions();
         });
       });
     }
@@ -960,6 +1058,7 @@
     document.addEventListener('DOMContentLoaded', () => {
       applyTheme(getTheme());
       initContextWorkspace();
+      initRecentBrowser();
       renderRecentSessions();
       initCommandPalette();
     });

@@ -23,6 +23,13 @@
     return new Date(timestamp).toLocaleDateString();
   }
 
+  function categoryForTool(tool) {
+    if (tool === 'Synax' || tool === 'ThisButThat' || tool === 'Joterie') return 'Ideation';
+    if (tool === 'BeatHive' || tool === 'WitherNaught' || tool === 'Wribbon') return 'Drafting';
+    if (tool === 'Courius' || tool === 'PaperCut') return 'Output';
+    return 'Other';
+  }
+
   function list() {
     var out = [];
 
@@ -33,6 +40,7 @@
         out.push({
           id: 'recent-wribbon',
           tool: 'Wribbon',
+          category: categoryForTool('Wribbon'),
           title: 'Wribbon Draft',
           meta: wribbonWords + ' words cached',
           path: 'Wribbon.html',
@@ -49,6 +57,7 @@
         out.push({
           id: 'recent-courius',
           tool: 'Courius',
+          category: categoryForTool('Courius'),
           title: 'Courius Script',
           meta: couriusWords + ' words in screenplay buffer',
           path: 'Courius.html',
@@ -74,6 +83,7 @@
           signature: recentBeat && recentBeat.id ? String(recentBeat.id) : '',
           id: 'recent-beathive',
           tool: 'BeatHive',
+          category: categoryForTool('BeatHive'),
           title: trimTitle((recentBeat && recentBeat.name) || 'Untitled Hive', 28),
           meta: beatCount + ' populated beats',
           path: 'BeatHive.html',
@@ -92,6 +102,7 @@
         out.push({
           id: 'recent-withernaught',
           tool: 'WitherNaught',
+          category: categoryForTool('WitherNaught'),
           title: 'WitherNaught Session',
           meta: sessionWords > 0 ? ('last session ' + sessionWords + ' words') : 'resume session flow',
           path: 'WitherNaught.html',
@@ -108,6 +119,7 @@
         out.push({
           id: 'recent-synax',
           tool: 'Synax',
+          category: categoryForTool('Synax'),
           title: 'Synax Idea Canvas',
           meta: synaxWords + ' words in editor',
           path: 'Synax.html',
@@ -126,6 +138,7 @@
         out.push({
           id: 'recent-joterie',
           tool: 'Joterie',
+          category: categoryForTool('Joterie'),
           title: trimTitle(recentArchive.prompt || 'Joterie Harvest', 28),
           meta: keepCount + ' kept cards',
           path: 'Joterie.html',
@@ -145,6 +158,7 @@
         out.push({
           id: 'recent-thisbutthat',
           tool: 'ThisButThat',
+          category: categoryForTool('ThisButThat'),
           title: trimTitle(latestTopic, 28),
           meta: twistCount + ' twists cached',
           path: 'ThisButThat.html',
