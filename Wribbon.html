@@ -286,6 +286,42 @@
             opacity: 1;
             background: var(--ui-hover);
         }
+        .courius-mode-picker {
+            display: flex;
+            gap: 6px;
+            padding: 6px 6px 4px 6px;
+            border-top: 1px solid var(--ui-border);
+            margin-top: 2px;
+        }
+        .courius-mode-btn {
+            flex: 1;
+            border: 1px solid var(--ui-border);
+            border-radius: 8px;
+            background: transparent;
+            color: var(--text-color);
+            opacity: 0.65;
+            text-align: center;
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-weight: 700;
+            padding: 8px 6px;
+            cursor: pointer;
+            transition: all 0.18s ease;
+        }
+        .courius-mode-btn:hover { opacity: 0.95; }
+        .courius-mode-btn.active-append {
+            opacity: 1;
+            color: #ffffff;
+            background: #4f46e5;
+            border-color: #4f46e5;
+        }
+        .courius-mode-btn.active-overwrite {
+            opacity: 1;
+            color: #ffffff;
+            background: #be123c;
+            border-color: #be123c;
+        }
 
         /* Stats Bar */
         .stats {
@@ -587,6 +623,10 @@
                 <button onclick="app.email()">Email</button>
                 <button onclick="app.emailGmail()">Gmail</button>
                 <button onclick="app.sendToCourius()">Send to Courius</button>
+                <div class="courius-mode-picker">
+                    <button id="courius-mode-append" class="courius-mode-btn" onclick="app.setCouriusMode('append')">Append</button>
+                    <button id="courius-mode-overwrite" class="courius-mode-btn" onclick="app.setCouriusMode('overwrite')">Replace</button>
+                </div>
             </div>
         </div>
 
@@ -676,6 +716,7 @@
                 timerRemaining: 0,
                 timerInterval: null,
                 goalReached: false,
+                couriusMode: 'append',
                 focusMode: false,
                 ambientPlaying: false,
                 ambientAudio: null,
@@ -694,7 +735,9 @@
                 goalInput: document.getElementById('goal-input'),
                 timerInput: document.getElementById('timer-input'),
                 exportMenu: document.getElementById('export-menu'),
-                exportBtn: document.getElementById('export-btn')
+                exportBtn: document.getElementById('export-btn'),
+                couriusModeAppend: document.getElementById('courius-mode-append'),
+                couriusModeOverwrite: document.getElementById('courius-mode-overwrite')
             },
 
             init() {
@@ -746,6 +789,9 @@
                 } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
                     this.state.theme = 'dark';
                 }
+                if (s.getItem('writingtools_wribbon_courius_mode') === 'overwrite') {
+                    this.state.couriusMode = 'overwrite';
+                }
                 document.documentElement.setAttribute('data-theme', this.state.theme);
             },
 
@@ -753,6 +799,21 @@
                 localStorage.setItem('writingtools_wribbon_goal', this.state.goal);
                 localStorage.setItem('writingtools_wribbon_text', this.state.text);
                 localStorage.setItem('writingtools_theme', this.state.theme); // Suite-wide sync
+                localStorage.setItem('writingtools_wribbon_courius_mode', this.state.couriusMode);
+            },
+
+            setCouriusMode(mode) {
+                this.state.couriusMode = (mode === 'overwrite') ? 'overwrite' : 'append';
+                this.saveState();
+                this.updateCouriusModeUI();
+            },
+
+            updateCouriusModeUI() {
+                const appendBtn = this.dom.couriusModeAppend;
+                const overwriteBtn = this.dom.couriusModeOverwrite;
+                if (!appendBtn || !overwriteBtn) return;
+                appendBtn.className = `courius-mode-btn ${this.state.couriusMode === 'append' ? 'active-append' : ''}`;
+                overwriteBtn.className = `courius-mode-btn ${this.state.couriusMode === 'overwrite' ? 'active-overwrite' : ''}`;
             },
 
             // Focus Mode - highlights current paragraph
@@ -861,6 +922,7 @@
                     this.dom.contextStatus.innerText = `Context · ${stamp}`;
                     this.dom.contextStatus.title = this.state.sharedContext.topic || 'No shared topic';
                 }
+                this.updateCouriusModeUI();
             },
 
             handleInput(e) {
@@ -997,9 +1059,7 @@
             sendToCourius() {
                 if (!this.state.text.trim()) return;
                 const bus = window.WTContextBus;
-                const choice = window.prompt('Send to Courius: "a" append (default), "o" overwrite, or Cancel.', 'a');
-                if (choice === null) return;
-                const mode = String(choice || 'a').trim().toLowerCase().startsWith('o') ? 'overwrite' : 'append';
+                const mode = this.state.couriusMode === 'overwrite' ? 'overwrite' : 'append';
                 if (bus) {
                     bus.mergeContext({
                         topic: this.state.sharedContext.topic || this.state.text.trim().split(/\s+/).slice(0, 8).join(' '),

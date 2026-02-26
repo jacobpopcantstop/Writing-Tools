@@ -448,6 +448,7 @@
             const [saveStatus, setSaveStatus] = useState('ready');
             const [showImmersionTips, setShowImmersionTips] = useState(() => !localStorage.getItem('writingtools_beathive_immersive_seen'));
             const [sharedContext, setSharedContext] = useState({ topic: '', constraints: '', lastTool: '', updatedAt: '' });
+            const [couriusMode, setCouriusMode] = useState(() => localStorage.getItem('writingtools_beathive_courius_mode') === 'overwrite' ? 'overwrite' : 'append');
 
             // Refs
             const keysPressed = useRef({});
@@ -483,6 +484,9 @@
                     setSketchName(sharedContext.topic);
                 }
             }, [sharedContext.topic]);
+            useEffect(() => {
+                localStorage.setItem('writingtools_beathive_courius_mode', couriusMode);
+            }, [couriusMode]);
 
             const loadLocalSketches = () => { try { return JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)) || []; } catch(e) { return []; } };
             const saveLocalSketches = (list) => { localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list)); setSketches(list); };
@@ -988,9 +992,7 @@
                     return `<div class="scene-heading">BEAT ${idx + 1} - ${safe(beatType)}</div><div class="action">${content.replace(/\n/g, '<br>')}</div>`;
                 }).join('');
 
-                const choice = window.prompt('Send to Courius: "a" append (default), "o" overwrite, or Cancel.', 'a');
-                if (choice === null) return;
-                const mode = String(choice || 'a').trim().toLowerCase().startsWith('o') ? 'overwrite' : 'append';
+                const mode = couriusMode === 'overwrite' ? 'overwrite' : 'append';
 
                 if (bus) {
                     bus.mergeContext({
@@ -1016,7 +1018,7 @@
                     }
                 }
                 window.open('Courius.html', '_blank', 'noopener');
-            }, [cells, getCellContentText, sketchName, sharedContext.topic]);
+            }, [cells, getCellContentText, sketchName, sharedContext.topic, couriusMode]);
 
             const seedStarterArc = useCallback(() => {
                 const base = [
@@ -1375,8 +1377,22 @@
                                             Purge Node
                                         </button>
                                         <button onClick={sendMapToCourius} className="w-full py-3 bg-indigo-600/15 text-indigo-500 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-indigo-600/25 transition-all">
-                                            Send Map To Courius
+                                            Send Map To Courius ({couriusMode === 'overwrite' ? 'Replace' : 'Append'})
                                         </button>
+                                        <div className={`w-full p-1 rounded-xl border flex items-center gap-1 ${theme === 'dark' ? 'border-white/10 bg-black/30' : 'border-[#432818]/15 bg-white/70'}`}>
+                                            <button
+                                                onClick={() => setCouriusMode('append')}
+                                                className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-[0.12em] transition-all ${couriusMode === 'append' ? 'bg-indigo-600 text-white shadow' : 'opacity-60 hover:opacity-100'}`}
+                                            >
+                                                Append
+                                            </button>
+                                            <button
+                                                onClick={() => setCouriusMode('overwrite')}
+                                                className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-[0.12em] transition-all ${couriusMode === 'overwrite' ? 'bg-rose-600 text-white shadow' : 'opacity-60 hover:opacity-100'}`}
+                                            >
+                                                Replace
+                                            </button>
+                                        </div>
                                     </>
                                 ) : (
                                     <div className="h-full flex flex-col items-center justify-center text-center opacity-30 space-y-6">
@@ -1440,6 +1456,10 @@
                             <span className={`transition-opacity duration-300 ${saveStatus === 'saved' ? 'opacity-100' : 'opacity-0'}`} style={{color: '#4ade80'}}>Saved</span>
                         </div>
                         <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-1 border border-current/20 rounded-md p-0.5">
+                                <button onClick={() => setCouriusMode('append')} className={`px-2 py-1 rounded text-[9px] ${couriusMode === 'append' ? 'bg-indigo-600 text-white' : 'opacity-70 hover:opacity-100'}`}>Append</button>
+                                <button onClick={() => setCouriusMode('overwrite')} className={`px-2 py-1 rounded text-[9px] ${couriusMode === 'overwrite' ? 'bg-rose-600 text-white' : 'opacity-70 hover:opacity-100'}`}>Replace</button>
+                            </div>
                             <button onClick={sendMapToCourius} className="hover:opacity-100 transition-opacity">Send To Courius</button>
                             <a href="index.html" className="hover:opacity-100 transition-opacity" style={{textDecoration: 'none', color: 'inherit'}}>Writing Tools Suite</a>
                         </div>

@@ -319,6 +319,7 @@ const THEMES = {
       streak: { current: 0, lastDate: null },
       _highScoresCache: null,
       _highScoresCacheKey: null,
+      couriusMode: 'append',
       sharedContext: { topic: '', constraints: '', audience: '', tone: '', updatedAt: '', lastTool: '' }
     };
 
@@ -386,9 +387,10 @@ const THEMES = {
         
         const prefs = localStorage.getItem('flowstate_prefs_v13');
         if (prefs) {
-          const { theme, difficulty } = JSON.parse(prefs);
+          const { theme, difficulty, couriusMode } = JSON.parse(prefs);
           if (theme) state.theme = theme;
           if (difficulty) state.difficulty = difficulty;
+          if (couriusMode === 'overwrite') state.couriusMode = 'overwrite';
         }
       } catch (e) {
         console.warn('LocalStorage unavailable:', e);
@@ -405,9 +407,15 @@ const THEMES = {
 
     function savePrefs() {
       try {
-        localStorage.setItem('flowstate_prefs_v13', JSON.stringify({ theme: state.theme, difficulty: state.difficulty }));
+        localStorage.setItem('flowstate_prefs_v13', JSON.stringify({ theme: state.theme, difficulty: state.difficulty, couriusMode: state.couriusMode }));
         localStorage.setItem('writingtools_theme', state.theme === 'warm' ? 'light' : 'dark');
       } catch (e) {}
+    }
+
+    function setCouriusMode(mode) {
+      state.couriusMode = mode === 'overwrite' ? 'overwrite' : 'append';
+      savePrefs();
+      render();
     }
 
     function updateStreak() {
@@ -518,9 +526,7 @@ const THEMES = {
 
     function sendToCourius() {
       if (!state.text.trim()) return;
-      const choice = window.prompt('Send to Courius: "a" append (default), "o" overwrite, or Cancel.', 'a');
-      if (choice === null) return;
-      const mode = String(choice || 'a').trim().toLowerCase().startsWith('o') ? 'overwrite' : 'append';
+      const mode = state.couriusMode === 'overwrite' ? 'overwrite' : 'append';
       const lines = state.text.split('\n');
       const html = lines.map((line) => {
         if (!line.trim()) return '<div class="action"><br></div>';
@@ -712,6 +718,15 @@ const THEMES = {
                   </div>
                 `}
               </div>
+            </div>
+
+            <div class="animate-slide-up stagger-3 mb-4 p-1 rounded-xl border inline-flex items-center gap-1" style="border-color: ${t.border}; background: ${t.cardSolid};">
+              <button onclick="WitherNaught.setCouriusMode('append')" class="px-3 py-2 rounded-lg text-[10px] uppercase tracking-[0.14em] font-sans transition-all ${state.couriusMode === 'append' ? 'text-white' : 'opacity-60 hover:opacity-100'}" style="${state.couriusMode === 'append' ? 'background:#4f46e5;' : ''}">
+                Append
+              </button>
+              <button onclick="WitherNaught.setCouriusMode('overwrite')" class="px-3 py-2 rounded-lg text-[10px] uppercase tracking-[0.14em] font-sans transition-all ${state.couriusMode === 'overwrite' ? 'text-white' : 'opacity-60 hover:opacity-100'}" style="${state.couriusMode === 'overwrite' ? 'background:#be123c;' : ''}">
+                Replace
+              </button>
             </div>
             
             <div class="animate-slide-up stagger-4 space-y-4">
@@ -1326,6 +1341,7 @@ const THEMES = {
       exportText,
       exportToGmail,
       sendToCourius,
+      setCouriusMode,
       pushToContext,
       pullContextIntoDraft
     };

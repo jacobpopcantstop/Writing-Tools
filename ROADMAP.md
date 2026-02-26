@@ -19,7 +19,6 @@ Delivered in this phase:
 
 Next tasks (Phase 1 completion):
 - Validate import history restore behavior on mobile and desktop.
-- Add contextual "Send to Courius mode" affordance beyond prompt (compact segmented control).
 - Close Phase 1 with a short QA pass across Courius + BeatHive + Wribbon + WitherNaught.
 
 ## Phase 2 (Next): Command Palette + Session Navigation
