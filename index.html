@@ -639,6 +639,7 @@
   </div>
 
   <script src="shared-context.js"></script>
+  <script src="shared-commands.js"></script>
   <script>
     'use strict';
 
@@ -746,20 +747,17 @@
       const list = document.getElementById('cmdk-list');
       if (!root || !input || !list) return;
 
-      const baseCommands = [
-        { id: 'open-synax', title: 'Open Synax', desc: 'Concept and serendipity ideation', keys: 'idea concept synax', run: () => (window.__wtOpenToolWithContext || ((p) => window.open(p, '_blank', 'noopener')))('Synax.html') },
-        { id: 'open-thisbutthat', title: 'Open ThisButThat', desc: 'Twist-based premise generation', keys: 'twist premise thisbutthat', run: () => (window.__wtOpenToolWithContext || ((p) => window.open(p, '_blank', 'noopener')))('ThisButThat.html') },
-        { id: 'open-beathive', title: 'Open BeatHive', desc: 'Structure and beat mapping', keys: 'structure map beathive', run: () => (window.__wtOpenToolWithContext || ((p) => window.open(p, '_blank', 'noopener')))('BeatHive.html') },
-        { id: 'open-withernaught', title: 'Open WitherNaught', desc: 'Fast drafting under pressure', keys: 'draft withernaught', run: () => (window.__wtOpenToolWithContext || ((p) => window.open(p, '_blank', 'noopener')))('WitherNaught.html') },
-        { id: 'open-courius', title: 'Open Courius', desc: 'Screenplay editing and output', keys: 'screenplay courius', run: () => (window.__wtOpenToolWithContext || ((p) => window.open(p, '_blank', 'noopener')))('Courius.html') },
-        { id: 'save-context', title: 'Save Context', desc: 'Push current context bus values', keys: 'save context bus', run: () => { if (typeof window.__wtSaveContext === 'function') window.__wtSaveContext(); } },
-        { id: 'clear-context', title: 'Clear Context', desc: 'Reset shared context fields', keys: 'clear context reset', run: () => { if (typeof window.__wtClearContext === 'function') window.__wtClearContext(); } },
-        { id: 'toggle-theme', title: 'Toggle Theme', desc: 'Switch between light and dark', keys: 'theme color mode', run: () => toggleTheme() }
-      ];
-
       function openWithContext(path) {
         (window.__wtOpenToolWithContext || ((p) => window.open(p, '_blank', 'noopener')))(path);
       }
+      const baseCommands = (window.WTCommands && typeof window.WTCommands.build === 'function')
+        ? window.WTCommands.build({
+            openTool: openWithContext,
+            saveContext: () => { if (typeof window.__wtSaveContext === 'function') window.__wtSaveContext(); },
+            clearContext: () => { if (typeof window.__wtClearContext === 'function') window.__wtClearContext(); },
+            toggleTheme: () => toggleTheme()
+          })
+        : [];
 
       function wordCountFromText(text) {
         return (String(text || '').trim().match(/\S+/g) || []).length;

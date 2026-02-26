@@ -38,6 +38,7 @@ Delivered so far in this phase:
 - Added mobile quick-actions button to open the same palette.
 - Added first command set: open core tools with context, save/clear context, and toggle theme.
 - Added unified "recent sessions" commands from BeatHive, Wribbon, WitherNaught, and Courius local state.
+- Added `shared-commands.js` as a reusable command schema source with stable action IDs.
 
 ## Phase 3 (Later): Adaptive Assistance + Structural Intelligence
 Status: Planned
