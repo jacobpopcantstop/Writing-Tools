@@ -134,6 +134,7 @@
             </div>
             
             <div class="flex items-center gap-6">
+                <span id="ctx-badge" class="hidden md:block text-[9px] font-black tracking-[0.2em] opacity-35 uppercase">Context · idle</span>
                 <div id="sprint-status" class="hidden flex items-center gap-4">
                     <div id="timer-pill" class="px-4 py-1.5 rounded-full border border-theme bg-white/5 backdrop-blur-md flex items-center gap-2 timer-idle">
                         <i id="timer-icon" data-lucide="clock" class="w-3.5 h-3.5"></i>
@@ -282,6 +283,22 @@
 
         function getContextBus() {
             return window.WTContextBus || null;
+        }
+
+        function refreshContextBadge() {
+            const badge = document.getElementById('ctx-badge');
+            if (!badge) return;
+            const bus = getContextBus();
+            if (!bus) {
+                badge.innerText = 'Context · n/a';
+                return;
+            }
+            const ctx = bus.getContext();
+            const stamp = ctx.updatedAt
+                ? new Date(ctx.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                : 'idle';
+            badge.innerText = `Context · ${stamp}`;
+            badge.title = ctx.topic || 'No topic set';
         }
 
         const elements = {
@@ -674,7 +691,9 @@
             if (ctx.topic && !elements.homePrompt.value.trim()) {
                 elements.homePrompt.value = ctx.topic;
             }
+            bus.subscribe(() => refreshContextBadge());
         }
+        refreshContextBadge();
         elements.homePrompt.focus();
     </script>
 </body>

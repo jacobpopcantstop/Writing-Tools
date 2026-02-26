@@ -18,9 +18,9 @@ Delivered in this phase:
 - `ThisButThat` now seeds topic fetch from shared context and publishes selected topic back.
 
 Next tasks (Phase 1 completion):
-- Add a tiny "Context Last Updated" indicator in each integrated tool header.
-- Wire shared context into `WitherNaught` and `BeatHive` side panels.
-- Add one-click "Send to Courius" handoff from drafting tools.
+- Wire shared context into `Courius` startup hints.
+- Add "Send to Courius" handoff from `BeatHive` inspector and map footer.
+- Add conflict-safe merge options when multiple tools append into Courius storage.
 
 ## Phase 2 (Next): Command Palette + Session Navigation
 Status: Planned

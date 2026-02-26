@@ -446,6 +446,7 @@
             const [showCanvas, setShowCanvas] = useState(false);
             const [showSettings, setShowSettings] = useState(false);
             const [serendipityCount, setSerendipityCount] = useState(4);
+            const [contextMeta, setContextMeta] = useState({ updatedAt: '', topic: '' });
             
             // Persistent State
             const [pinned, setPinned] = useState(() => {
@@ -491,6 +492,11 @@
                 if (ctx.topic && !contextInput.trim()) {
                     setContextInput(ctx.topic);
                 }
+                setContextMeta({ updatedAt: ctx.updatedAt || '', topic: ctx.topic || '' });
+                const unsub = bus.subscribe((next) => {
+                    setContextMeta({ updatedAt: next.updatedAt || '', topic: next.topic || '' });
+                });
+                return () => { if (typeof unsub === 'function') unsub(); };
             }, []);
             const serendipityPoolRef = useRef({ nouns: [], verbs: [], adjectives: [], updatedAt: 0 });
 
@@ -983,6 +989,9 @@
                         <div>
                             <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-white font-serif leading-none">Synax</h1>
                             <span className="text-[10px] font-bold tracking-widest text-pink-500 dark:text-pink-400 uppercase">Creative Engine v3.2</span>
+                            <div className="text-[9px] uppercase tracking-[0.14em] opacity-35 mt-1" title={contextMeta.topic || 'No topic set'}>
+                                Context · {contextMeta.updatedAt ? new Date(contextMeta.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'idle'}
+                            </div>
                         </div>
                         </div>
 

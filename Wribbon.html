@@ -8,6 +8,7 @@
     <!-- Theme Color - Dad Skeleton -->
     <meta name="theme-color" content="#000000">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23000000%22/><text y=%22.9em%22 font-size=%2290%22 font-weight=%22bold%22 fill=%22%23fd19c8%22>W</text></svg>">
+    <script src="shared-context.js"></script>
     
     <style>
         /* --- 1. VARIABLES & THEME - Dad Skeleton Theme --- */
@@ -585,6 +586,7 @@
                 <button onclick="window.print()">Print / PDF</button>
                 <button onclick="app.email()">Email</button>
                 <button onclick="app.emailGmail()">Gmail</button>
+                <button onclick="app.sendToCourius()">Send to Courius</button>
             </div>
         </div>
 
@@ -601,6 +603,7 @@
         <div id="word-stats" title="Word Count / Goal">
             <span id="word-current">0</span> / <span id="word-target">0</span>
         </div>
+        <div id="context-status" style="font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.45; font-weight: 700;">Context · idle</div>
         <div id="timer-stats" style="display:none; display: flex; align-items: center; gap: 15px;">
             <div class="timer-separator"></div>
             <span id="timer-display" title="Time Remaining">00:00</span>
@@ -675,7 +678,8 @@
                 goalReached: false,
                 focusMode: false,
                 ambientPlaying: false,
-                ambientAudio: null
+                ambientAudio: null,
+                sharedContext: { topic: '', updatedAt: '', lastTool: '', constraints: '' }
             },
             
             dom: {
@@ -685,6 +689,7 @@
                 targetCount: document.getElementById('word-target'),
                 timerStats: document.getElementById('timer-stats'),
                 timerDisplay: document.getElementById('timer-display'),
+                contextStatus: document.getElementById('context-status'),
                 modal: document.getElementById('modal-overlay'),
                 goalInput: document.getElementById('goal-input'),
                 timerInput: document.getElementById('timer-input'),
@@ -694,6 +699,7 @@
 
             init() {
                 this.loadState();
+                this.syncContext();
                 this.buildProgressBar();
                 this.setupEventListeners();
                 this.updateUI();
@@ -705,6 +711,25 @@
                     this.dom.editor.focus();
                 }
                 localStorage.setItem('writingtools_wribbon_visited', 'true');
+
+                if (window.WTContextBus && typeof window.WTContextBus.subscribe === 'function') {
+                    window.WTContextBus.subscribe(() => {
+                        this.syncContext();
+                        this.updateUI();
+                    });
+                }
+            },
+
+            syncContext() {
+                const bus = window.WTContextBus;
+                if (!bus) return;
+                const ctx = bus.getContext();
+                this.state.sharedContext = {
+                    topic: ctx.topic || '',
+                    updatedAt: ctx.updatedAt || '',
+                    lastTool: ctx.lastTool || '',
+                    constraints: ctx.constraints || ''
+                };
             },
 
             loadState() {
@@ -827,6 +852,14 @@
                     const seg = document.getElementById(`seg-${i}`);
                     if (i < segmentsFilled) seg.classList.add('active');
                     else seg.classList.remove('active');
+                }
+
+                if (this.dom.contextStatus) {
+                    const stamp = this.state.sharedContext.updatedAt
+                        ? new Date(this.state.sharedContext.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                        : 'idle';
+                    this.dom.contextStatus.innerText = `Context · ${stamp}`;
+                    this.dom.contextStatus.title = this.state.sharedContext.topic || 'No shared topic';
                 }
             },
 
@@ -958,6 +991,37 @@
                         }
                     }, 800);
                 }
+                this.toggleExportMenu();
+            },
+
+            sendToCourius() {
+                if (!this.state.text.trim()) return;
+                const bus = window.WTContextBus;
+                if (bus) {
+                    bus.mergeContext({
+                        topic: this.state.sharedContext.topic || this.state.text.trim().split(/\s+/).slice(0, 8).join(' '),
+                        constraints: `Wribbon draft: ${this.state.text.match(/\S+/g)?.length || 0} words`,
+                        lastTool: 'Wribbon'
+                    });
+                    this.syncContext();
+                }
+
+                const lines = this.state.text.split('\n');
+                const html = lines.map((line) => {
+                    const safe = String(line)
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;');
+                    return safe.trim() ? `<div class="action">${safe}</div>` : '<div class="action"><br></div>';
+                }).join('');
+                try {
+                    const key = 'writingtools_courius_storage';
+                    const existing = localStorage.getItem(key) || '';
+                    const divider = existing && existing.trim() ? '<div class="action"><br></div><div class="action">--- WRIBBON ---</div>' : '';
+                    localStorage.setItem(key, `${existing}${divider}${html}`);
+                } catch (_) {}
+
+                window.open('Courius.html', '_blank', 'noopener');
                 this.toggleExportMenu();
             },
 

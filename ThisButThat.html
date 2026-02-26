@@ -88,6 +88,8 @@
             <div id="medal-gold" class="transition-all duration-500 opacity-20 scale-75 grayscale"><i data-lucide="medal" class="w-5 h-5 text-neonYellow"></i></div>
         </div>
 
+        <span id="ctx-badge" class="hidden md:block text-[9px] font-bold uppercase tracking-[0.18em] opacity-40">Context · idle</span>
+
         <div class="flex gap-1">
             <button onclick="toggleHistory(true)" class="p-2 hover:bg-neonPurple/10 hover:text-neonPurple rounded-lg transition-colors">
                 <i data-lucide="history" class="w-5 h-5"></i>
@@ -254,6 +256,22 @@
             return window.WTContextBus || null;
         }
 
+        function refreshContextBadge() {
+            const badge = document.getElementById('ctx-badge');
+            if (!badge) return;
+            const bus = getContextBus();
+            if (!bus) {
+                badge.textContent = 'Context · n/a';
+                return;
+            }
+            const ctx = bus.getContext();
+            const stamp = ctx.updatedAt
+                ? new Date(ctx.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                : 'idle';
+            badge.textContent = `Context · ${stamp}`;
+            badge.title = ctx.topic || 'No topic set';
+        }
+
         function getSeedTopicFromContext() {
             const bus = getContextBus();
             if (!bus) return '';
@@ -276,6 +294,7 @@
             fetchTopics(seedTopic || null);
             setupInputListener();
             lucide.createIcons();
+            refreshContextBadge();
 
             // Load theme from suite-wide localStorage key
             const savedTheme = localStorage.getItem('writingtools_theme');
@@ -287,6 +306,9 @@
                 state.darkMode = true;
             }
             applyThemeState();
+
+            const bus = getContextBus();
+            if (bus) bus.subscribe(() => refreshContextBadge());
         });
 
         function getCachedTwistBatches() {

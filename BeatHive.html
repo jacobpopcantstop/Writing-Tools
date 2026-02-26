@@ -6,6 +6,7 @@
     <title>BeatHive - Story Structure Architect</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5' fill='%23fd19c8'/><polygon points='50,20 80,37.5 80,62.5 50,80 20,62.5 20,37.5' fill='%23da70d6' opacity='0.6'/></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="shared-context.js"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -202,6 +203,7 @@
         const HEX_HEIGHT = 2 * HEX_SIZE;
         const VERT_SPACING = HEX_HEIGHT * 0.75;
         const LOCAL_STORAGE_KEY = 'writingtools_beathive_sketches';
+        const getContextBus = () => window.WTContextBus || null;
 
         const Icon = ({ name, size = 20, className = "", style = {} }) => {
             const icons = {
@@ -445,6 +447,7 @@
             const [isCreating, setIsCreating] = useState(false);
             const [saveStatus, setSaveStatus] = useState('ready');
             const [showImmersionTips, setShowImmersionTips] = useState(() => !localStorage.getItem('writingtools_beathive_immersive_seen'));
+            const [sharedContext, setSharedContext] = useState({ topic: '', constraints: '', lastTool: '', updatedAt: '' });
 
             // Refs
             const keysPressed = useRef({});
@@ -467,6 +470,19 @@
                 document.body.className = theme === 'dark' ? 'dark-theme' : 'light-theme';
                 localStorage.setItem('writingtools_theme', theme);
             }, [theme]);
+            useEffect(() => {
+                const bus = getContextBus();
+                if (!bus) return;
+                const sync = (ctx) => setSharedContext(ctx || bus.getContext());
+                sync(bus.getContext());
+                const unsub = bus.subscribe(sync);
+                return () => { if (typeof unsub === 'function') unsub(); };
+            }, []);
+            useEffect(() => {
+                if (!sketchName && sharedContext.topic) {
+                    setSketchName(sharedContext.topic);
+                }
+            }, [sharedContext.topic]);
 
             const loadLocalSketches = () => { try { return JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)) || []; } catch(e) { return []; } };
             const saveLocalSketches = (list) => { localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list)); setSketches(list); };
@@ -940,6 +956,20 @@
                 const momentum = Math.min(100, Math.round((storyBeats.length * 11) + (distinctTypes * 9)));
                 return { withContent: withContent.length, storyBeats: storyBeats.length, distinctTypes, momentum };
             }, [cells, getCellContentText]);
+            const pullContextToMap = useCallback(() => {
+                if (!sharedContext.topic) return;
+                setSketchName(sharedContext.topic);
+                save(null, sharedContext.topic);
+            }, [sharedContext.topic, save]);
+            const pushMapToContext = useCallback(() => {
+                const bus = getContextBus();
+                if (!bus) return;
+                bus.mergeContext({
+                    topic: (sketchName || sharedContext.topic || '').trim(),
+                    constraints: `BeatHive beats: ${beatMetrics.storyBeats}; momentum: ${beatMetrics.momentum}`,
+                    lastTool: 'BeatHive'
+                });
+            }, [sketchName, sharedContext.topic, beatMetrics.storyBeats, beatMetrics.momentum]);
 
             const seedStarterArc = useCallback(() => {
                 const base = [
@@ -986,7 +1016,12 @@
                     <header className={`h-16 flex items-center justify-between px-6 border-b transition-colors ${theme === 'dark' ? 'border-white/5 bg-black/50' : 'border-stone-400/20 bg-[#e6e0d4]/80'} backdrop-blur-xl z-50`}>
                         <div className="flex items-center gap-4">
                             <button onClick={() => setLibOpen(!libOpen)} aria-label="Toggle Library" className={`p-2 rounded-lg transition-all ${libOpen ? 'bg-indigo-600 text-white shadow-lg' : 'hover:bg-black/10 opacity-60'}`}><Icon name="folder" size={18}/></button>
-                            <input value={sketchName} onChange={(e) => { setSketchName(e.target.value); save(null, e.target.value); }} aria-label="Project Name" className="bg-transparent font-display font-bold text-lg outline-none w-48 sm:w-64" placeholder="Untitled Hive" />
+                            <div className="flex flex-col">
+                                <input value={sketchName} onChange={(e) => { setSketchName(e.target.value); save(null, e.target.value); }} aria-label="Project Name" className="bg-transparent font-display font-bold text-lg outline-none w-48 sm:w-64" placeholder="Untitled Hive" />
+                                <span className="text-[9px] uppercase tracking-[0.16em] opacity-45">
+                                    Context {sharedContext.updatedAt ? `· ${new Date(sharedContext.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : '· idle'}
+                                </span>
+                            </div>
                         </div>
                         <div className="flex items-center gap-4">
                             <div className={`hidden lg:flex items-center gap-3 px-3 py-2 rounded-xl border ${theme === 'dark' ? 'border-white/10 bg-black/30' : 'border-[#432818]/15 bg-white/50'}`}>
@@ -1031,6 +1066,15 @@
                                 <button onClick={handleNewMap} disabled={isCreating} aria-label="New Map" className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs tracking-widest uppercase flex items-center justify-center gap-3 shadow-xl transition-all active:scale-95 disabled:opacity-50">
                                     <Icon name="plus" size={14}/> New Universe
                                 </button>
+                                <div className={`rounded-2xl p-4 border ${theme === 'dark' ? 'border-white/10 bg-white/5' : 'border-[#432818]/15 bg-white/50'}`}>
+                                    <div className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-2">Context Bus</div>
+                                    <div className="text-xs font-semibold truncate">{sharedContext.topic || 'No topic set'}</div>
+                                    <div className="text-[10px] opacity-50 mt-1 line-clamp-2">{sharedContext.constraints || 'No constraints yet'}</div>
+                                    <div className="grid grid-cols-2 gap-2 mt-3">
+                                        <button onClick={pullContextToMap} className="py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-current/10 hover:bg-current/15 transition-colors">Pull</button>
+                                        <button onClick={pushMapToContext} className="py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-indigo-600 text-white hover:bg-indigo-500 transition-colors">Push</button>
+                                    </div>
+                                </div>
                                 <div className="flex-1 overflow-y-auto space-y-2 no-scrollbar pr-2">
                                     {sketches.map(s => (
                                         <div key={s.id} onClick={() => setCurrentId(s.id)} className={`group flex items-center justify-between p-4 rounded-xl cursor-pointer transition-all ${currentId === s.id ? 'bg-indigo-500/10 border border-indigo-500/30 text-indigo-500 font-bold' : 'opacity-60 hover:opacity-100 hover:bg-current/5'}`}>
