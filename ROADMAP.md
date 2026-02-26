@@ -22,7 +22,7 @@ Delivered in this phase:
 - QA pass completed across Courius + BeatHive + Wribbon + WitherNaught, including mobile/desktop validation for Courius import panel and restore flow.
 
 ## Phase 2 (Next): Command Palette + Session Navigation
-Status: Planned
+Status: In progress
 
 Goals:
 - Add a global command palette (`Cmd/Ctrl+K`) and mobile quick-actions button.
@@ -32,6 +32,11 @@ Scope:
 - Shared command schema and keyboard bindings.
 - Unified recent-session listing across tools.
 - Common action IDs for theme switch, export, and "open with context".
+
+Delivered so far in this phase:
+- Added global command palette on `index.html` with `Cmd/Ctrl+K`.
+- Added mobile quick-actions button to open the same palette.
+- Added first command set: open core tools with context, save/clear context, and toggle theme.
 
 ## Phase 3 (Later): Adaptive Assistance + Structural Intelligence
 Status: Planned
