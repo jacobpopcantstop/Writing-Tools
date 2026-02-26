@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Courius Screenwriter</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect x=%225%22 y=%2230%22 width=%2290%22 height=%2265%22 rx=%225%22 fill=%22%23000000%22/><rect x=%225%22 y=%2210%22 width=%2290%22 height=%2225%22 fill=%22%23000000%22/><rect x=%225%22 y=%2210%22 width=%2218%22 height=%2225%22 fill=%22%23fd19c8%22 transform=%22skewX(-15)%22/><rect x=%2228%22 y=%2210%22 width=%2218%22 height=%2225%22 fill=%22%23fd19c8%22 transform=%22skewX(-15)%22/><rect x=%2251%22 y=%2210%22 width=%2218%22 height=%2225%22 fill=%22%23fd19c8%22 transform=%22skewX(-15)%22/><rect x=%2274%22 y=%2210%22 width=%2218%22 height=%2225%22 fill=%22%23fd19c8%22 transform=%22skewX(-15)%22/><line x1=%2215%22 y1=%2250%22 x2=%2285%22 y2=%2250%22 stroke=%22%23fd19c8%22 stroke-width=%223%22/><line x1=%2215%22 y1=%2265%22 x2=%2270%22 y2=%2265%22 stroke=%22%23fd19c8%22 stroke-width=%222%22/><line x1=%2215%22 y1=%2280%22 x2=%2255%22 y2=%2280%22 stroke=%22%23fd19c8%22 stroke-width=%222%22/></svg>">
     <style>
@@ -48,7 +48,9 @@
             display: flex;
             flex-direction: column; 
             height: 100vh;
+            height: 100dvh;
             overflow: hidden;
+            -webkit-text-size-adjust: 100%;
             transition: background 0.4s ease;
         }
 
@@ -433,6 +435,34 @@
             border-top: 1px solid rgba(255,255,255,0.07);
             color: var(--ui-text);
             font-family: var(--courier);
+        }
+
+        @media (max-width: 1024px) {
+            main { padding: 14px 10px 126px 10px; }
+            #page {
+                width: 100%;
+                min-height: auto;
+                padding: 0.75in 0.55in 0.9in 0.75in;
+            }
+            .actions-bar {
+                top: auto;
+                right: 10px;
+                bottom: calc(74px + env(safe-area-inset-bottom));
+                flex-direction: row;
+                max-width: calc(100vw - 20px);
+                overflow-x: auto;
+            }
+            .element-bar {
+                left: 10px;
+                right: 10px;
+                bottom: calc(12px + env(safe-area-inset-bottom));
+                transform: none;
+                justify-content: flex-start;
+                max-width: calc(100vw - 20px);
+                overflow-x: auto;
+            }
+            .side-btn { min-height: 44px; min-width: 44px; }
+            #save-bar { right: 12px; bottom: calc(62px + env(safe-area-inset-bottom)); }
         }
     </style>
 </head>

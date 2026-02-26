@@ -2,7 +2,7 @@
 <html lang="en" data-wt-theme="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Writing Tools Suite</title>
   <meta name="description" content="A focused suite of writing tools for ideation, structure, drafting, and output.">
   <meta name="theme-color" content="#0b0c10">
@@ -49,6 +49,8 @@
         var(--bg);
       color: var(--text);
       min-height: 100vh;
+      min-height: 100dvh;
+      -webkit-text-size-adjust: 100%;
     }
 
     .wrap { max-width: 1120px; margin: 0 auto; padding: 28px 20px 56px; }
@@ -296,6 +298,7 @@
       .cards .card { border-right: none; }
       .card { min-height: 146px; padding: 14px; }
       .card h2 { font-size: 21px; }
+      .theme-btn, .quick-link { min-height: 44px; }
     }
 
     @media (prefers-reduced-motion: reduce) {

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Wribbon</title>
     <meta name="description" content="A minimalist, distraction-free writing app.">
     <!-- Theme Color - Dad Skeleton -->
@@ -84,12 +84,14 @@
             margin: 0;
             padding: 0;
             height: 100%;
+            min-height: 100dvh;
             background-color: var(--bg-color);
             color: var(--text-color);
             font-family: var(--font-stack);
             overflow-x: hidden;
             scrollbar-width: thin;
             scrollbar-color: var(--ui-icon) transparent;
+            -webkit-text-size-adjust: 100%;
         }
 
         /* Paper Texture */
@@ -537,6 +539,29 @@
             @page {
                 margin: 2cm;
             }
+        }
+
+        @media (max-width: 900px) {
+            .controls {
+                top: auto;
+                right: 12px;
+                left: 12px;
+                bottom: calc(12px + env(safe-area-inset-bottom));
+                justify-content: space-between;
+                border-radius: 14px;
+            }
+            #editor-wrapper {
+                padding: 0 16px;
+                padding-top: 20vh;
+                padding-bottom: calc(36vh + env(safe-area-inset-bottom));
+            }
+            .icon-btn { min-width: 44px; min-height: 44px; }
+            .export-menu {
+                right: 0;
+                left: auto;
+                bottom: 56px;
+            }
+            input, textarea { font-size: 16px; }
         }
     </style>
 </head>

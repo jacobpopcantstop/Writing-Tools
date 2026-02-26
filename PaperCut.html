@@ -2,7 +2,7 @@
 <html lang="en" id="main-html" data-wt-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>PaperCut | PDF Editor & Converter</title>
 
     <!-- Favicon -->
@@ -79,9 +79,11 @@
             background-color: var(--bg-app);
             color: var(--text-body);
             height: 100vh;
+            height: 100dvh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            -webkit-text-size-adjust: 100%;
             transition: background-color 0.3s, color 0.3s;
         }
 
@@ -253,7 +255,18 @@
         .suite-link { position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted); text-decoration: none; z-index: 50; transition: color 0.2s; }
         .suite-link:hover { color: var(--wt-primary); }
 
-        @media (max-width: 768px) { .sidebar, .right-panel { display: none; } .toolbar { overflow-x: auto; } }
+        @media (max-width: 1024px) {
+            .sidebar, .right-panel { display: none; }
+            .toolbar {
+                overflow-x: auto;
+                flex-wrap: nowrap;
+                gap: 0.35rem;
+                padding: 0.5rem;
+            }
+            .tool-btn, .icon-btn, .btn-primary, .btn-secondary { min-height: 44px; min-width: 44px; }
+            .canvas-container { padding: 1rem; }
+            .suite-link { bottom: calc(1rem + env(safe-area-inset-bottom)); }
+        }
     </style>
 </head>
 <body>

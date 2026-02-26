@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Synax | Creative Engine</title>
     
     <!-- Dad Skeleton Theme Favicon -->
@@ -34,6 +34,10 @@
     </script>
     
     <style>
+        html, body {
+            min-height: 100dvh;
+            -webkit-text-size-adjust: 100%;
+        }
         /* Custom Scrollbar Styles - Dad Skeleton Theme */
         .custom-scrollbar::-webkit-scrollbar {
             width: 6px;
@@ -63,6 +67,11 @@
         }
         .animate-in {
             animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        @media (max-width: 768px) {
+            button, [role="button"] { min-height: 44px; }
+            input, textarea, select { font-size: 16px; }
         }
     </style>
 </head>
