@@ -41,6 +41,8 @@ Delivered so far in this phase:
 - Added `shared-commands.js` as a reusable command schema source with stable action IDs.
 - Added shared command palette injection script and wired it into Courius, BeatHive, Wribbon, and WitherNaught.
 - Added common `export-current` command ID support via `WTToolActions.exportPrimary`.
+- Extended shared palette support to Synax, ThisButThat, Joterie, and PaperCut.
+- Added a visible recent-session browser on `index.html`, backed by shared recent-session discovery.
 
 ## Phase 3 (Later): Adaptive Assistance + Structural Intelligence
 Status: Planned

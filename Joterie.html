@@ -10,6 +10,9 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="shared-context.js"></script>
+    <script src="shared-recent-sessions.js"></script>
+    <script src="shared-commands.js"></script>
+    <script src="shared-command-palette.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;900&family=Newsreader:ital,opsz,wght@1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
@@ -695,6 +698,9 @@
         }
         refreshContextBadge();
         elements.homePrompt.focus();
+        window.WTToolActions = {
+            exportPrimary: exportText
+        };
     </script>
 </body>
 </html>

@@ -341,6 +341,60 @@
       transition: background .2s ease, transform .2s ease;
     }
     .quick-link:hover { background: var(--card-hover); transform: translateY(-1px); }
+    .recent-browser {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: color-mix(in srgb, var(--card) 95%, transparent);
+      padding: 16px;
+      margin-bottom: 18px;
+    }
+    .recent-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .recent-card {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--bg-soft);
+      padding: 14px;
+      display: grid;
+      gap: 8px;
+    }
+    .recent-tool {
+      font: 700 11px/1.2 "IBM Plex Mono", monospace;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .recent-title {
+      font-size: 18px;
+      font-family: "Fraunces", serif;
+      letter-spacing: -.02em;
+    }
+    .recent-meta {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    .recent-open {
+      justify-self: start;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--card);
+      color: var(--text);
+      padding: 8px 10px;
+      font: 700 10px/1 "IBM Plex Mono", monospace;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .recent-empty {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 14px;
+    }
 
     footer {
       margin-top: 26px;
@@ -461,6 +515,7 @@
       .context-grid { grid-template-columns: 1fr; }
       .ctx-btn { min-height: 44px; }
       .cmdk-trigger { display: inline-flex; }
+      .recent-grid { grid-template-columns: 1fr; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -525,6 +580,15 @@
         <button class="ctx-btn" id="ctx-open-thisbutthat" type="button">Open ThisButThat</button>
         <button class="ctx-btn" id="ctx-open-joterie" type="button">Open Joterie</button>
       </div>
+    </section>
+
+    <section class="recent-browser" aria-label="Recent Sessions">
+      <div class="context-head">
+        <h3>Recent Sessions</h3>
+        <span class="card-cta">Resume without searching</span>
+      </div>
+      <div id="recent-sessions-grid" class="recent-grid"></div>
+      <div id="recent-sessions-empty" class="recent-empty" hidden>No recent local sessions yet.</div>
     </section>
 
     <main class="sections">
@@ -639,6 +703,7 @@
   </div>
 
   <script src="shared-context.js"></script>
+  <script src="shared-recent-sessions.js"></script>
   <script src="shared-commands.js"></script>
   <script>
     'use strict';
@@ -740,6 +805,35 @@
       bus.subscribe(paint);
     }
 
+    function renderRecentSessions() {
+      const grid = document.getElementById('recent-sessions-grid');
+      const empty = document.getElementById('recent-sessions-empty');
+      if (!grid || !empty) return;
+      const sessions = window.WTRecentSessions && typeof window.WTRecentSessions.list === 'function'
+        ? window.WTRecentSessions.list()
+        : [];
+      if (!sessions.length) {
+        grid.innerHTML = '';
+        empty.hidden = false;
+        return;
+      }
+      empty.hidden = true;
+      grid.innerHTML = sessions.slice(0, 6).map((session) => `
+        <div class="recent-card">
+          <div class="recent-tool">${session.tool}</div>
+          <div class="recent-title">${session.title}</div>
+          <div class="recent-meta">${session.meta}</div>
+          <button type="button" class="recent-open" data-recent-path="${session.path}">Open</button>
+        </div>
+      `).join('');
+      grid.querySelectorAll('[data-recent-path]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const path = btn.getAttribute('data-recent-path');
+          (window.__wtOpenToolWithContext || ((p) => window.open(p, '_blank', 'noopener')))(path);
+        });
+      });
+    }
+
     function initCommandPalette() {
       const root = document.getElementById('cmdk');
       const trigger = document.getElementById('cmdk-trigger');
@@ -764,70 +858,16 @@
       }
 
       function getRecentCommands() {
-        const out = [];
-        try {
-          const wribbonText = localStorage.getItem('writingtools_wribbon_text') || '';
-          const wribbonWords = wordCountFromText(wribbonText);
-          if (wribbonWords > 0) {
-            out.push({
-              id: 'recent-wribbon',
-              title: 'Resume Wribbon Draft',
-              desc: `${wribbonWords} words cached`,
-              keys: 'recent wribbon resume draft',
-              run: () => openWithContext('Wribbon.html')
-            });
-          }
-        } catch (_) {}
-
-        try {
-          const couriusHtml = localStorage.getItem('writingtools_courius_storage') || '';
-          const couriusWords = wordCountFromText(couriusHtml.replace(/<[^>]+>/g, ' '));
-          if (couriusWords > 0) {
-            out.push({
-              id: 'recent-courius',
-              title: 'Resume Courius Script',
-              desc: `${couriusWords} words in screenplay buffer`,
-              keys: 'recent courius screenplay script',
-              run: () => openWithContext('Courius.html')
-            });
-          }
-        } catch (_) {}
-
-        try {
-          const raw = localStorage.getItem('writingtools_beathive_sketches');
-          const sketches = raw ? JSON.parse(raw) : [];
-          if (Array.isArray(sketches) && sketches.length) {
-            const recent = sketches
-              .slice()
-              .sort((a, b) => (new Date(b.updatedAt || b.createdAt || 0)).getTime() - (new Date(a.updatedAt || a.createdAt || 0)).getTime())[0];
-            const beatCount = Array.isArray(recent.cells) ? recent.cells.filter((c) => (c && c.content && String(c.content).trim())).length : 0;
-            out.push({
-              id: 'recent-beathive',
-              title: `Resume BeatHive: ${String(recent.name || 'Untitled').slice(0, 26)}`,
-              desc: `${beatCount} populated beats`,
-              keys: 'recent beathive beats structure',
-              run: () => openWithContext('BeatHive.html')
-            });
-          }
-        } catch (_) {}
-
-        try {
-          const raw = localStorage.getItem('flowstate_history_v13');
-          const history = raw ? JSON.parse(raw) : [];
-          if (Array.isArray(history) && history.length) {
-            const latest = history[history.length - 1] || {};
-            const words = parseInt(latest.words || 0, 10) || 0;
-            out.push({
-              id: 'recent-withernaught',
-              title: 'Resume WitherNaught',
-              desc: words > 0 ? `last session ${words} words` : 'resume session flow',
-              keys: 'recent withernaught flow draft',
-              run: () => openWithContext('WitherNaught.html')
-            });
-          }
-        } catch (_) {}
-
-        return out;
+        const sessions = window.WTRecentSessions && typeof window.WTRecentSessions.list === 'function'
+          ? window.WTRecentSessions.list()
+          : [];
+        return sessions.map((session) => ({
+          id: session.id,
+          title: `Resume ${session.tool}`,
+          desc: session.meta,
+          keys: `recent ${String(session.tool || '').toLowerCase()} resume session`,
+          run: () => openWithContext(session.path)
+        }));
       }
 
       function buildCommands() {
@@ -916,6 +956,7 @@
     document.addEventListener('DOMContentLoaded', () => {
       applyTheme(getTheme());
       initContextWorkspace();
+      renderRecentSessions();
       initCommandPalette();
     });
   </script>

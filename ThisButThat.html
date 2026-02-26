@@ -12,6 +12,9 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="shared-context.js"></script>
+    <script src="shared-recent-sessions.js"></script>
+    <script src="shared-commands.js"></script>
+    <script src="shared-command-palette.js"></script>
 
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -913,6 +916,10 @@
                 setTimeout(() => toast.classList.add('opacity-0'), 2000);
             });
         }
+
+        window.WTToolActions = {
+            exportPrimary: exportEmail
+        };
 
     </script>
 </body>

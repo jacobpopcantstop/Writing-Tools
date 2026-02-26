@@ -46,81 +46,19 @@
     } catch (_) {}
   }
 
-  function wordCountFromText(text) {
-    return (String(text || '').trim().match(/\S+/g) || []).length;
-  }
-
   function getRecentCommands() {
-    var out = [];
-    try {
-      var wribbonText = localStorage.getItem('writingtools_wribbon_text') || '';
-      var wribbonWords = wordCountFromText(wribbonText);
-      if (wribbonWords > 0) {
-        out.push({
-          id: 'recent-wribbon',
-          title: 'Resume Wribbon Draft',
-          desc: wribbonWords + ' words cached',
-          keys: 'recent wribbon resume draft',
-          run: function () { openTool('Wribbon.html'); }
-        });
-      }
-    } catch (_) {}
-
-    try {
-      var couriusHtml = localStorage.getItem('writingtools_courius_storage') || '';
-      var couriusWords = wordCountFromText(couriusHtml.replace(/<[^>]+>/g, ' '));
-      if (couriusWords > 0) {
-        out.push({
-          id: 'recent-courius',
-          title: 'Resume Courius Script',
-          desc: couriusWords + ' words in screenplay buffer',
-          keys: 'recent courius screenplay script',
-          run: function () { openTool('Courius.html'); }
-        });
-      }
-    } catch (_) {}
-
-    try {
-      var raw = localStorage.getItem('writingtools_beathive_sketches');
-      var sketches = raw ? JSON.parse(raw) : [];
-      if (Array.isArray(sketches) && sketches.length) {
-        var recent = sketches
-          .slice()
-          .sort(function (a, b) {
-            var ta = new Date(a && (a.updatedAt || a.createdAt) || 0).getTime();
-            var tb = new Date(b && (b.updatedAt || b.createdAt) || 0).getTime();
-            return tb - ta;
-          })[0];
-        var beatCount = Array.isArray(recent && recent.cells)
-          ? recent.cells.filter(function (c) { return c && c.content && String(c.content).trim(); }).length
-          : 0;
-        out.push({
-          id: 'recent-beathive',
-          title: 'Resume BeatHive: ' + String((recent && recent.name) || 'Untitled').slice(0, 24),
-          desc: beatCount + ' populated beats',
-          keys: 'recent beathive beats structure',
-          run: function () { openTool('BeatHive.html'); }
-        });
-      }
-    } catch (_) {}
-
-    try {
-      var historyRaw = localStorage.getItem('flowstate_history_v13');
-      var history = historyRaw ? JSON.parse(historyRaw) : [];
-      if (Array.isArray(history) && history.length) {
-        var latest = history[history.length - 1] || {};
-        var words = parseInt(latest.words || 0, 10) || 0;
-        out.push({
-          id: 'recent-withernaught',
-          title: 'Resume WitherNaught',
-          desc: words > 0 ? ('last session ' + words + ' words') : 'resume session flow',
-          keys: 'recent withernaught flow draft',
-          run: function () { openTool('WitherNaught.html'); }
-        });
-      }
-    } catch (_) {}
-
-    return out;
+    var sessions = window.WTRecentSessions && typeof window.WTRecentSessions.list === 'function'
+      ? window.WTRecentSessions.list()
+      : [];
+    return sessions.map(function (session) {
+      return {
+        id: session.id,
+        title: 'Resume ' + session.tool,
+        desc: session.meta,
+        keys: 'recent ' + String(session.tool || '').toLowerCase() + ' resume session',
+        run: function () { openTool(session.path); }
+      };
+    });
   }
 
   function buildBaseCommands() {

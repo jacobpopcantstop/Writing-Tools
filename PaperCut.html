@@ -19,6 +19,9 @@
 
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="shared-recent-sessions.js"></script>
+    <script src="shared-commands.js"></script>
+    <script src="shared-command-palette.js"></script>
 
     <style>
         /* =========================================
@@ -1283,6 +1286,10 @@
             else if (e.key === 'Escape') { closeConvertModal(); setTool('select'); state.selectedAnnotationId = null; renderAnnotations(); }
             else if (e.key === 'Delete' || e.key === 'Backspace') deleteSelectedAnnotation();
         }
+
+        window.WTToolActions = {
+            exportPrimary: downloadPDF
+        };
 
         document.addEventListener('DOMContentLoaded', init);
     </script>

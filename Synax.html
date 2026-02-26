@@ -18,6 +18,9 @@
     <!-- Babel for JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="shared-context.js"></script>
+    <script src="shared-recent-sessions.js"></script>
+    <script src="shared-commands.js"></script>
+    <script src="shared-command-palette.js"></script>
 
     <!-- Custom Config for Tailwind -->
     <script>
@@ -949,6 +952,25 @@
                 }
             };
 
+            const downloadEditorMarkdown = useCallback(() => {
+                const blob = new Blob([editorContent], { type: 'text/markdown' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'synax-idea.md';
+                a.click();
+                URL.revokeObjectURL(url);
+            }, [editorContent]);
+
+            useEffect(() => {
+                window.WTToolActions = {
+                    exportPrimary: downloadEditorMarkdown
+                };
+                return () => {
+                    try { delete window.WTToolActions; } catch (_) {}
+                };
+            }, [downloadEditorMarkdown]);
+
             const sendToBeatHive = () => {
                 const topTopic = contextInput.trim() || (words[0]?.word || '').trim();
                 const constraints = words
@@ -1253,15 +1275,7 @@
                                 <Trash2 size={16} />
                                 </button>
                                 <button 
-                                onClick={() => {
-                                    const blob = new Blob([editorContent], { type: 'text/markdown' });
-                                    const url = URL.createObjectURL(blob);
-                                    const a = document.createElement('a');
-                                    a.href = url;
-                                    a.download = 'synax-idea.md';
-                                    a.click();
-                                    URL.revokeObjectURL(url);
-                                }}
+                                onClick={downloadEditorMarkdown}
                                 className="p-2 text-slate-300 hover:text-pink-500 hover:bg-pink-50 dark:hover:bg-pink-900/20 rounded-lg transition-colors"
                                 title="Download Markdown"
                                 >
