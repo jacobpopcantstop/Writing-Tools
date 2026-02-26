@@ -970,6 +970,41 @@
                     lastTool: 'BeatHive'
                 });
             }, [sketchName, sharedContext.topic, beatMetrics.storyBeats, beatMetrics.momentum]);
+            const sendMapToCourius = useCallback(() => {
+                const bus = getContextBus();
+                const storyCells = cells
+                    .filter((c) => getCellContentText(c).length > 0)
+                    .slice(0, 80);
+                if (storyCells.length === 0) return;
+
+                const safe = (text) => String(text || '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;');
+
+                const html = storyCells.map((cell, idx) => {
+                    const beatType = (BEAT_TYPES.find(t => t.id === cell.type) || BEAT_TYPES[4]).label;
+                    const content = safe(getCellContentText(cell));
+                    return `<div class="scene-heading">BEAT ${idx + 1} - ${safe(beatType)}</div><div class="action">${content.replace(/\n/g, '<br>')}</div>`;
+                }).join('');
+
+                if (bus) {
+                    bus.mergeContext({
+                        topic: (sketchName || sharedContext.topic || '').trim(),
+                        constraints: `BeatHive export: ${storyCells.length} beats`,
+                        lastTool: 'BeatHive'
+                    });
+                    if (typeof bus.appendToCourius === 'function') {
+                        bus.appendToCourius(html, 'BeatHive');
+                    } else {
+                        const key = 'writingtools_courius_storage';
+                        const existing = localStorage.getItem(key) || '';
+                        const divider = existing && existing.trim() ? '<div class="action"><br></div><div class="action">--- BEATHIVE ---</div>' : '';
+                        localStorage.setItem(key, `${existing}${divider}${html}`);
+                    }
+                }
+                window.open('Courius.html', '_blank', 'noopener');
+            }, [cells, getCellContentText, sketchName, sharedContext.topic]);
 
             const seedStarterArc = useCallback(() => {
                 const base = [
@@ -1327,6 +1362,9 @@
                                         }} className="w-full py-4 bg-red-500/10 text-red-500 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-red-500/20 transition-all">
                                             Purge Node
                                         </button>
+                                        <button onClick={sendMapToCourius} className="w-full py-3 bg-indigo-600/15 text-indigo-500 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-indigo-600/25 transition-all">
+                                            Send Map To Courius
+                                        </button>
                                     </>
                                 ) : (
                                     <div className="h-full flex flex-col items-center justify-center text-center opacity-30 space-y-6">
@@ -1389,7 +1427,10 @@
                             </span>
                             <span className={`transition-opacity duration-300 ${saveStatus === 'saved' ? 'opacity-100' : 'opacity-0'}`} style={{color: '#4ade80'}}>Saved</span>
                         </div>
-                        <a href="index.html" className="hover:opacity-100 transition-opacity" style={{textDecoration: 'none', color: 'inherit'}}>Writing Tools Suite</a>
+                        <div className="flex items-center gap-4">
+                            <button onClick={sendMapToCourius} className="hover:opacity-100 transition-opacity">Send To Courius</button>
+                            <a href="index.html" className="hover:opacity-100 transition-opacity" style={{textDecoration: 'none', color: 'inherit'}}>Writing Tools Suite</a>
+                        </div>
                     </footer>
                 </div>
             );

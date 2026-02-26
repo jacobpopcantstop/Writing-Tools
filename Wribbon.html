@@ -1015,10 +1015,14 @@
                     return safe.trim() ? `<div class="action">${safe}</div>` : '<div class="action"><br></div>';
                 }).join('');
                 try {
-                    const key = 'writingtools_courius_storage';
-                    const existing = localStorage.getItem(key) || '';
-                    const divider = existing && existing.trim() ? '<div class="action"><br></div><div class="action">--- WRIBBON ---</div>' : '';
-                    localStorage.setItem(key, `${existing}${divider}${html}`);
+                    if (bus && typeof bus.appendToCourius === 'function') {
+                        bus.appendToCourius(html, 'Wribbon');
+                    } else {
+                        const key = 'writingtools_courius_storage';
+                        const existing = localStorage.getItem(key) || '';
+                        const divider = existing && existing.trim() ? '<div class="action"><br></div><div class="action">--- WRIBBON ---</div>' : '';
+                        localStorage.setItem(key, `${existing}${divider}${html}`);
+                    }
                 } catch (_) {}
 
                 window.open('Courius.html', '_blank', 'noopener');

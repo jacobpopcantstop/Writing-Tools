@@ -18,9 +18,9 @@ Delivered in this phase:
 - `ThisButThat` now seeds topic fetch from shared context and publishes selected topic back.
 
 Next tasks (Phase 1 completion):
-- Wire shared context into `Courius` startup hints.
-- Add "Send to Courius" handoff from `BeatHive` inspector and map footer.
-- Add conflict-safe merge options when multiple tools append into Courius storage.
+- Add per-tool "Context Source" badges in Courius after insertions.
+- Add optional overwrite/append choice when sending to Courius from tools.
+- Add lightweight recovery UI for Courius appended imports history.
 
 ## Phase 2 (Next): Command Palette + Session Navigation
 Status: Planned

@@ -524,10 +524,15 @@ const THEMES = {
         return `<div class="action">${escapeHtml(line)}</div>`;
       }).join('');
       try {
-        const key = 'writingtools_courius_storage';
-        const existing = localStorage.getItem(key) || '';
-        const divider = existing && existing.trim() ? '<div class="action"><br></div><div class="action">--- WITHERNAUGHT ---</div>' : '';
-        localStorage.setItem(key, `${existing}${divider}${html}`);
+        const bus = window.WTContextBus;
+        if (bus && typeof bus.appendToCourius === 'function') {
+          bus.appendToCourius(html, 'WitherNaught');
+        } else {
+          const key = 'writingtools_courius_storage';
+          const existing = localStorage.getItem(key) || '';
+          const divider = existing && existing.trim() ? '<div class="action"><br></div><div class="action">--- WITHERNAUGHT ---</div>' : '';
+          localStorage.setItem(key, `${existing}${divider}${html}`);
+        }
       } catch (_) {}
       pushToContext();
       window.open('Courius.html', '_blank', 'noopener');

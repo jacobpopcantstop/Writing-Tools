@@ -3,6 +3,8 @@
 
   var KEY = 'writingtools_context_v1';
   var EVENT = 'wt-context-updated';
+  var COURIUS_KEY = 'writingtools_courius_storage';
+  var COURIUS_REV_KEY = 'writingtools_courius_revision_v1';
 
   function nowIso() {
     return new Date().toISOString();
@@ -86,12 +88,43 @@
     };
   }
 
+  function appendToCourius(htmlPayload, sourceLabel) {
+    var payload = String(htmlPayload || '').trim();
+    if (!payload) return false;
+
+    var source = String(sourceLabel || 'tool').trim() || 'tool';
+    var stamp = new Date().toLocaleString();
+    var header = '<div class="action"><br></div><div class="action">--- ' +
+      source.toUpperCase() + ' · ' + stamp + ' ---</div>';
+
+    // Simple compare-and-retry to reduce overwrite risk across tabs.
+    for (var i = 0; i < 3; i += 1) {
+      var current = '';
+      var rev = 0;
+      try {
+        current = localStorage.getItem(COURIUS_KEY) || '';
+        rev = parseInt(localStorage.getItem(COURIUS_REV_KEY) || '0', 10) || 0;
+      } catch (_) {}
+
+      var divider = current && current.trim() ? header : '';
+      var next = current + divider + payload;
+
+      try {
+        localStorage.setItem(COURIUS_KEY, next);
+        localStorage.setItem(COURIUS_REV_KEY, String(rev + 1));
+        return true;
+      } catch (_) {}
+    }
+    return false;
+  }
+
   window.WTContextBus = {
     key: KEY,
     getContext: read,
     setContext: write,
     mergeContext: merge,
     clearContext: clear,
-    subscribe: subscribe
+    subscribe: subscribe,
+    appendToCourius: appendToCourius
   };
 })();
