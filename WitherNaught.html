@@ -518,6 +518,9 @@ const THEMES = {
 
     function sendToCourius() {
       if (!state.text.trim()) return;
+      const choice = window.prompt('Send to Courius: "a" append (default), "o" overwrite, or Cancel.', 'a');
+      if (choice === null) return;
+      const mode = String(choice || 'a').trim().toLowerCase().startsWith('o') ? 'overwrite' : 'append';
       const lines = state.text.split('\n');
       const html = lines.map((line) => {
         if (!line.trim()) return '<div class="action"><br></div>';
@@ -525,13 +528,21 @@ const THEMES = {
       }).join('');
       try {
         const bus = window.WTContextBus;
-        if (bus && typeof bus.appendToCourius === 'function') {
+        if (bus && typeof bus.transferToCourius === 'function') {
+          bus.transferToCourius(html, 'WitherNaught', mode);
+        } else if (bus && mode === 'overwrite' && typeof bus.overwriteCourius === 'function') {
+          bus.overwriteCourius(html, 'WitherNaught');
+        } else if (bus && typeof bus.appendToCourius === 'function') {
           bus.appendToCourius(html, 'WitherNaught');
         } else {
           const key = 'writingtools_courius_storage';
           const existing = localStorage.getItem(key) || '';
-          const divider = existing && existing.trim() ? '<div class="action"><br></div><div class="action">--- WITHERNAUGHT ---</div>' : '';
-          localStorage.setItem(key, `${existing}${divider}${html}`);
+          if (mode === 'overwrite') {
+            localStorage.setItem(key, html);
+          } else {
+            const divider = existing && existing.trim() ? '<div class="action"><br></div><div class="action">--- WITHERNAUGHT ---</div>' : '';
+            localStorage.setItem(key, `${existing}${divider}${html}`);
+          }
         }
       } catch (_) {}
       pushToContext();

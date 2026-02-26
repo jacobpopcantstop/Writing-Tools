@@ -5,6 +5,7 @@
   var EVENT = 'wt-context-updated';
   var COURIUS_KEY = 'writingtools_courius_storage';
   var COURIUS_REV_KEY = 'writingtools_courius_revision_v1';
+  var COURIUS_IMPORTS_KEY = 'writingtools_courius_imports_v1';
 
   function nowIso() {
     return new Date().toISOString();
@@ -88,14 +89,41 @@
     };
   }
 
-  function appendToCourius(htmlPayload, sourceLabel) {
+  function getCouriusImportHistory() {
+    try {
+      var raw = localStorage.getItem(COURIUS_IMPORTS_KEY);
+      var parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function writeCouriusImportHistory(items) {
+    try {
+      localStorage.setItem(COURIUS_IMPORTS_KEY, JSON.stringify(items.slice(0, 30)));
+    } catch (_) {}
+  }
+
+  function buildImportHeader(source, stampIso) {
+    var safeSource = String(source || 'tool').trim() || 'tool';
+    var safeStamp = String(stampIso || nowIso());
+    return '<div class="action courius-import-marker" data-import-source="' +
+      safeSource.replace(/"/g, '&quot;') + '" data-import-time="' +
+      safeStamp.replace(/"/g, '&quot;') + '">' +
+      '<span class="context-source-badge">' + safeSource.toUpperCase() + '</span>' +
+      '<span class="context-source-meta">imported ' + new Date(safeStamp).toLocaleString() + '</span>' +
+      '</div>';
+  }
+
+  function transferToCourius(htmlPayload, sourceLabel, modeLabel) {
     var payload = String(htmlPayload || '').trim();
     if (!payload) return false;
 
     var source = String(sourceLabel || 'tool').trim() || 'tool';
-    var stamp = new Date().toLocaleString();
-    var header = '<div class="action"><br></div><div class="action">--- ' +
-      source.toUpperCase() + ' · ' + stamp + ' ---</div>';
+    var mode = String(modeLabel || 'append').trim().toLowerCase() === 'overwrite' ? 'overwrite' : 'append';
+    var stampIso = nowIso();
+    var header = buildImportHeader(source, stampIso);
 
     // Simple compare-and-retry to reduce overwrite risk across tabs.
     for (var i = 0; i < 3; i += 1) {
@@ -106,16 +134,38 @@
         rev = parseInt(localStorage.getItem(COURIUS_REV_KEY) || '0', 10) || 0;
       } catch (_) {}
 
-      var divider = current && current.trim() ? header : '';
-      var next = current + divider + payload;
+      var hasCurrent = !!(current && current.trim());
+      var next = '';
+      if (mode === 'overwrite' || !hasCurrent) {
+        next = header + payload;
+      } else {
+        next = current + '<div class="action"><br></div>' + header + payload;
+      }
 
       try {
         localStorage.setItem(COURIUS_KEY, next);
         localStorage.setItem(COURIUS_REV_KEY, String(rev + 1));
+        var history = getCouriusImportHistory();
+        history.unshift({
+          id: 'imp_' + Date.now() + '_' + Math.floor(Math.random() * 100000),
+          source: source,
+          mode: mode,
+          createdAt: stampIso,
+          payload: payload
+        });
+        writeCouriusImportHistory(history);
         return true;
       } catch (_) {}
     }
     return false;
+  }
+
+  function appendToCourius(htmlPayload, sourceLabel) {
+    return transferToCourius(htmlPayload, sourceLabel, 'append');
+  }
+
+  function overwriteCourius(htmlPayload, sourceLabel) {
+    return transferToCourius(htmlPayload, sourceLabel, 'overwrite');
   }
 
   window.WTContextBus = {
@@ -125,6 +175,9 @@
     mergeContext: merge,
     clearContext: clear,
     subscribe: subscribe,
-    appendToCourius: appendToCourius
+    appendToCourius: appendToCourius,
+    overwriteCourius: overwriteCourius,
+    transferToCourius: transferToCourius,
+    getCouriusImportHistory: getCouriusImportHistory
   };
 })();

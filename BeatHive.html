@@ -988,19 +988,31 @@
                     return `<div class="scene-heading">BEAT ${idx + 1} - ${safe(beatType)}</div><div class="action">${content.replace(/\n/g, '<br>')}</div>`;
                 }).join('');
 
+                const choice = window.prompt('Send to Courius: "a" append (default), "o" overwrite, or Cancel.', 'a');
+                if (choice === null) return;
+                const mode = String(choice || 'a').trim().toLowerCase().startsWith('o') ? 'overwrite' : 'append';
+
                 if (bus) {
                     bus.mergeContext({
                         topic: (sketchName || sharedContext.topic || '').trim(),
                         constraints: `BeatHive export: ${storyCells.length} beats`,
                         lastTool: 'BeatHive'
                     });
-                    if (typeof bus.appendToCourius === 'function') {
+                    if (typeof bus.transferToCourius === 'function') {
+                        bus.transferToCourius(html, 'BeatHive', mode);
+                    } else if (mode === 'overwrite' && typeof bus.overwriteCourius === 'function') {
+                        bus.overwriteCourius(html, 'BeatHive');
+                    } else if (typeof bus.appendToCourius === 'function') {
                         bus.appendToCourius(html, 'BeatHive');
                     } else {
                         const key = 'writingtools_courius_storage';
                         const existing = localStorage.getItem(key) || '';
-                        const divider = existing && existing.trim() ? '<div class="action"><br></div><div class="action">--- BEATHIVE ---</div>' : '';
-                        localStorage.setItem(key, `${existing}${divider}${html}`);
+                        if (mode === 'overwrite') {
+                            localStorage.setItem(key, html);
+                        } else {
+                            const divider = existing && existing.trim() ? '<div class="action"><br></div><div class="action">--- BEATHIVE ---</div>' : '';
+                            localStorage.setItem(key, `${existing}${divider}${html}`);
+                        }
                     }
                 }
                 window.open('Courius.html', '_blank', 'noopener');

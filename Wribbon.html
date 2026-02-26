@@ -997,6 +997,9 @@
             sendToCourius() {
                 if (!this.state.text.trim()) return;
                 const bus = window.WTContextBus;
+                const choice = window.prompt('Send to Courius: "a" append (default), "o" overwrite, or Cancel.', 'a');
+                if (choice === null) return;
+                const mode = String(choice || 'a').trim().toLowerCase().startsWith('o') ? 'overwrite' : 'append';
                 if (bus) {
                     bus.mergeContext({
                         topic: this.state.sharedContext.topic || this.state.text.trim().split(/\s+/).slice(0, 8).join(' '),
@@ -1015,13 +1018,21 @@
                     return safe.trim() ? `<div class="action">${safe}</div>` : '<div class="action"><br></div>';
                 }).join('');
                 try {
-                    if (bus && typeof bus.appendToCourius === 'function') {
+                    if (bus && typeof bus.transferToCourius === 'function') {
+                        bus.transferToCourius(html, 'Wribbon', mode);
+                    } else if (bus && mode === 'overwrite' && typeof bus.overwriteCourius === 'function') {
+                        bus.overwriteCourius(html, 'Wribbon');
+                    } else if (bus && typeof bus.appendToCourius === 'function') {
                         bus.appendToCourius(html, 'Wribbon');
                     } else {
                         const key = 'writingtools_courius_storage';
                         const existing = localStorage.getItem(key) || '';
-                        const divider = existing && existing.trim() ? '<div class="action"><br></div><div class="action">--- WRIBBON ---</div>' : '';
-                        localStorage.setItem(key, `${existing}${divider}${html}`);
+                        if (mode === 'overwrite') {
+                            localStorage.setItem(key, html);
+                        } else {
+                            const divider = existing && existing.trim() ? '<div class="action"><br></div><div class="action">--- WRIBBON ---</div>' : '';
+                            localStorage.setItem(key, `${existing}${divider}${html}`);
+                        }
                     }
                 } catch (_) {}
 

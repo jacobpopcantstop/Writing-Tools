@@ -469,6 +469,111 @@
             flex-shrink: 0;
         }
         #context-tip button:hover { background: rgba(253, 25, 200, 0.12); }
+        .courius-import-marker {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .context-source-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(253, 25, 200, 0.45);
+            background: rgba(253, 25, 200, 0.15);
+            font-size: 0.52rem;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+        .context-source-meta {
+            opacity: 0.72;
+            font-size: 0.58rem;
+        }
+        .imports-panel {
+            position: fixed;
+            top: 20px;
+            right: 88px;
+            width: min(420px, calc(100vw - 24px));
+            max-height: min(70vh, 560px);
+            background: var(--ui-bg);
+            color: var(--ui-text);
+            border: 1px solid rgba(253, 25, 200, 0.25);
+            border-radius: 10px;
+            z-index: 1400;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .imports-panel.open { display: flex; }
+        .imports-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(253, 25, 200, 0.18);
+            font-size: 0.62rem;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+        }
+        .imports-header button {
+            border: 1px solid rgba(253, 25, 200, 0.4);
+            background: transparent;
+            color: inherit;
+            border-radius: 6px;
+            font-size: 0.52rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            padding: 4px 7px;
+            cursor: pointer;
+        }
+        .imports-header button:hover { background: rgba(253, 25, 200, 0.12); }
+        .imports-list {
+            overflow: auto;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .imports-item {
+            border: 1px solid rgba(253, 25, 200, 0.18);
+            border-radius: 8px;
+            padding: 8px;
+            font-size: 0.62rem;
+            line-height: 1.35;
+        }
+        .imports-item-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+        .imports-item-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 7px;
+        }
+        .imports-item button {
+            border: 1px solid rgba(253, 25, 200, 0.4);
+            background: transparent;
+            color: inherit;
+            border-radius: 6px;
+            font-size: 0.55rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            padding: 4px 7px;
+            cursor: pointer;
+        }
+        .imports-item button:hover {
+            background: rgba(253, 25, 200, 0.12);
+        }
+        .imports-empty {
+            opacity: 0.65;
+            font-size: 0.6rem;
+            padding: 10px 6px;
+        }
 
         @media (max-width: 1024px) {
             main { padding: 14px 10px 126px 10px; }
@@ -502,6 +607,12 @@
                 max-width: none;
                 top: calc(10px + env(safe-area-inset-top));
             }
+            .imports-panel {
+                right: 10px;
+                top: calc(56px + env(safe-area-inset-top));
+                width: calc(100vw - 20px);
+                max-height: calc(66vh - env(safe-area-inset-top));
+            }
         }
     </style>
 </head>
@@ -511,6 +622,14 @@
     <button onclick="insertContextSnapshot()">Insert</button>
 </div>
 
+<div id="imports-panel" class="imports-panel">
+    <div class="imports-header">
+        <span>Courius Imports</span>
+        <button onclick="toggleImportsPanel(false)">Close</button>
+    </div>
+    <div id="imports-list" class="imports-list"></div>
+</div>
+
 <div class="floating-controls actions-bar">
     <div style="font-weight: 900; font-size: 0.5rem; text-align: center; margin-bottom: 4px; opacity: 0.5; color: var(--ui-text);">COURIUS</div>
     <button class="side-btn" data-label="Scenes (N)" onclick="toggleSceneNav()">📑</button>
@@ -518,6 +637,7 @@
     <button class="side-btn" data-label="Import FDX" onclick="document.getElementById('file-input').click()">Imp</button>
     <button class="side-btn" data-label="Theme (D)" onclick="toggleTheme()">🌓</button>
     <button class="side-btn" data-label="Help (?)" onclick="toggleHelp()">❓</button>
+    <button class="side-btn" data-label="Import History" onclick="toggleImportsPanel()">↺</button>
     <button class="side-btn" data-label="Export FDX" onclick="downloadFDX()">FDX</button>
     <button class="side-btn" data-label="Print/PDF" onclick="window.print()">PDF</button>
     <button class="side-btn" style="color: #fca5a5;" data-label="Clear All" onclick="resetScript()">🗑️</button>
@@ -577,6 +697,7 @@
     const STATUS = document.getElementById('save-status');
     const PAGE_COUNT = document.getElementById('page-count');
     const STORAGE_KEY = 'writingtools_courius_storage';
+    const IMPORTS_KEY = 'writingtools_courius_imports_v1';
     // NEW KEY to avoid conflict with previous Light Mode settings
     const THEME_STORAGE_KEY = 'courius_theme_v2'; 
     
@@ -602,6 +723,7 @@
     let characterSet = new Set();
     let locationSet = new Set();
     let saveTimeout;
+    let importHistory = [];
 
     // --- Autocomplete state ---
     const DROPDOWN = document.getElementById('autocomplete-dropdown');
@@ -612,6 +734,94 @@
     function getSharedContext() {
         const bus = window.WTContextBus;
         return bus ? bus.getContext() : null;
+    }
+
+    function getImportHistory() {
+        const bus = window.WTContextBus;
+        if (bus && typeof bus.getCouriusImportHistory === 'function') {
+            return bus.getCouriusImportHistory();
+        }
+        try {
+            const raw = localStorage.getItem(IMPORTS_KEY);
+            const parsed = raw ? JSON.parse(raw) : [];
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (_) {
+            return [];
+        }
+    }
+
+    function makeImportMarker(source, createdAt) {
+        const safeSource = escapeHtml(String(source || 'tool'));
+        const stampText = createdAt ? new Date(createdAt).toLocaleString() : '';
+        return `<div class="action courius-import-marker"><span class="context-source-badge">${safeSource.toUpperCase()}</span><span class="context-source-meta">${stampText ? `imported ${escapeHtml(stampText)}` : 'imported'}</span></div>`;
+    }
+
+    function normalizeLegacyImportMarkers() {
+        const blocks = Array.from(EDITOR.querySelectorAll('.action'));
+        blocks.forEach((node) => {
+            const text = getPureText(node).trim();
+            const legacy = text.match(/^---\s+(.+?)\s+·\s+(.+?)\s+---$/);
+            if (!legacy) return;
+            node.classList.add('courius-import-marker');
+            node.innerHTML = `<span class="context-source-badge">${escapeHtml(legacy[1])}</span><span class="context-source-meta">imported ${escapeHtml(legacy[2])}</span>`;
+        });
+    }
+
+    function renderImportHistory() {
+        const list = document.getElementById('imports-list');
+        if (!list) return;
+        importHistory = getImportHistory();
+        if (!importHistory.length) {
+            list.innerHTML = '<div class="imports-empty">No imports yet.</div>';
+            return;
+        }
+        list.innerHTML = importHistory.slice(0, 24).map((item) => {
+            const source = escapeHtml(String(item.source || 'tool').toUpperCase());
+            const stamp = item.createdAt ? new Date(item.createdAt).toLocaleString() : '';
+            const previewText = String(item.payload || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+            const preview = escapeHtml(previewText.slice(0, 110) || '(no preview)');
+            const id = escapeHtml(String(item.id || ''));
+            return `<div class="imports-item">
+                <div class="imports-item-header">
+                    <span class="context-source-badge">${source}</span>
+                    <span class="context-source-meta">${escapeHtml(stamp)}</span>
+                </div>
+                <div>${preview}${previewText.length > 110 ? '...' : ''}</div>
+                <div class="imports-item-actions">
+                    <button onclick="restoreImport('${id}', 'append')">Append</button>
+                    <button onclick="restoreImport('${id}', 'overwrite')">Replace</button>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function toggleImportsPanel(forceOpen) {
+        const panel = document.getElementById('imports-panel');
+        if (!panel) return;
+        const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : !panel.classList.contains('open');
+        if (shouldOpen) {
+            renderImportHistory();
+            panel.classList.add('open');
+        } else {
+            panel.classList.remove('open');
+        }
+    }
+
+    function restoreImport(importId, mode) {
+        const found = importHistory.find((item) => String(item.id) === String(importId));
+        if (!found || !found.payload) return;
+        const marker = makeImportMarker(found.source, found.createdAt);
+        const payload = `${marker}${String(found.payload)}`;
+        const shouldOverwrite = String(mode || '').toLowerCase() === 'overwrite';
+        if (shouldOverwrite) {
+            if (!confirm('Replace current draft with this import snapshot?')) return;
+            EDITOR.innerHTML = payload;
+        } else {
+            const divider = EDITOR.innerHTML.trim() ? '<div class="action"><br></div>' : '';
+            EDITOR.insertAdjacentHTML('beforeend', `${divider}${payload}`);
+        }
+        triggerSave();
+        toggleImportsPanel(false);
     }
 
     function updateContextTip() {
@@ -630,6 +840,7 @@
     window.addEventListener('DOMContentLoaded', () => {
         const content = localStorage.getItem(STORAGE_KEY);
         if (content) EDITOR.innerHTML = content;
+        normalizeLegacyImportMarkers();
         if (!EDITOR.innerHTML.trim() || (EDITOR.children.length === 0)) {
             // Ensure at least one line if empty
             if (EDITOR.innerHTML.trim() === "") createLine('scene-heading');
@@ -646,6 +857,7 @@
         updateSelectorUI();
         updatePageCount();
         updateContextTip();
+        renderImportHistory();
         if (window.WTContextBus && typeof window.WTContextBus.subscribe === 'function') {
             window.WTContextBus.subscribe(() => updateContextTip());
         }
