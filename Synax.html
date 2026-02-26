@@ -17,6 +17,7 @@
     
     <!-- Babel for JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="shared-context.js"></script>
 
     <!-- Custom Config for Tailwind -->
     <script>
@@ -476,6 +477,21 @@
 
             // Refs
             const textareaRef = useRef(null);
+
+            const publishContext = useCallback((partial) => {
+                const bus = window.WTContextBus;
+                if (!bus || !partial || typeof partial !== 'object') return;
+                bus.mergeContext({ ...partial, lastTool: 'Synax' });
+            }, []);
+
+            useEffect(() => {
+                const bus = window.WTContextBus;
+                if (!bus) return;
+                const ctx = bus.getContext();
+                if (ctx.topic && !contextInput.trim()) {
+                    setContextInput(ctx.topic);
+                }
+            }, []);
             const serendipityPoolRef = useRef({ nouns: [], verbs: [], adjectives: [], updatedAt: 0 });
 
             // --- EFFECTS ---
@@ -689,6 +705,9 @@
 
             const generate = useCallback(async () => {
                 setLoading(true);
+                if ((mode === 'context' || mode === 'rhyme') && contextInput.trim()) {
+                    publishContext({ topic: contextInput.trim() });
+                }
                 let newWords = [];
 
                 try {
@@ -866,7 +885,7 @@
                 const finalSet = newWords.map((w, i) => ({ ...w, id: Date.now() + i }));
                 addToHistory(finalSet);
                 setLoading(false);
-            }, [mode, contextInput, offlineMode, serendipityCount]); 
+            }, [mode, contextInput, offlineMode, serendipityCount, publishContext]); 
 
             // Auto-Generate Effect
             useEffect(() => {
@@ -922,6 +941,16 @@
                 if(window.confirm("Clear your writing canvas?")) {
                     setEditorContent('');
                 }
+            };
+
+            const sendToBeatHive = () => {
+                const topTopic = contextInput.trim() || (words[0]?.word || '').trim();
+                const constraints = words
+                    .slice(0, 6)
+                    .map((w) => `${w.type}: ${w.word}`)
+                    .join(' | ');
+                publishContext({ topic: topTopic, constraints });
+                window.open('BeatHive.html', '_blank', 'noopener');
             };
 
             return (
@@ -1071,6 +1100,17 @@
                                 >
                                     <Flame size={18} className="fill-pink-200 dark:fill-pink-900/0" />
                                     Spark Idea
+                                </button>
+                            )}
+
+                            {!minimalMode && (
+                                <button
+                                    onClick={sendToBeatHive}
+                                    className="px-6 py-3 rounded-xl border border-pink-200 dark:border-white/10 text-slate-600 dark:text-slate-200 hover:bg-pink-50 dark:hover:bg-pink-900/20 hover:border-pink-300 transition-colors flex items-center gap-2 font-bold"
+                                    title="Send current context to BeatHive"
+                                >
+                                    <Grid size={18} />
+                                    Send to BeatHive
                                 </button>
                             )}
                         </div>

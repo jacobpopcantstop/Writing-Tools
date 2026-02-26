@@ -253,6 +253,74 @@
 
     .featured h3 { font-size: 15px; text-transform: uppercase; letter-spacing: .12em; color: var(--accent-2); margin-bottom: 10px; font-family: "IBM Plex Mono", monospace; }
     .featured p { font-size: 15px; color: var(--text); opacity: .9; }
+    .context-workspace {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: color-mix(in srgb, var(--card) 95%, transparent);
+      padding: 16px;
+      margin-bottom: 18px;
+    }
+    .context-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .context-head h3 {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 12px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .context-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .context-field {
+      display: grid;
+      gap: 6px;
+    }
+    .context-field label {
+      font-size: 10px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-family: "IBM Plex Mono", monospace;
+    }
+    .context-field input, .context-field textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--bg-soft);
+      color: var(--text);
+      font: inherit;
+      padding: 9px 10px;
+      -webkit-appearance: none;
+    }
+    .context-field textarea { min-height: 72px; resize: vertical; grid-column: 1 / -1; }
+    .context-actions {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .ctx-btn {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--card);
+      color: var(--text);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+    .ctx-btn:hover { background: var(--card-hover); }
+    .ctx-btn.primary { border-color: var(--accent); color: var(--accent); }
     .quick-links {
       margin-top: 12px;
       display: flex;
@@ -299,6 +367,8 @@
       .card { min-height: 146px; padding: 14px; }
       .card h2 { font-size: 21px; }
       .theme-btn, .quick-link { min-height: 44px; }
+      .context-grid { grid-template-columns: 1fr; }
+      .ctx-btn { min-height: 44px; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -332,6 +402,38 @@
         <a class="quick-link" href="Courius.html" target="_blank" rel="noopener">Screenplay Output</a>
       </div>
     </div>
+
+    <section class="context-workspace" aria-label="Shared Project Context">
+      <div class="context-head">
+        <h3>Project Context Bus</h3>
+        <span id="ctx-meta" class="card-cta">Not Saved</span>
+      </div>
+      <div class="context-grid">
+        <div class="context-field">
+          <label for="ctx-topic">Topic</label>
+          <input id="ctx-topic" type="text" placeholder="Bruce Lee, climate comedy, startup satire..." />
+        </div>
+        <div class="context-field">
+          <label for="ctx-tone">Tone</label>
+          <input id="ctx-tone" type="text" placeholder="Sharp, absurdist, dry, cinematic..." />
+        </div>
+        <div class="context-field">
+          <label for="ctx-audience">Audience</label>
+          <input id="ctx-audience" type="text" placeholder="Late-night, Gen Z, broad streaming..." />
+        </div>
+        <div class="context-field">
+          <label for="ctx-constraints">Constraints</label>
+          <textarea id="ctx-constraints" placeholder="No politics, PG-13, 2 locations max, 5-minute set..."></textarea>
+        </div>
+      </div>
+      <div class="context-actions">
+        <button class="ctx-btn primary" id="ctx-save" type="button">Save Context</button>
+        <button class="ctx-btn" id="ctx-clear" type="button">Clear</button>
+        <button class="ctx-btn" id="ctx-open-synax" type="button">Open Synax</button>
+        <button class="ctx-btn" id="ctx-open-thisbutthat" type="button">Open ThisButThat</button>
+        <button class="ctx-btn" id="ctx-open-joterie" type="button">Open Joterie</button>
+      </div>
+    </section>
 
     <main class="sections">
       <section class="section">
@@ -434,6 +536,7 @@
     <footer>Writing Tools Suite · Local Storage Powered</footer>
   </div>
 
+  <script src="shared-context.js"></script>
   <script>
     'use strict';
 
@@ -479,8 +582,60 @@
 
     document.getElementById('theme-btn').addEventListener('click', toggleTheme);
 
+    function initContextWorkspace() {
+      const bus = window.WTContextBus;
+      if (!bus) return;
+
+      const els = {
+        topic: document.getElementById('ctx-topic'),
+        tone: document.getElementById('ctx-tone'),
+        audience: document.getElementById('ctx-audience'),
+        constraints: document.getElementById('ctx-constraints'),
+        meta: document.getElementById('ctx-meta'),
+        save: document.getElementById('ctx-save'),
+        clear: document.getElementById('ctx-clear')
+      };
+
+      function paint(ctx) {
+        els.topic.value = ctx.topic || '';
+        els.tone.value = ctx.tone || '';
+        els.audience.value = ctx.audience || '';
+        els.constraints.value = ctx.constraints || '';
+        const stamp = ctx.updatedAt ? new Date(ctx.updatedAt).toLocaleString() : 'Not Saved';
+        els.meta.textContent = `${ctx.lastTool || 'Suite'} · ${stamp}`;
+      }
+
+      function payload() {
+        return {
+          topic: els.topic.value.trim(),
+          tone: els.tone.value.trim(),
+          audience: els.audience.value.trim(),
+          constraints: els.constraints.value.trim(),
+          lastTool: 'index'
+        };
+      }
+
+      function save() {
+        paint(bus.mergeContext(payload()));
+      }
+
+      function openTool(path) {
+        save();
+        window.open(path, '_blank', 'noopener');
+      }
+
+      paint(bus.getContext());
+      els.save.addEventListener('click', save);
+      els.clear.addEventListener('click', () => paint(bus.clearContext()));
+      document.getElementById('ctx-open-synax').addEventListener('click', () => openTool('Synax.html'));
+      document.getElementById('ctx-open-thisbutthat').addEventListener('click', () => openTool('ThisButThat.html'));
+      document.getElementById('ctx-open-joterie').addEventListener('click', () => openTool('Joterie.html'));
+      bus.subscribe(paint);
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       applyTheme(getTheme());
+      initContextWorkspace();
     });
   </script>
 </body>

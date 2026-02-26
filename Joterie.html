@@ -9,6 +9,7 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2225%22 fill=%22%23000000%22/><path d=%22M54 15L24 55h28l-4 30 30-40H50l4-30z%22 fill=%22%23fd19c8%22 stroke=%22%23fd19c8%22 stroke-width=%224%22 stroke-linejoin=%22round%22/></svg>">
 
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="shared-context.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;900&family=Newsreader:ital,opsz,wght@1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
@@ -232,10 +233,11 @@
 
                 <div class="flex flex-col items-center gap-6 shrink-0 pb-4">
                     <button id="new-session-btn" class="interactive-layer text-xs font-black tracking-[0.4em] border-b-2 border-current pb-1 hover:opacity-50 transition-opacity uppercase">New Session</button>
-                    <div class="flex gap-8">
+                    <div class="flex flex-wrap justify-center gap-6">
                         <button id="export-text-btn" class="interactive-layer text-[9px] font-black tracking-[0.4em] opacity-30 hover:opacity-100 transition-opacity uppercase">Export Text</button>
                         <button id="export-email-btn" class="interactive-layer text-[9px] font-black tracking-[0.4em] opacity-30 hover:opacity-100 transition-opacity uppercase">Email</button>
                         <button id="export-gmail-btn" class="interactive-layer text-[9px] font-black tracking-[0.4em] opacity-30 hover:opacity-100 transition-opacity uppercase">Gmail</button>
+                        <button id="send-beathive-btn" class="interactive-layer text-[9px] font-black tracking-[0.4em] opacity-30 hover:opacity-100 transition-opacity uppercase">Send to BeatHive</button>
                     </div>
                 </div>
             </section>
@@ -278,6 +280,10 @@
             archives: JSON.parse(localStorage.getItem('writingtools_joterie_archives')) || []
         };
 
+        function getContextBus() {
+            return window.WTContextBus || null;
+        }
+
         const elements = {
             html: document.getElementById('main-html'),
             logoContainer: document.getElementById('logo-container'),
@@ -299,6 +305,7 @@
             newSessionBtn: document.getElementById('new-session-btn'),
             exportTextBtn: document.getElementById('export-text-btn'),
             exportEmailBtn: document.getElementById('export-email-btn'),
+            sendBeatHiveBtn: document.getElementById('send-beathive-btn'),
             footerHint: document.getElementById('footer-hint'),
             finishEarlyBtn: document.getElementById('finish-early-btn'),
             finishEarlyContainer: document.getElementById('finish-early-container'),
@@ -393,6 +400,10 @@
         // Session Logic
         function startSession() {
             state.focusPrompt = elements.homePrompt.value;
+            const bus = getContextBus();
+            if (bus && state.focusPrompt.trim()) {
+                bus.mergeContext({ topic: state.focusPrompt.trim(), lastTool: 'Joterie' });
+            }
             state.sessionCards = [];
             state.timeLeft = state.configTime;
             state.elapsedTime = 0;
@@ -594,6 +605,17 @@
             }
         }
 
+        function sendToBeatHive() {
+            const kept = state.sessionCards.filter(c => c.status === 'kept').map(c => c.text.trim()).filter(Boolean);
+            const topic = (state.focusPrompt || '').trim();
+            const bus = getContextBus();
+            if (bus) {
+                const constraints = kept.length ? `Joterie keeps: ${kept.slice(0, 6).join(' | ')}` : '';
+                bus.mergeContext({ topic, constraints, lastTool: 'Joterie' });
+            }
+            window.open('BeatHive.html', '_blank', 'noopener');
+        }
+
         // Event Listeners
         elements.startBtn.onclick = startSession;
         elements.saveHarvest.onclick = saveHarvest;
@@ -601,6 +623,7 @@
         elements.exportTextBtn.onclick = exportText;
         elements.exportEmailBtn.onclick = exportEmail;
         document.getElementById('export-gmail-btn').onclick = exportGmail;
+        elements.sendBeatHiveBtn.onclick = sendToBeatHive;
         elements.themeToggle.onclick = toggleTheme;
         elements.historyBtn.onclick = () => setView('history');
         elements.historyBackBtn.onclick = () => setView('home');
@@ -645,6 +668,13 @@
 
         // Init
         applyTheme();
+        const bus = getContextBus();
+        if (bus) {
+            const ctx = bus.getContext();
+            if (ctx.topic && !elements.homePrompt.value.trim()) {
+                elements.homePrompt.value = ctx.topic;
+            }
+        }
         elements.homePrompt.focus();
     </script>
 </body>

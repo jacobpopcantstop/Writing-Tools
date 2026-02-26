@@ -11,6 +11,7 @@
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="shared-context.js"></script>
 
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -181,7 +182,7 @@
                 <i data-lucide="save" class="w-4 h-4"></i> Save & Next
             </button>
             
-            <div class="col-span-2 sm:col-span-1 grid grid-cols-2 gap-2">
+            <div class="col-span-2 sm:col-span-1 grid grid-cols-3 gap-2">
                 <button 
                     onclick="copyToClipboard()"
                     id="btn-copy"
@@ -198,6 +199,15 @@
                     class="w-full shadow-lg shadow-neonPink/20 dark:shadow-none font-bold uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed border-2 px-2 py-3 text-sm rounded-lg bg-neonPink border-neonPink text-white hover:bg-black hover:text-neonPink dark:hover:bg-white dark:hover:text-neonPink"
                 >
                     <i data-lucide="send" class="w-4 h-4"></i> Email
+                </button>
+
+                <button
+                    onclick="sendToBeatHive()"
+                    id="btn-beathive"
+                    disabled
+                    class="w-full shadow-lg shadow-black/10 dark:shadow-none font-bold uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed border-2 px-2 py-3 text-sm rounded-lg bg-black text-neonYellow border-black hover:bg-neonYellow hover:text-black hover:border-neonYellow dark:bg-white dark:text-black dark:border-white"
+                >
+                    <i data-lucide="hexagon" class="w-4 h-4"></i> Beat
                 </button>
             </div>
         </div>
@@ -240,10 +250,30 @@
         };
         const CACHE_KEY = 'thisButThat_cachedTwists_v2';
 
+        function getContextBus() {
+            return window.WTContextBus || null;
+        }
+
+        function getSeedTopicFromContext() {
+            const bus = getContextBus();
+            if (!bus) return '';
+            const ctx = bus.getContext();
+            return (ctx.topic || '').trim();
+        }
+
+        function publishTopicToContext(topicText) {
+            const bus = getContextBus();
+            if (!bus) return;
+            const topic = String(topicText || '').trim();
+            if (!topic) return;
+            bus.mergeContext({ topic, lastTool: 'ThisButThat' });
+        }
+
         // --- Init ---
         document.addEventListener('DOMContentLoaded', () => {
             loadHistory();
-            fetchTopics();
+            const seedTopic = getSeedTopicFromContext();
+            fetchTopics(seedTopic || null);
             setupInputListener();
             lucide.createIcons();
 
@@ -421,6 +451,9 @@
                 state.twists = [];
                 state.selectedIndex = 0;
                 state.contextExpanded = false; // Reset expansion on new topics
+                if (state.topics[0] && state.topics[0].text) {
+                    publishTopicToContext(state.topics[0].text);
+                }
                 renderTopicGrid();
                 renderTwistList();
                 updateMedals();
@@ -570,10 +603,13 @@
             const saveBtn = document.getElementById('btn-save');
             const exportBtn = document.getElementById('btn-export');
             const copyBtn = document.getElementById('btn-copy');
+            const beatBtn = document.getElementById('btn-beathive');
+            const currentTopic = state.topics[state.selectedIndex];
 
             saveBtn.disabled = !hasItems;
             exportBtn.disabled = !hasItems && !hasCachedItems;
             copyBtn.disabled = !hasItems && !hasCachedItems;
+            beatBtn.disabled = !hasItems && !(currentTopic && currentTopic.text);
             
             lucide.createIcons();
         }
@@ -655,6 +691,8 @@
                 state.selectedIndex = idx;
                 state.twists = [];
                 state.contextExpanded = false; // Reset expansion when switching topics
+                const selected = state.topics[idx];
+                if (selected && selected.text) publishTopicToContext(selected.text);
                 renderTopicGrid();
                 renderTwistList();
                 updateMedals();
@@ -828,6 +866,20 @@
                     }
                 }, 800);
             }
+        }
+
+        function sendToBeatHive() {
+            const currentTopic = state.topics[state.selectedIndex];
+            const twists = state.twists.map(t => String(t).trim()).filter(Boolean);
+            if (!currentTopic && twists.length === 0) return;
+
+            const bus = getContextBus();
+            if (bus) {
+                const topic = currentTopic?.text || bus.getContext().topic || '';
+                const constraints = twists.length ? `ThisButThat twists: ${twists.slice(0, 8).join(' | ')}` : '';
+                bus.mergeContext({ topic, constraints, lastTool: 'ThisButThat' });
+            }
+            window.open('BeatHive.html', '_blank', 'noopener');
         }
 
         function copyToClipboard() {
