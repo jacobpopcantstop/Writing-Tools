@@ -258,6 +258,31 @@ run_eval_check wt-wribbon "Wribbon Gmail export opens a compose target" "$(cat <
 JS
 )"
 
+run_eval_check wt-wribbon "Wribbon latest snapshot restore applies draft text" "$(cat <<'JS'
+(() => {
+  if (!window.app || typeof window.app.restoreLatestSnapshot !== 'function') {
+    throw new Error('Wribbon snapshot controls unavailable');
+  }
+  const originalConfirm = window.confirm;
+  window.confirm = () => true;
+  try {
+    localStorage.setItem('writingtools_wribbon_snapshots_v1', JSON.stringify([{
+      id: 'wrsmoke',
+      at: new Date().toISOString(),
+      reason: 'smoke-test',
+      payload: 'Recovered Wribbon draft'
+    }]));
+    window.app.restoreLatestSnapshot();
+  } finally {
+    window.confirm = originalConfirm;
+  }
+  const text = String(localStorage.getItem('writingtools_wribbon_text') || '');
+  if (!text.includes('Recovered Wribbon draft')) throw new Error('Wribbon draft not restored');
+  return true;
+})()
+JS
+)"
+
 run_eval_check wt-withernaught "WitherNaught Gmail export opens a compose target" "$(cat <<'JS'
 (() => {
   const opened = [];

@@ -676,6 +676,8 @@
                 <button onclick="app.email()">Email</button>
                 <button onclick="app.emailGmail()">Gmail</button>
                 <button onclick="app.sendToCourius()">Send to Courius</button>
+                <button onclick="app.restoreLatestSnapshot()">Restore Latest Snapshot</button>
+                <button onclick="app.clearDraftSnapshots()">Clear Snapshots</button>
                 <div class="courius-mode-picker">
                     <button id="courius-mode-append" class="courius-mode-btn" onclick="app.setCouriusMode('append')">Append</button>
                     <button id="courius-mode-overwrite" class="courius-mode-btn" onclick="app.setCouriusMode('overwrite')">Replace</button>
@@ -882,6 +884,26 @@
                     });
                     localStorage.setItem(WRIBBON_SNAPSHOTS_KEY, JSON.stringify(snapshots.slice(0, 20)));
                 } catch (_) {}
+            },
+
+            restoreLatestSnapshot() {
+                const snapshots = this.getDraftSnapshots();
+                const latest = snapshots[0];
+                if (!latest || !latest.payload) return;
+                if (!confirm('Restore the latest Wribbon snapshot and replace the current draft?')) return;
+                this.saveDraftSnapshot('manual-restore-backup', this.state.text, { snapshotId: latest.id });
+                this.state.text = String(latest.payload || '');
+                this.state.lastPersistedText = this.state.text;
+                this.dom.editor.innerText = this.state.text;
+                this.persistDraftText('snapshot-restore');
+                this.updateUI();
+                this.toggleExportMenu();
+            },
+
+            clearDraftSnapshots() {
+                if (!confirm('Clear all Wribbon recovery snapshots?')) return;
+                try { localStorage.removeItem(WRIBBON_SNAPSHOTS_KEY); } catch (_) {}
+                this.toggleExportMenu();
             },
 
             notifyReliability(message, level = 'info') {
