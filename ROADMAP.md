@@ -90,6 +90,8 @@ Delivered:
   - PaperCut page nav + rotate/delete control safety without an active PDF
 - Final bug-seeking hardening pass:
   - Escaped recent-session and command text in both command palette implementations to prevent malformed local session metadata from breaking the suite action UI.
+  - Escaped user-derived recent-session and export telemetry text on the index hub.
+  - Added smoke coverage that verifies malformed recent-session metadata renders as text instead of executable markup.
 
 ## Phase 3 (Later): Adaptive Assistance + Structural Intelligence
 Status: In progress

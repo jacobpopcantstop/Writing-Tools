@@ -1019,6 +1019,15 @@
       { tool: 'PaperCut', key: 'writingtools_papercut_snapshots_v1', path: 'PaperCut.html' }
     ];
 
+    function escapeHtml(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
     function renderRecentSessions() {
       const grid = document.getElementById('recent-sessions-grid');
       const empty = document.getElementById('recent-sessions-empty');
@@ -1047,15 +1056,15 @@
       }, {});
       grid.innerHTML = Object.entries(groups).map(([group, sessions]) => `
         <div class="recent-group">
-          <div class="recent-group-title">${group}</div>
+          <div class="recent-group-title">${escapeHtml(group)}</div>
           <div class="recent-group-grid">
             ${sessions.slice(0, 6).map((session) => `
               <div class="recent-card">
-                <div class="recent-tool">${session.tool}</div>
-                <div class="recent-title">${session.title}</div>
-                <div class="recent-meta">${session.meta}</div>
-                <div class="recent-stamp">${session.updatedLabel || 'local cache'}</div>
-                <button type="button" class="recent-open" data-recent-path="${session.path}">Open</button>
+                <div class="recent-tool">${escapeHtml(session.tool)}</div>
+                <div class="recent-title">${escapeHtml(session.title)}</div>
+                <div class="recent-meta">${escapeHtml(session.meta)}</div>
+                <div class="recent-stamp">${escapeHtml(session.updatedLabel || 'local cache')}</div>
+                <button type="button" class="recent-open" data-recent-path="${escapeHtml(session.path)}">Open</button>
               </div>
             `).join('')}
           </div>
@@ -1138,7 +1147,7 @@
         const stamp = item.at ? new Date(item.at).toLocaleString() : '';
         const tool = String(item.tool || 'tool');
         const transport = String(item.transport || 'unknown');
-        return `<div class="export-health-row"><strong>${tool}</strong><span>${transport}${item.trimmed ? ' · trimmed' : ''} · ${stamp}</span></div>`;
+        return `<div class="export-health-row"><strong>${escapeHtml(tool)}</strong><span>${escapeHtml(`${transport}${item.trimmed ? ' · trimmed' : ''} · ${stamp}`)}</span></div>`;
       }).join('');
     }
 
@@ -1273,15 +1282,6 @@
       let filtered = commands.slice();
       let activeIndex = 0;
       let isOpen = false;
-
-      function escapeHtml(value) {
-        return String(value == null ? '' : value)
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#39;');
-      }
 
       function render() {
         if (!filtered.length) {

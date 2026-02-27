@@ -111,6 +111,33 @@ run_eval_check wt-synax "Synax revisioned persistence stores state updates" "$(c
 JS
 )"
 
+run_eval_check wt-index "Index recent-session hub escapes malformed local metadata" "$(cat <<'JS'
+(() => {
+  localStorage.setItem('writingtools_joterie_archives', JSON.stringify([
+    {
+      id: 1,
+      createdAt: new Date().toISOString(),
+      prompt: '<img src=x onerror=window.__wtSmokeInjected=1>',
+      cards: ['one']
+    }
+  ]));
+  if (typeof renderRecentSessions !== 'function') {
+    throw new Error('renderRecentSessions unavailable');
+  }
+  window.__wtSmokeInjected = 0;
+  renderRecentSessions();
+  const titleNode = document.querySelector('.recent-title');
+  if (!titleNode) throw new Error('Recent session title not rendered');
+  if (titleNode.querySelector('img')) throw new Error('Unsafe markup rendered inside recent title');
+  if (!String(titleNode.textContent || '').includes('<img src=x onerror=window.__wtSmokeInjected=1>')) {
+    throw new Error('Escaped recent title text missing');
+  }
+  if (window.__wtSmokeInjected) throw new Error('Injected markup executed');
+  return true;
+})()
+JS
+)"
+
 run_eval_check wt-thisbutthat "ThisButThat Gmail export opens a compose target" "$(cat <<'JS'
 (() => {
   const opened = [];
