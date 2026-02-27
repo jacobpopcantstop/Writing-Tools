@@ -10,6 +10,7 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="shared-context.js"></script>
+    <script src="shared-export.js"></script>
     <script src="shared-recent-sessions.js"></script>
     <script src="shared-commands.js"></script>
     <script src="shared-command-palette.js"></script>
@@ -607,46 +608,26 @@
 
         function exportEmail() {
             const kept = state.sessionCards.filter(c => c.status === 'kept');
-            const subject = encodeURIComponent(`Joterie Harvest: ${state.focusPrompt || 'Untitled'}`);
+            const subject = `Joterie Harvest: ${state.focusPrompt || 'Untitled'}`;
             const bodyContent = kept.map((c, i) => `${i + 1}. ${c.text}`).join('\n');
-            const body = encodeURIComponent(bodyContent);
-            window.open(`mailto:?subject=${subject}&body=${body}`);
+            const exporter = window.WTExport;
+            if (exporter && typeof exporter.openMailtoCompose === 'function') {
+                exporter.openMailtoCompose({ tool: 'Joterie', subject, body: bodyContent });
+                return;
+            }
+            window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyContent)}`);
         }
 
         function exportGmail() {
             const kept = state.sessionCards.filter(c => c.status === 'kept');
             const subjectText = `Joterie Harvest: ${state.focusPrompt || 'Untitled'}`;
             const bodyContent = kept.map((c, i) => `${i + 1}. ${c.text}`).join('\n');
-            const subject = encodeURIComponent(subjectText);
-            const body = encodeURIComponent(bodyContent);
-            const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&tf=1&su=${subject}&body=${body}`;
-            const mailtoUrl = `mailto:?subject=${encodeURIComponent(subjectText)}&body=${encodeURIComponent(bodyContent)}`;
-            const isMobile = window.matchMedia('(max-width: 820px)').matches || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-            if (isMobile) {
-                window.location.assign(gmailUrl);
+            const exporter = window.WTExport;
+            if (exporter && typeof exporter.openGmailCompose === 'function') {
+                exporter.openGmailCompose({ tool: 'Joterie', subject: subjectText, body: bodyContent });
                 return;
             }
-
-            let popup = null;
-            try {
-                popup = window.open(gmailUrl, '_blank', 'noopener,noreferrer');
-            } catch (_) {}
-            if (popup && !popup.closed) return;
-
-            const link = document.createElement('a');
-            link.href = gmailUrl;
-            link.target = '_blank';
-            link.rel = 'noopener noreferrer';
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-
-            setTimeout(() => {
-                if (document.visibilityState === 'visible' && document.hasFocus()) {
-                    window.location.assign(mailtoUrl);
-                }
-            }, 900);
+            window.open(`mailto:?subject=${encodeURIComponent(subjectText)}&body=${encodeURIComponent(bodyContent)}`);
         }
 
         function sendToBeatHive() {

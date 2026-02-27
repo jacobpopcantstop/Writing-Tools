@@ -99,7 +99,7 @@ Delivered so far in this phase:
   - Ring status now indicates output progress (`Output Ring`), aligning progression with draft quality.
 
 ## Phase 4 (Later): Reliability + Platform Hardening
-Status: Planned
+Status: In progress
 
 Goals:
 - Make exports, autosave, and offline flows resilient across browsers/devices.
@@ -108,3 +108,14 @@ Scope:
 - Unified export service with fallback order + telemetry.
 - Improved recovery snapshots and conflict-safe local persistence.
 - PWA/offline shell for key tools.
+
+Delivered so far in this phase:
+- Added `shared-export.js` as a unified compose/export helper with:
+  - Consistent Gmail compose flow across mobile + desktop.
+  - Desktop fallback from Gmail compose to `mailto:` when popup/open fails.
+  - Lightweight local telemetry of export transport outcomes (`writingtools_export_events_v1`).
+- Integrated shared export compose handling into:
+  - `ThisButThat`
+  - `Joterie`
+  - `Wribbon`
+  - `WitherNaught`
