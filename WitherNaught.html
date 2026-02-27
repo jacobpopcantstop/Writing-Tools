@@ -332,6 +332,11 @@ const THEMES = {
       couriusMode: 'append',
       sharedContext: { topic: '', constraints: '', audience: '', tone: '', updatedAt: '', lastTool: '' }
     };
+    const WITHER_STATE_KEY = 'writingtools_withernaught_state_v1';
+    const WITHER_REV_KEY = 'writingtools_withernaught_revision_v1';
+    const WITHER_SNAP_KEY = 'writingtools_withernaught_snapshots_v1';
+    const WITHER_TAB_ID = 'withernaught-' + Math.random().toString(36).slice(2, 10);
+    let localKnownRevision = 0;
 
     // ===== TIMERS & REFS =====
     let lastUpdate = null;
@@ -401,71 +406,154 @@ const THEMES = {
 
     function loadFromStorage() {
       try {
-        const saved = localStorage.getItem('flowstate_history_v13');
-        if (saved) {
-          try {
-            const parsed = JSON.parse(saved);
-            state.history = Array.isArray(parsed) ? parsed : [];
-            if (!Array.isArray(parsed)) localStorage.removeItem('flowstate_history_v13');
-          } catch (_) {
-            state.history = [];
-            localStorage.removeItem('flowstate_history_v13');
-          }
-        }
-        
-        const streakData = localStorage.getItem('flowstate_streak_v13');
-        if (streakData) {
-          try {
-            const parsed = JSON.parse(streakData);
-            if (parsed && typeof parsed === 'object') {
-              state.streak = {
-                current: Number.isFinite(parsed.current) ? parsed.current : 0,
-                lastDate: typeof parsed.lastDate === 'string' ? parsed.lastDate : null
-              };
-            } else {
-              localStorage.removeItem('flowstate_streak_v13');
-            }
-          } catch (_) {
-            localStorage.removeItem('flowstate_streak_v13');
-          }
-        }
-        
-        const prefs = localStorage.getItem('flowstate_prefs_v13');
-        if (prefs) {
-          try {
-            const parsed = JSON.parse(prefs);
-            if (parsed && typeof parsed === 'object') {
-              const theme = parsed.theme;
-              const difficulty = parsed.difficulty;
-              const couriusMode = parsed.couriusMode;
-              if (theme) state.theme = theme;
-              if (difficulty && DIFFICULTIES[difficulty]) state.difficulty = difficulty;
-              if (couriusMode === 'overwrite') state.couriusMode = 'overwrite';
-            } else {
-              localStorage.removeItem('flowstate_prefs_v13');
-            }
-          } catch (_) {
-            localStorage.removeItem('flowstate_prefs_v13');
-          }
-        }
+        const persisted = readPersistedState();
+        if (persisted) applyPersistedState(persisted);
       } catch (e) {
         console.warn('LocalStorage unavailable:', e);
       }
     }
 
+    function normalizePersistedState(payload) {
+      const source = payload && typeof payload === 'object' ? payload : {};
+      const history = Array.isArray(source.history) ? source.history : [];
+      const streak = source.streak && typeof source.streak === 'object' ? source.streak : {};
+      const prefs = source.prefs && typeof source.prefs === 'object' ? source.prefs : {};
+      return {
+        history: history.slice(0, CONSTANTS.HISTORY_LIMIT).filter((entry) => entry && typeof entry === 'object'),
+        streak: {
+          current: Number.isFinite(streak.current) ? streak.current : 0,
+          lastDate: typeof streak.lastDate === 'string' ? streak.lastDate : null
+        },
+        prefs: {
+          theme: prefs.theme === 'warm' ? 'warm' : 'cool',
+          difficulty: prefs.difficulty && DIFFICULTIES[prefs.difficulty] ? prefs.difficulty : 'Writer',
+          couriusMode: prefs.couriusMode === 'overwrite' ? 'overwrite' : 'append'
+        }
+      };
+    }
+
+    function buildPersistedState() {
+      return normalizePersistedState({
+        history: state.history,
+        streak: state.streak,
+        prefs: { theme: state.theme, difficulty: state.difficulty, couriusMode: state.couriusMode }
+      });
+    }
+
+    function applyPersistedState(payload) {
+      const data = normalizePersistedState(payload);
+      state.history = data.history;
+      state.streak = data.streak;
+      state.theme = data.prefs.theme;
+      state.difficulty = data.prefs.difficulty;
+      state.couriusMode = data.prefs.couriusMode;
+      state._highScoresCache = null;
+      state._highScoresCacheKey = null;
+    }
+
+    function readLegacyState() {
+      let history = [];
+      let streak = { current: 0, lastDate: null };
+      let prefs = { theme: state.theme, difficulty: state.difficulty, couriusMode: state.couriusMode };
+      const saved = localStorage.getItem('flowstate_history_v13');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          history = Array.isArray(parsed) ? parsed : [];
+        } catch (_) {}
+      }
+      const streakData = localStorage.getItem('flowstate_streak_v13');
+      if (streakData) {
+        try {
+          const parsed = JSON.parse(streakData);
+          if (parsed && typeof parsed === 'object') {
+            streak = {
+              current: Number.isFinite(parsed.current) ? parsed.current : 0,
+              lastDate: typeof parsed.lastDate === 'string' ? parsed.lastDate : null
+            };
+          }
+        } catch (_) {}
+      }
+      const prefsRaw = localStorage.getItem('flowstate_prefs_v13');
+      if (prefsRaw) {
+        try {
+          const parsed = JSON.parse(prefsRaw);
+          if (parsed && typeof parsed === 'object') {
+            prefs = {
+              theme: parsed.theme === 'warm' ? 'warm' : 'cool',
+              difficulty: parsed.difficulty && DIFFICULTIES[parsed.difficulty] ? parsed.difficulty : 'Writer',
+              couriusMode: parsed.couriusMode === 'overwrite' ? 'overwrite' : 'append'
+            };
+          }
+        } catch (_) {}
+      }
+      return normalizePersistedState({ history, streak, prefs });
+    }
+
+    function readPersistedState() {
+      try {
+        const modern = localStorage.getItem(WITHER_STATE_KEY);
+        if (modern) {
+          return normalizePersistedState(JSON.parse(modern));
+        }
+      } catch (_) {}
+      return readLegacyState();
+    }
+
+    function persistSnapshots(payload, reason, meta) {
+      try {
+        const snapshotsRaw = localStorage.getItem(WITHER_SNAP_KEY);
+        const snapshotsParsed = snapshotsRaw ? JSON.parse(snapshotsRaw) : [];
+        const snapshots = Array.isArray(snapshotsParsed) ? snapshotsParsed : [];
+        snapshots.unshift({
+          id: 'snap_' + Date.now() + '_' + Math.floor(Math.random() * 100000),
+          at: new Date().toISOString(),
+          reason: String(reason || 'autosave'),
+          sourceTab: WITHER_TAB_ID,
+          meta: meta && typeof meta === 'object' ? meta : {},
+          payload: normalizePersistedState(payload)
+        });
+        localStorage.setItem(WITHER_SNAP_KEY, JSON.stringify(snapshots.slice(0, 20)));
+      } catch (_) {}
+    }
+
+    function persistedComparable(payload) {
+      try { return JSON.stringify(normalizePersistedState(payload)); } catch (_) { return ''; }
+    }
+
+    function persistWitherState(reason = 'autosave') {
+      const candidate = buildPersistedState();
+      const remoteRev = parseInt(localStorage.getItem(WITHER_REV_KEY) || '0', 10) || 0;
+      const remoteState = readPersistedState();
+      if (remoteRev > localKnownRevision && persistedComparable(remoteState) !== persistedComparable(candidate)) {
+        persistSnapshots(candidate, 'save-conflict', {
+          reason: String(reason || 'autosave'),
+          baseRevision: localKnownRevision,
+          remoteRevision: remoteRev
+        });
+        return false;
+      }
+      const nextRev = Math.max(remoteRev, localKnownRevision) + 1;
+      localStorage.setItem(WITHER_STATE_KEY, JSON.stringify(candidate));
+      localStorage.setItem(WITHER_REV_KEY, String(nextRev));
+      localStorage.setItem('flowstate_history_v13', JSON.stringify(candidate.history));
+      localStorage.setItem('flowstate_streak_v13', JSON.stringify(candidate.streak));
+      localStorage.setItem('flowstate_prefs_v13', JSON.stringify(candidate.prefs));
+      localStorage.setItem('writingtools_theme', candidate.prefs.theme === 'warm' ? 'light' : 'dark');
+      localKnownRevision = nextRev;
+      return true;
+    }
+
     function saveHistory() {
-      try { localStorage.setItem('flowstate_history_v13', JSON.stringify(state.history)); } catch (e) {}
+      try { persistWitherState('history-save'); } catch (e) {}
     }
 
     function saveStreak() {
-      try { localStorage.setItem('flowstate_streak_v13', JSON.stringify(state.streak)); } catch (e) {}
+      try { persistWitherState('streak-save'); } catch (e) {}
     }
 
     function savePrefs() {
-      try {
-        localStorage.setItem('flowstate_prefs_v13', JSON.stringify({ theme: state.theme, difficulty: state.difficulty, couriusMode: state.couriusMode }));
-        localStorage.setItem('writingtools_theme', state.theme === 'warm' ? 'light' : 'dark');
-      } catch (e) {}
+      try { persistWitherState('prefs-save'); } catch (e) {}
     }
 
     function setCouriusMode(mode) {
@@ -1448,6 +1536,7 @@ const THEMES = {
 
     // ===== INIT =====
     function init() {
+      localKnownRevision = parseInt(localStorage.getItem(WITHER_REV_KEY) || '0', 10) || 0;
       loadFromStorage();
       syncSharedContext();
 
@@ -1473,6 +1562,22 @@ const THEMES = {
           render();
         });
       }
+      window.addEventListener('storage', (event) => {
+        if (!event || event.key !== WITHER_REV_KEY) return;
+        const incomingRev = parseInt(event.newValue || '0', 10) || 0;
+        if (incomingRev <= localKnownRevision) return;
+        const remote = readPersistedState();
+        const local = buildPersistedState();
+        if (persistedComparable(remote) !== persistedComparable(local)) {
+          persistSnapshots(local, 'remote-sync', {
+            previousRevision: localKnownRevision,
+            incomingRevision: incomingRev
+          });
+          applyPersistedState(remote);
+          render();
+        }
+        localKnownRevision = incomingRev;
+      });
     }
 
     init();

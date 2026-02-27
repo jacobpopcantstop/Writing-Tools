@@ -69,6 +69,7 @@ Delivered:
   - Synax revisioned persistence path verification
   - Gmail compose handoff assertions in `ThisButThat`, `Joterie`, `Wribbon`, and `WitherNaught`
   - Joterie revisioned archive persistence path verification
+  - WitherNaught revisioned prefs persistence path verification
   - Courius transfer append/overwrite storage path verification
   - Courius parenthetical wrapper carryover regression check when cycling element types
   - WitherNaught ring progression after writing input
@@ -153,3 +154,6 @@ Delivered so far in this phase:
   - Joterie archives now use revision tracking (`writingtools_joterie_revision_v1`) with conflict-safe writes.
   - Automatic Joterie snapshots (`writingtools_joterie_snapshots_v1`) are captured on save conflict and remote sync.
   - Cross-tab Joterie archive sync now preserves local recoverability before applying remote updates.
+  - WitherNaught persisted state now uses revision tracking (`writingtools_withernaught_revision_v1`) across history, streak, and preferences.
+  - Automatic WitherNaught snapshots (`writingtools_withernaught_snapshots_v1`) are captured on save conflict and remote sync.
+  - Cross-tab WitherNaught sync now preserves local recoverability before applying remote updates.

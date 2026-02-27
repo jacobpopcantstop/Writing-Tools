@@ -229,6 +229,25 @@ run_eval_check wt-withernaught "WitherNaught Gmail export opens a compose target
 JS
 )"
 
+run_eval_check wt-withernaught "WitherNaught revisioned prefs persist changes" "$(cat <<'JS'
+(() => {
+  localStorage.removeItem('writingtools_withernaught_state_v1');
+  localStorage.removeItem('writingtools_withernaught_revision_v1');
+  if (!window.WitherNaught || typeof window.WitherNaught.setDifficulty !== 'function') {
+    throw new Error('WitherNaught.setDifficulty unavailable');
+  }
+  window.WitherNaught.setDifficulty('Master');
+  const rev = parseInt(localStorage.getItem('writingtools_withernaught_revision_v1') || '0', 10) || 0;
+  const payload = JSON.parse(localStorage.getItem('writingtools_withernaught_state_v1') || '{}');
+  if (!(rev > 0)) throw new Error('WitherNaught revision not persisted');
+  if (!payload || !payload.prefs || payload.prefs.difficulty !== 'Master') {
+    throw new Error('WitherNaught persisted difficulty mismatch');
+  }
+  return true;
+})()
+JS
+)"
+
 run_eval_check wt-courius "Courius append/overwrite import flows update storage" "$(cat <<'JS'
 (() => {
   const bus = window.WTContextBus;
