@@ -266,6 +266,23 @@ run_eval_check wt-beathive "BeatHive revisioned local persistence updates on ren
 JS
 )"
 
+run_eval_check wt-papercut "PaperCut revisioned recent-session persistence updates" "$(cat <<'JS'
+(() => {
+  localStorage.removeItem('writingtools_papercut_state_v1');
+  localStorage.removeItem('writingtools_papercut_revision_v1');
+  if (typeof persistRecentSession !== 'function') throw new Error('persistRecentSession unavailable');
+  persistRecentSession({ fileName: 'smoke.pdf', totalPages: 7, currentPage: 3 });
+  const rev = parseInt(localStorage.getItem('writingtools_papercut_revision_v1') || '0', 10) || 0;
+  const payload = JSON.parse(localStorage.getItem('writingtools_papercut_state_v1') || '{}');
+  if (!(rev > 0)) throw new Error('PaperCut revision not persisted');
+  if (!payload || !payload.recentSession || payload.recentSession.fileName !== 'smoke.pdf') {
+    throw new Error('PaperCut recent session missing from persisted payload');
+  }
+  return true;
+})()
+JS
+)"
+
 run_eval_check wt-courius "Courius append/overwrite import flows update storage" "$(cat <<'JS'
 (() => {
   const bus = window.WTContextBus;

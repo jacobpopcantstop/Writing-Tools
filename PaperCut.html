@@ -441,9 +441,15 @@
             drawStart: null,
             selectedAnnotationId: null,
             draggingAnnotationId: null,
-            dragOffset: { x: 0, y: 0 }
+            dragOffset: { x: 0, y: 0 },
+            recentSession: null
         };
         const PAPERCUT_RECENT_KEY = 'writingtools_papercut_recent_v1';
+        const PAPERCUT_STATE_KEY = 'writingtools_papercut_state_v1';
+        const PAPERCUT_REV_KEY = 'writingtools_papercut_revision_v1';
+        const PAPERCUT_SNAPSHOT_KEY = 'writingtools_papercut_snapshots_v1';
+        const PAPERCUT_TAB_ID = 'papercut-' + Math.random().toString(36).slice(2, 10);
+        let localKnownRevision = 0;
         let renderSequence = 0;
 
         const dom = {
@@ -473,6 +479,83 @@
             return state.documents.find(d => d.id === state.activeDocId);
         }
 
+        function readPaperCutState() {
+            try {
+                const raw = localStorage.getItem(PAPERCUT_STATE_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (parsed && typeof parsed === 'object') {
+                        return {
+                            theme: parsed.theme === 'light' ? 'light' : 'dark',
+                            recentSession: parsed.recentSession && typeof parsed.recentSession === 'object' ? parsed.recentSession : null
+                        };
+                    }
+                }
+            } catch (_) {}
+            let recent = null;
+            try { recent = JSON.parse(localStorage.getItem(PAPERCUT_RECENT_KEY) || 'null'); } catch (_) {}
+            return {
+                theme: localStorage.getItem('writingtools_theme') === 'light' ? 'light' : 'dark',
+                recentSession: recent && typeof recent === 'object' ? recent : null
+            };
+        }
+
+        function paperCutComparable(payload) {
+            try {
+                return JSON.stringify({
+                    theme: payload.theme === 'light' ? 'light' : 'dark',
+                    recentSession: payload.recentSession || null
+                });
+            } catch (_) {
+                return '';
+            }
+        }
+
+        function savePaperCutSnapshot(payload, reason, meta) {
+            try {
+                const raw = localStorage.getItem(PAPERCUT_SNAPSHOT_KEY);
+                const parsed = raw ? JSON.parse(raw) : [];
+                const snapshots = Array.isArray(parsed) ? parsed : [];
+                snapshots.unshift({
+                    id: 'snap_' + Date.now() + '_' + Math.floor(Math.random() * 100000),
+                    at: new Date().toISOString(),
+                    reason: String(reason || 'autosave'),
+                    sourceTab: PAPERCUT_TAB_ID,
+                    meta: meta && typeof meta === 'object' ? meta : {},
+                    payload: { theme: payload.theme === 'light' ? 'light' : 'dark', recentSession: payload.recentSession || null }
+                });
+                localStorage.setItem(PAPERCUT_SNAPSHOT_KEY, JSON.stringify(snapshots.slice(0, 20)));
+            } catch (_) {}
+        }
+
+        function persistPaperCutState(partial, reason = 'autosave') {
+            const current = readPaperCutState();
+            const candidate = {
+                theme: (partial && partial.theme) ? partial.theme : current.theme,
+                recentSession: (partial && Object.prototype.hasOwnProperty.call(partial, 'recentSession')) ? partial.recentSession : current.recentSession
+            };
+            const remoteRev = parseInt(localStorage.getItem(PAPERCUT_REV_KEY) || '0', 10) || 0;
+            const remoteState = readPaperCutState();
+
+            if (remoteRev > localKnownRevision && paperCutComparable(remoteState) !== paperCutComparable(candidate)) {
+                savePaperCutSnapshot(candidate, 'save-conflict', {
+                    reason: String(reason || 'autosave'),
+                    baseRevision: localKnownRevision,
+                    remoteRevision: remoteRev
+                });
+                return false;
+            }
+
+            const nextRev = Math.max(remoteRev, localKnownRevision) + 1;
+            localStorage.setItem(PAPERCUT_STATE_KEY, JSON.stringify(candidate));
+            if (candidate.recentSession) localStorage.setItem(PAPERCUT_RECENT_KEY, JSON.stringify(candidate.recentSession));
+            else localStorage.removeItem(PAPERCUT_RECENT_KEY);
+            localStorage.setItem('writingtools_theme', candidate.theme === 'light' ? 'light' : 'dark');
+            localStorage.setItem(PAPERCUT_REV_KEY, String(nextRev));
+            localKnownRevision = nextRev;
+            return true;
+        }
+
         function persistRecentSession(doc) {
             if (!doc) return;
             const safeTotal = parseInt(doc.totalPages || 0, 10) || 0;
@@ -483,20 +566,39 @@
                 currentPage: safeCurrent,
                 updatedAt: Date.now()
             };
-            try {
-                localStorage.setItem(PAPERCUT_RECENT_KEY, JSON.stringify(payload));
-            } catch (_) {}
+            state.recentSession = payload;
+            persistPaperCutState({ recentSession: payload }, 'recent-session');
         }
 
         function init() {
+            localKnownRevision = parseInt(localStorage.getItem(PAPERCUT_REV_KEY) || '0', 10) || 0;
             loadTheme();
             setupEventListeners();
             if (typeof lucide !== 'undefined') lucide.createIcons();
             else setTimeout(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); }, 500);
+            window.addEventListener('storage', (event) => {
+                if (!event || event.key !== PAPERCUT_REV_KEY) return;
+                const incomingRev = parseInt(event.newValue || '0', 10) || 0;
+                if (incomingRev <= localKnownRevision) return;
+                const remote = readPaperCutState();
+                const local = {
+                    theme: document.documentElement.getAttribute('data-wt-theme') === 'light' ? 'light' : 'dark',
+                    recentSession: state.recentSession
+                };
+                if (paperCutComparable(remote) !== paperCutComparable(local)) {
+                    savePaperCutSnapshot(local, 'remote-sync', {
+                        previousRevision: localKnownRevision,
+                        incomingRevision: incomingRev
+                    });
+                    state.recentSession = remote.recentSession || null;
+                    setTheme(remote.theme, false);
+                }
+                localKnownRevision = incomingRev;
+            });
         }
 
         function loadTheme() {
-            const saved = localStorage.getItem('writingtools_theme') || 'dark';
+            const saved = readPaperCutState().theme || 'dark';
             setTheme(saved);
         }
 
@@ -506,14 +608,14 @@
             setTheme(next);
         }
 
-        function setTheme(theme) {
+        function setTheme(theme, shouldPersist = true) {
             state.isDarkMode = theme === 'dark';
             document.documentElement.setAttribute('data-wt-theme', theme);
             if(dom.themeIcon) {
                 dom.themeIcon.setAttribute('data-lucide', theme === 'dark' ? 'sun' : 'moon');
                 if (typeof lucide !== 'undefined') lucide.createIcons();
             }
-            localStorage.setItem('writingtools_theme', theme);
+            if (shouldPersist) persistPaperCutState({ theme }, 'theme');
         }
 
         function setupEventListeners() {
@@ -669,7 +771,8 @@
                 dom.toolbar.style.display = 'none';
                 document.body.classList.remove('has-doc');
                 dom.thumbnails.innerHTML = '';
-                try { localStorage.removeItem(PAPERCUT_RECENT_KEY); } catch (_) {}
+                state.recentSession = null;
+                persistPaperCutState({ recentSession: null }, 'clear-recent');
             } else {
                 updateUIForActiveDoc();
             }
