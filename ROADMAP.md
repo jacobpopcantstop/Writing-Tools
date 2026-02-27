@@ -141,3 +141,6 @@ Delivered so far in this phase:
   - Wribbon draft writes now use revision tracking (`writingtools_wribbon_revision_v1`).
   - Automatic Wribbon local snapshots (`writingtools_wribbon_snapshots_v1`) captured on save conflicts and remote sync.
   - Cross-tab Wribbon sync now preserves recoverable local text before applying remote draft updates.
+  - ThisButThat cache/history writes now use revision tracking (`writingtools_thisbutthat_revision_v1`).
+  - Automatic ThisButThat snapshots (`writingtools_thisbutthat_snapshots_v1`) are captured on save conflicts and remote sync.
+  - Cross-tab ThisButThat sync now preserves a recoverable local state before applying remote updates.

@@ -257,6 +257,11 @@
             contextExpanded: false // NEW: Track context expansion
         };
         const CACHE_KEY = 'thisButThat_cachedTwists_v2';
+        const HISTORY_KEY = 'thisButThatHistory';
+        const TBT_REV_KEY = 'writingtools_thisbutthat_revision_v1';
+        const TBT_SNAPSHOTS_KEY = 'writingtools_thisbutthat_snapshots_v1';
+        const TBT_TAB_ID = 'tbt-' + Math.random().toString(36).slice(2, 10);
+        let localKnownRevision = 0;
 
         function getContextBus() {
             return window.WTContextBus || null;
@@ -285,6 +290,111 @@
             return (ctx.topic || '').trim();
         }
 
+        function normalizeHistoryPayload(list) {
+            if (!Array.isArray(list)) return [];
+            return list.filter(entry => entry && entry.prompt && entry.prompt.text && Array.isArray(entry.twists));
+        }
+
+        function getSnapshots() {
+            try {
+                const raw = localStorage.getItem(TBT_SNAPSHOTS_KEY);
+                const parsed = raw ? JSON.parse(raw) : [];
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (_) {
+                return [];
+            }
+        }
+
+        function saveSnapshot(payload, reason, meta) {
+            try {
+                const snapshots = getSnapshots();
+                snapshots.unshift({
+                    id: 'snap_' + Date.now() + '_' + Math.floor(Math.random() * 100000),
+                    at: new Date().toISOString(),
+                    reason: String(reason || 'autosave'),
+                    sourceTab: TBT_TAB_ID,
+                    meta: meta && typeof meta === 'object' ? meta : {},
+                    payload
+                });
+                localStorage.setItem(TBT_SNAPSHOTS_KEY, JSON.stringify(snapshots.slice(0, 20)));
+            } catch (_) {}
+        }
+
+        function serializeComparable(data) {
+            try {
+                return JSON.stringify(data || {});
+            } catch (_) {
+                return '';
+            }
+        }
+
+        function readPersistedState() {
+            return {
+                history: normalizeHistoryPayload(loadHistoryFromStorage()),
+                cache: getCachedTwistBatches()
+            };
+        }
+
+        function loadHistoryFromStorage() {
+            const saved = localStorage.getItem(HISTORY_KEY);
+            if (!saved) return [];
+            try {
+                const parsed = JSON.parse(saved);
+                if (!Array.isArray(parsed)) {
+                    localStorage.removeItem(HISTORY_KEY);
+                    return [];
+                }
+                return parsed;
+            } catch (_) {
+                try { localStorage.removeItem(HISTORY_KEY); } catch (_) {}
+                return [];
+            }
+        }
+
+        function notifyPersistence(message, level = 'info') {
+            const toast = document.getElementById('toast');
+            if (toast) {
+                toast.textContent = String(message || '');
+                toast.classList.remove('opacity-0');
+                setTimeout(() => toast.classList.add('opacity-0'), 2200);
+            }
+            const bus = getContextBus();
+            if (bus && typeof bus.notify === 'function') {
+                bus.notify(String(message || ''), level);
+            }
+        }
+
+        function persistState(nextState, reason = 'autosave') {
+            const candidate = {
+                history: normalizeHistoryPayload(nextState.history),
+                cache: Array.isArray(nextState.cache) ? nextState.cache : []
+            };
+            const remoteRev = parseInt(localStorage.getItem(TBT_REV_KEY) || '0', 10) || 0;
+            const remoteState = readPersistedState();
+            const comparableRemote = serializeComparable(remoteState);
+            const comparableCandidate = serializeComparable(candidate);
+
+            if (remoteRev > localKnownRevision && comparableRemote !== comparableCandidate) {
+                saveSnapshot({
+                    history: candidate.history,
+                    cache: candidate.cache
+                }, 'save-conflict', {
+                    reason: String(reason || 'autosave'),
+                    baseRevision: localKnownRevision,
+                    remoteRevision: remoteRev
+                });
+                notifyPersistence('This But That conflict detected; local snapshot saved', 'error');
+                return false;
+            }
+
+            const nextRev = Math.max(remoteRev, localKnownRevision) + 1;
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(candidate.history));
+            localStorage.setItem(CACHE_KEY, JSON.stringify(candidate.cache));
+            localStorage.setItem(TBT_REV_KEY, String(nextRev));
+            localKnownRevision = nextRev;
+            return true;
+        }
+
         function publishTopicToContext(topicText) {
             const bus = getContextBus();
             if (!bus) return;
@@ -295,6 +405,7 @@
 
         // --- Init ---
         document.addEventListener('DOMContentLoaded', () => {
+            localKnownRevision = parseInt(localStorage.getItem(TBT_REV_KEY) || '0', 10) || 0;
             loadHistory();
             const seedTopic = getSeedTopicFromContext();
             fetchTopics(seedTopic || null);
@@ -315,6 +426,29 @@
 
             const bus = getContextBus();
             if (bus) bus.subscribe(() => refreshContextBadge());
+        });
+
+        window.addEventListener('storage', (event) => {
+            if (!event || event.key !== TBT_REV_KEY) return;
+            const incomingRev = parseInt(event.newValue || '0', 10) || 0;
+            if (incomingRev <= localKnownRevision) return;
+
+            const remoteState = readPersistedState();
+            const localState = {
+                history: normalizeHistoryPayload(state.history),
+                cache: getCachedTwistBatches()
+            };
+            if (serializeComparable(localState) !== serializeComparable(remoteState)) {
+                saveSnapshot(localState, 'remote-sync', {
+                    previousRevision: localKnownRevision,
+                    incomingRevision: incomingRev
+                });
+                state.history = remoteState.history;
+                renderTwistList();
+                renderHistory();
+                notifyPersistence('This But That synced from another tab; local snapshot saved', 'info');
+            }
+            localKnownRevision = incomingRev;
         });
 
         function getCachedTwistBatches() {
@@ -357,7 +491,10 @@
                 }
             ].slice(-250);
 
-            localStorage.setItem(CACHE_KEY, JSON.stringify(next));
+            persistState({
+                history: state.history,
+                cache: next
+            }, 'cache-save');
         }
 
         // --- Theme ---
@@ -793,25 +930,17 @@
             };
 
             state.history.unshift(entry);
-            localStorage.setItem('thisButThatHistory', JSON.stringify(state.history));
+            persistState({
+                history: state.history,
+                cache: getCachedTwistBatches()
+            }, 'save-and-next');
             
             // Refresh
             fetchTopics();
         }
 
         function loadHistory() {
-            const saved = localStorage.getItem('thisButThatHistory');
-            if (saved) {
-                try {
-                    const parsed = JSON.parse(saved);
-                    state.history = Array.isArray(parsed) ? parsed : [];
-                    if (!Array.isArray(parsed)) localStorage.removeItem('thisButThatHistory');
-                } catch(e) {
-                    state.history = [];
-                    try { localStorage.removeItem('thisButThatHistory'); } catch (_) {}
-                    console.error("History parse fail");
-                }
-            }
+            state.history = normalizeHistoryPayload(loadHistoryFromStorage());
         }
 
         function formatExport(options = {}) {
@@ -906,9 +1035,7 @@
             const data = formatExport();
             if(!data) return;
             navigator.clipboard.writeText(data.body).then(() => {
-                const toast = document.getElementById('toast');
-                toast.classList.remove('opacity-0');
-                setTimeout(() => toast.classList.add('opacity-0'), 2000);
+                notifyPersistence('Copied to clipboard', 'info');
             });
         }
 
