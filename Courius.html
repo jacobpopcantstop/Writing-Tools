@@ -814,6 +814,9 @@
 
     let characterSet = new Set();
     let locationSet = new Set();
+    let sceneLocationCoreSet = new Set();
+    let sceneTimeSet = new Set(SCENE_TIME_HINTS);
+    let characterTurnPairs = new Map();
     let saveTimeout;
     let importHistory = [];
     let writingTimerDuration = 25 * 60;
@@ -1344,31 +1347,109 @@
         return text.replace(/\n$/, '');
     }
 
-    function getMatches(text, targetSet, type) {
+    function parseSceneHeadingParts(text) {
+        const value = String(text || '').toUpperCase().trim();
+        if (!value) return { prefix: '', location: '', time: '', hasDash: false, raw: '' };
+        const match = value.match(/^(INT\/EXT|INT|EXT)\.\s*(.*)$/);
+        const prefix = match ? match[1] + '.' : '';
+        const remainder = match ? match[2] : value;
+        const dashIdx = remainder.indexOf(' - ');
+        if (dashIdx >= 0) {
+            const location = remainder.slice(0, dashIdx).trim();
+            const time = remainder.slice(dashIdx + 3).trim();
+            return { prefix, location, time, hasDash: true, raw: value };
+        }
+        if (/\s-\s*$/.test(value)) {
+            const location = remainder.replace(/\s-\s*$/, '').trim();
+            return { prefix, location, time: '', hasDash: true, raw: value };
+        }
+        return { prefix, location: remainder.trim(), time: '', hasDash: false, raw: value };
+    }
+
+    function normalizeSceneHeading(value) {
+        const parts = parseSceneHeadingParts(value);
+        if (!parts.location) return '';
+        const prefix = parts.prefix || 'INT.';
+        if (!parts.hasDash) return `${prefix} ${parts.location}`.trim();
+        const time = parts.time || 'DAY.';
+        return `${prefix} ${parts.location} - ${time}`.trim();
+    }
+
+    function getPreviousCharacterName(block) {
+        const prev = previousBlockOfType(block, 'character');
+        return prev ? getPureText(prev).trim().toUpperCase() : '';
+    }
+
+    function rankCharacterMatches(matches, block) {
+        const previousName = getPreviousCharacterName(block);
+        if (!previousName) return matches;
+        const preferred = characterTurnPairs.get(previousName) || new Set();
+        if (!preferred.size) return matches;
+        return matches.slice().sort((a, b) => {
+            const aPreferred = preferred.has(a) ? 0 : 1;
+            const bPreferred = preferred.has(b) ? 0 : 1;
+            return aPreferred - bPreferred || a.localeCompare(b);
+        });
+    }
+
+    function getMatches(text, targetSet, type, block) {
         const results = [];
         for (let entry of targetSet) {
             if (entry === text) continue;
             if (type === 'scene-heading') {
-                // Match on full heading prefix, OR on the location segment after INT./EXT./INT./EXT.
-                // e.g. typing "KITCHEN" matches "INT. KITCHEN - DAY"
-                const locationPart = entry.replace(/^(INT\/EXT|INT|EXT)\.\s*/i, '').split(/\s*-\s*/)[0].trim();
-                if (entry.startsWith(text) || locationPart.startsWith(text)) {
-                    results.push(entry);
+                const parsedText = parseSceneHeadingParts(text);
+                if (/\s-\s*$/.test(text)) {
+                    // Typing "... -" should suggest time tokens immediately.
+                    sceneTimeSet.forEach((token) => {
+                        results.push(`${text} ${token}`.replace(/\s+/g, ' ').trim());
+                    });
+                    break;
+                }
+                const normalizedEntry = normalizeSceneHeading(entry);
+                const entryParts = parseSceneHeadingParts(normalizedEntry);
+                const fullStarts = normalizedEntry.startsWith(text);
+                const locStarts = entryParts.location && entryParts.location.startsWith(parsedText.location || text);
+                const timeStarts = parsedText.hasDash && parsedText.time
+                    ? (entryParts.time && entryParts.time.startsWith(parsedText.time))
+                    : false;
+                if (fullStarts || locStarts || timeStarts) {
+                    results.push(normalizedEntry);
                 }
             } else {
-                // Character: prefix match
                 if (entry.startsWith(text)) {
                     results.push(entry);
                 }
             }
         }
-        // Sort: exact prefix first, then location-part matches
+        if (type === 'scene-heading') {
+            const parsedText = parseSceneHeadingParts(text);
+            if (parsedText.location) {
+                sceneLocationCoreSet.forEach((loc) => {
+                    if (!loc.startsWith(parsedText.location)) return;
+                    const heading = `${parsedText.prefix || 'INT.'} ${loc}${parsedText.hasDash ? ` - ${parsedText.time || SCENE_TIME_HINTS[0]}` : ''}`.trim();
+                    results.push(heading);
+                });
+            }
+            if (parsedText.hasDash) {
+                sceneTimeSet.forEach((token) => {
+                    if (parsedText.time && !token.startsWith(parsedText.time)) return;
+                    const heading = `${parsedText.prefix || 'INT.'} ${parsedText.location || 'LOCATION'} - ${token}`.trim();
+                    results.push(heading);
+                });
+            }
+        }
+
+        // Sort: exact prefix first, then broader matches
         results.sort((a, b) => {
             const aPrefix = a.startsWith(text) ? 0 : 1;
             const bPrefix = b.startsWith(text) ? 0 : 1;
             return aPrefix - bPrefix || a.localeCompare(b);
         });
-        return results.slice(0, 8);
+        const deduped = Array.from(new Set(results)).slice(0, 20);
+        if (type === 'character') {
+            return rankCharacterMatches(deduped, block).slice(0, 8);
+        }
+        return deduped.slice(0, 8);
     }
 
     function handleAutofill(block, type, key) {
@@ -1381,7 +1462,7 @@
         }
 
         const targetSet = (type === 'character') ? characterSet : locationSet;
-        const matches = getMatches(text, targetSet, type);
+        const matches = getMatches(text, targetSet, type, block);
 
         if (matches.length === 0) { hideDropdown(); return; }
 
@@ -1616,9 +1697,42 @@
     }
 
     function updateSuggestions() {
-        characterSet.clear(); locationSet.clear();
-        document.querySelectorAll('.character').forEach(d => { const t = getPureText(d).trim().toUpperCase(); if (t) characterSet.add(t); });
-        document.querySelectorAll('.scene-heading').forEach(d => { const t = getPureText(d).trim().toUpperCase(); if (t) locationSet.add(t); });
+        characterSet.clear();
+        locationSet.clear();
+        sceneLocationCoreSet.clear();
+        sceneTimeSet = new Set(SCENE_TIME_HINTS);
+        characterTurnPairs.clear();
+
+        const blocks = Array.from(EDITOR.children || []);
+        let previousCharacter = '';
+        blocks.forEach((node) => {
+            if (!node || !node.classList || node.classList.contains('title-page-container')) return;
+            if (node.classList.contains('character')) {
+                const name = getPureText(node).trim().toUpperCase();
+                if (!name) return;
+                characterSet.add(name);
+                if (previousCharacter && previousCharacter !== name) {
+                    const pairSet = characterTurnPairs.get(previousCharacter) || new Set();
+                    pairSet.add(name);
+                    characterTurnPairs.set(previousCharacter, pairSet);
+                }
+                previousCharacter = name;
+                return;
+            }
+            if (node.classList.contains('scene-heading')) {
+                const heading = normalizeSceneHeading(getPureText(node));
+                if (!heading) return;
+                locationSet.add(heading);
+                const parts = parseSceneHeadingParts(heading);
+                if (parts.location) sceneLocationCoreSet.add(parts.location);
+                if (parts.time) sceneTimeSet.add(parts.time);
+                previousCharacter = '';
+                return;
+            }
+            if (node.classList.contains('action') || node.classList.contains('transition')) {
+                previousCharacter = '';
+            }
+        });
     }
 
     function resetScript() {

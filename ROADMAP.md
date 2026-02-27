@@ -89,6 +89,10 @@ Delivered so far in this phase:
   - Missing-spine detection (Normal World, First Weird Thing, Heightening, Ending).
   - Escalation depth signal and unresolved tension estimate from story tags.
   - Actionable diagnostic hints surfaced inline while mapping beats.
+- Courius autocomplete now adapts to active screenplay structure:
+  - Learns scene heading location cores + time tokens from the current draft.
+  - Supports `INT./EXT. LOCATION -` time completion suggestions (`DAY.`, `NIGHT.`, etc.).
+  - Learns character turn pairs and prioritizes likely alternating speakers.
 
 ## Phase 4 (Later): Reliability + Platform Hardening
 Status: Planned
