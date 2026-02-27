@@ -455,8 +455,17 @@
             const [pinned, setPinned] = useState(() => {
                 try {
                     const saved = localStorage.getItem('writingtools_synax_pinned');
-                    return saved ? JSON.parse(saved) : [];
-                } catch { return []; }
+                    if (!saved) return [];
+                    const parsed = JSON.parse(saved);
+                    if (!Array.isArray(parsed)) {
+                        localStorage.removeItem('writingtools_synax_pinned');
+                        return [];
+                    }
+                    return parsed;
+                } catch {
+                    try { localStorage.removeItem('writingtools_synax_pinned'); } catch (_) {}
+                    return [];
+                }
             });
             const [editorContent, setEditorContent] = useState(() => {
                 return localStorage.getItem('writingtools_synax_editor') || '';
@@ -596,14 +605,19 @@
                     const raw = localStorage.getItem(API_POOL_KEY);
                     if (!raw) return;
                     const parsed = JSON.parse(raw);
-                    if (!parsed || !parsed.nouns || !parsed.verbs || !parsed.adjectives) return;
+                    if (!parsed || !parsed.nouns || !parsed.verbs || !parsed.adjectives) {
+                        localStorage.removeItem(API_POOL_KEY);
+                        return;
+                    }
                     serendipityPoolRef.current = {
                         nouns: Array.isArray(parsed.nouns) ? parsed.nouns : [],
                         verbs: Array.isArray(parsed.verbs) ? parsed.verbs : [],
                         adjectives: Array.isArray(parsed.adjectives) ? parsed.adjectives : [],
                         updatedAt: parsed.updatedAt || 0
                     };
-                } catch (_) {}
+                } catch (_) {
+                    try { localStorage.removeItem(API_POOL_KEY); } catch (_) {}
+                }
             };
 
             const saveApiPoolToStorage = () => {

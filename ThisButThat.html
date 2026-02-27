@@ -328,6 +328,7 @@
                     item.twists.length > 0
                 );
             } catch (e) {
+                try { localStorage.removeItem(CACHE_KEY); } catch (_) {}
                 return [];
             }
         }
@@ -799,8 +800,14 @@
             const saved = localStorage.getItem('thisButThatHistory');
             if (saved) {
                 try {
-                    state.history = JSON.parse(saved);
-                } catch(e) { console.error("History parse fail"); }
+                    const parsed = JSON.parse(saved);
+                    state.history = Array.isArray(parsed) ? parsed : [];
+                    if (!Array.isArray(parsed)) localStorage.removeItem('thisButThatHistory');
+                } catch(e) {
+                    state.history = [];
+                    try { localStorage.removeItem('thisButThatHistory'); } catch (_) {}
+                    console.error("History parse fail");
+                }
             }
         }
 
