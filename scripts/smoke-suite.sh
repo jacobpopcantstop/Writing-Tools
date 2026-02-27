@@ -92,6 +92,25 @@ open_and_check wt-papercut PaperCut.html
 
 echo "==> critical interactions"
 
+run_eval_check wt-synax "Synax revisioned persistence stores state updates" "$(cat <<'JS'
+(() => {
+  localStorage.removeItem('writingtools_synax_state_v1');
+  localStorage.removeItem('writingtools_synax_revision_v1');
+  const pinBtn = Array.from(document.querySelectorAll('button'))
+    .find((btn) => ((btn.getAttribute('title') || '').toLowerCase() === 'pin'));
+  if (!pinBtn) throw new Error('Synax pin button not found');
+  pinBtn.click();
+  const revision = parseInt(localStorage.getItem('writingtools_synax_revision_v1') || '0', 10) || 0;
+  const state = JSON.parse(localStorage.getItem('writingtools_synax_state_v1') || '{}');
+  if (!(revision > 0)) throw new Error('Synax revision was not persisted');
+  if (!state || !Array.isArray(state.pinned) || state.pinned.length < 1) {
+    throw new Error('Synax pinned state missing from revisioned payload');
+  }
+  return true;
+})()
+JS
+)"
+
 run_eval_check wt-thisbutthat "ThisButThat Gmail export opens a compose target" "$(cat <<'JS'
 (() => {
   const opened = [];

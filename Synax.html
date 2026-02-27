@@ -350,6 +350,9 @@
 
         const DATAMUSE_API = 'https://api.datamuse.com/words';
         const API_POOL_KEY = 'writingtools_synax_api_pool_v1';
+        const SYNAX_STATE_KEY = 'writingtools_synax_state_v1';
+        const SYNAX_REV_KEY = 'writingtools_synax_revision_v1';
+        const SYNAX_SNAPSHOTS_KEY = 'writingtools_synax_snapshots_v1';
         const getRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
         // Diverse seed concepts for API-powered serendipity
@@ -492,6 +495,142 @@
 
             // Refs
             const textareaRef = useRef(null);
+            const synaxTabIdRef = useRef('synax-' + Math.random().toString(36).slice(2, 10));
+            const localKnownRevisionRef = useRef(0);
+            const skipNextPersistRef = useRef(false);
+            const stateRef = useRef(null);
+
+            const notifyReliability = useCallback((message, level = 'info') => {
+                const bus = window.WTContextBus;
+                if (bus && typeof bus.notify === 'function') {
+                    bus.notify(String(message || ''), level);
+                }
+            }, []);
+
+            const normalizeWordSet = useCallback((list) => {
+                if (!Array.isArray(list)) return [];
+                return list
+                    .filter((entry) => entry && typeof entry.word === 'string')
+                    .map((entry, idx) => ({
+                        id: Number(entry.id) || (Date.now() + idx),
+                        word: String(entry.word || '').trim(),
+                        type: String(entry.type || 'Word')
+                    }))
+                    .filter((entry) => entry.word);
+            }, []);
+
+            const normalizePinned = useCallback((list) => {
+                if (!Array.isArray(list)) return [];
+                return list
+                    .filter((entry) => entry && typeof entry.word === 'string')
+                    .map((entry, idx) => ({
+                        id: Number(entry.id) || (Date.now() + idx),
+                        word: String(entry.word || '').trim(),
+                        type: String(entry.type || 'Word')
+                    }))
+                    .filter((entry) => entry.word);
+            }, []);
+
+            const normalizeHistory = useCallback((list) => {
+                if (!Array.isArray(list)) return [];
+                return list
+                    .map((set) => normalizeWordSet(set))
+                    .filter((set) => Array.isArray(set) && set.length > 0)
+                    .slice(-20);
+            }, [normalizeWordSet]);
+
+            const buildSerializableState = useCallback((source = {}) => {
+                const safeMode = ['random', 'triad', 'context', 'rhyme'].includes(source.mode) ? source.mode : 'random';
+                const safeInterval = Math.min(30, Math.max(2, Number(source.autoGenInterval) || 5));
+                const safeCount = Math.min(12, Math.max(1, Number(source.serendipityCount) || 4));
+                return {
+                    mode: safeMode,
+                    contextInput: String(source.contextInput || ''),
+                    words: normalizeWordSet(source.words),
+                    history: normalizeHistory(source.history),
+                    pinned: normalizePinned(source.pinned),
+                    editorContent: String(source.editorContent || ''),
+                    settings: {
+                        offlineMode: !!source.offlineMode,
+                        darkMode: !!source.darkMode,
+                        minimalMode: !!source.minimalMode,
+                        autoGen: !!source.autoGen,
+                        autoGenInterval: safeInterval,
+                        serendipityCount: safeCount
+                    }
+                };
+            }, [normalizeHistory, normalizePinned, normalizeWordSet]);
+
+            const getSnapshots = useCallback(() => {
+                try {
+                    const raw = localStorage.getItem(SYNAX_SNAPSHOTS_KEY);
+                    const parsed = raw ? JSON.parse(raw) : [];
+                    return Array.isArray(parsed) ? parsed : [];
+                } catch (_) {
+                    return [];
+                }
+            }, []);
+
+            const saveRecoverySnapshot = useCallback((payload, reason, meta) => {
+                try {
+                    const nextPayload = buildSerializableState(payload);
+                    const snapshots = getSnapshots();
+                    snapshots.unshift({
+                        id: 'snap_' + Date.now() + '_' + Math.floor(Math.random() * 100000),
+                        at: new Date().toISOString(),
+                        reason: String(reason || 'autosave'),
+                        sourceTab: synaxTabIdRef.current,
+                        meta: meta && typeof meta === 'object' ? meta : {},
+                        payload: nextPayload
+                    });
+                    localStorage.setItem(SYNAX_SNAPSHOTS_KEY, JSON.stringify(snapshots.slice(0, 20)));
+                } catch (_) {}
+            }, [buildSerializableState, getSnapshots]);
+
+            const readStateFromStorage = useCallback(() => {
+                try {
+                    const raw = localStorage.getItem(SYNAX_STATE_KEY);
+                    if (!raw) return null;
+                    return buildSerializableState(JSON.parse(raw));
+                } catch (_) {
+                    return null;
+                }
+            }, [buildSerializableState]);
+
+            const stateComparable = useCallback((payload) => {
+                try {
+                    return JSON.stringify(buildSerializableState(payload));
+                } catch (_) {
+                    return '';
+                }
+            }, [buildSerializableState]);
+
+            const persistSynaxState = useCallback((candidateSource, reason = 'autosave') => {
+                const candidate = buildSerializableState(candidateSource);
+                const remoteRev = parseInt(localStorage.getItem(SYNAX_REV_KEY) || '0', 10) || 0;
+                const remoteState = readStateFromStorage();
+                const comparableRemote = remoteState ? stateComparable(remoteState) : '';
+                const comparableCandidate = stateComparable(candidate);
+
+                if (remoteRev > localKnownRevisionRef.current && comparableRemote !== comparableCandidate) {
+                    saveRecoverySnapshot(candidate, 'save-conflict', {
+                        reason: String(reason || 'autosave'),
+                        baseRevision: localKnownRevisionRef.current,
+                        remoteRevision: remoteRev
+                    });
+                    notifyReliability('Synax conflict detected; local snapshot saved', 'error');
+                    return false;
+                }
+
+                const nextRev = Math.max(remoteRev, localKnownRevisionRef.current) + 1;
+                localStorage.setItem(SYNAX_STATE_KEY, JSON.stringify(candidate));
+                localStorage.setItem(SYNAX_REV_KEY, String(nextRev));
+                localStorage.setItem('writingtools_synax_pinned', JSON.stringify(candidate.pinned));
+                localStorage.setItem('writingtools_synax_editor', candidate.editorContent);
+                localStorage.setItem('writingtools_synax_updated_at', String(Date.now()));
+                localKnownRevisionRef.current = nextRev;
+                return true;
+            }, [buildSerializableState, notifyReliability, readStateFromStorage, saveRecoverySnapshot, stateComparable]);
 
             const publishContext = useCallback((partial) => {
                 const bus = window.WTContextBus;
@@ -517,13 +656,49 @@
             // --- EFFECTS ---
 
             useEffect(() => {
-                localStorage.setItem('writingtools_synax_pinned', JSON.stringify(pinned));
-            }, [pinned]);
+                stateRef.current = {
+                    mode,
+                    contextInput,
+                    words,
+                    history,
+                    pinned,
+                    editorContent,
+                    offlineMode,
+                    darkMode,
+                    minimalMode,
+                    autoGen,
+                    autoGenInterval,
+                    serendipityCount
+                };
+            }, [autoGen, autoGenInterval, contextInput, darkMode, editorContent, history, minimalMode, mode, offlineMode, pinned, serendipityCount, words]);
 
             useEffect(() => {
-                localStorage.setItem('writingtools_synax_editor', editorContent);
-                localStorage.setItem('writingtools_synax_updated_at', String(Date.now()));
-            }, [editorContent]);
+                localKnownRevisionRef.current = parseInt(localStorage.getItem(SYNAX_REV_KEY) || '0', 10) || 0;
+                const persisted = readStateFromStorage();
+                if (!persisted) return;
+                skipNextPersistRef.current = true;
+                setMode(persisted.mode || 'random');
+                setContextInput(String(persisted.contextInput || ''));
+                setWords(normalizeWordSet(persisted.words));
+                setHistory(normalizeHistory(persisted.history));
+                setPinned(normalizePinned(persisted.pinned));
+                setEditorContent(String(persisted.editorContent || ''));
+                setOfflineMode(!!persisted.settings?.offlineMode);
+                setDarkMode(!!persisted.settings?.darkMode);
+                setMinimalMode(!!persisted.settings?.minimalMode);
+                setAutoGen(!!persisted.settings?.autoGen);
+                setAutoGenInterval(Math.min(30, Math.max(2, Number(persisted.settings?.autoGenInterval) || 5)));
+                setSerendipityCount(Math.min(12, Math.max(1, Number(persisted.settings?.serendipityCount) || 4)));
+            }, [normalizeHistory, normalizePinned, normalizeWordSet, readStateFromStorage]);
+
+            useEffect(() => {
+                if (!stateRef.current) return;
+                if (skipNextPersistRef.current) {
+                    skipNextPersistRef.current = false;
+                    return;
+                }
+                persistSynaxState(stateRef.current, 'state-change');
+            }, [autoGen, autoGenInterval, contextInput, darkMode, editorContent, history, minimalMode, mode, offlineMode, persistSynaxState, pinned, serendipityCount, words]);
 
             useEffect(() => {
                 if (darkMode) {
@@ -535,6 +710,43 @@
                 }
                 localStorage.setItem('writingtools_theme', darkMode ? 'dark' : 'light');
             }, [darkMode]);
+
+            useEffect(() => {
+                const onStorage = (event) => {
+                    if (!event || event.key !== SYNAX_REV_KEY) return;
+                    const incomingRev = parseInt(event.newValue || '0', 10) || 0;
+                    if (incomingRev <= localKnownRevisionRef.current) return;
+                    const remote = readStateFromStorage();
+                    if (!remote) {
+                        localKnownRevisionRef.current = incomingRev;
+                        return;
+                    }
+                    const local = stateRef.current ? buildSerializableState(stateRef.current) : buildSerializableState({});
+                    if (stateComparable(local) !== stateComparable(remote)) {
+                        saveRecoverySnapshot(local, 'remote-sync', {
+                            previousRevision: localKnownRevisionRef.current,
+                            incomingRevision: incomingRev
+                        });
+                        skipNextPersistRef.current = true;
+                        setMode(remote.mode || 'random');
+                        setContextInput(String(remote.contextInput || ''));
+                        setWords(normalizeWordSet(remote.words));
+                        setHistory(normalizeHistory(remote.history));
+                        setPinned(normalizePinned(remote.pinned));
+                        setEditorContent(String(remote.editorContent || ''));
+                        setOfflineMode(!!remote.settings?.offlineMode);
+                        setDarkMode(!!remote.settings?.darkMode);
+                        setMinimalMode(!!remote.settings?.minimalMode);
+                        setAutoGen(!!remote.settings?.autoGen);
+                        setAutoGenInterval(Math.min(30, Math.max(2, Number(remote.settings?.autoGenInterval) || 5)));
+                        setSerendipityCount(Math.min(12, Math.max(1, Number(remote.settings?.serendipityCount) || 4)));
+                        notifyReliability('Synax synced from another tab; local snapshot saved', 'info');
+                    }
+                    localKnownRevisionRef.current = incomingRev;
+                };
+                window.addEventListener('storage', onStorage);
+                return () => window.removeEventListener('storage', onStorage);
+            }, [buildSerializableState, normalizeHistory, normalizePinned, normalizeWordSet, notifyReliability, readStateFromStorage, saveRecoverySnapshot, stateComparable]);
 
             // Initial Load
             useEffect(() => {

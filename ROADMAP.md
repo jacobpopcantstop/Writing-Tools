@@ -66,6 +66,7 @@ Delivered:
 
 Delivered:
 - Added critical interaction checks to `scripts/smoke-suite.sh` for:
+  - Synax revisioned persistence path verification
   - Gmail compose handoff assertions in `ThisButThat`, `Joterie`, `Wribbon`, and `WitherNaught`
   - Courius transfer append/overwrite storage path verification
   - Courius parenthetical wrapper carryover regression check when cycling element types
@@ -144,3 +145,6 @@ Delivered so far in this phase:
   - ThisButThat cache/history writes now use revision tracking (`writingtools_thisbutthat_revision_v1`).
   - Automatic ThisButThat snapshots (`writingtools_thisbutthat_snapshots_v1`) are captured on save conflicts and remote sync.
   - Cross-tab ThisButThat sync now preserves a recoverable local state before applying remote updates.
+  - Synax workspace state now uses revision tracking (`writingtools_synax_revision_v1`) across words, narrative context, canvas, and generator settings.
+  - Automatic Synax snapshots (`writingtools_synax_snapshots_v1`) are captured on save conflicts and remote sync.
+  - Cross-tab Synax sync now preserves a recoverable local state before applying remote updates.
