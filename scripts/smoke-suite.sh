@@ -211,6 +211,31 @@ run_eval_check wt-joterie "Joterie revisioned archives persist on harvest save" 
 JS
 )"
 
+run_eval_check wt-joterie "Joterie snapshot restore applies archived payload" "$(cat <<'JS'
+(() => {
+  if (typeof restoreArchiveSnapshot !== 'function' || typeof saveArchiveSnapshot !== 'function') {
+    throw new Error('Joterie snapshot controls unavailable');
+  }
+  const originalConfirm = window.confirm;
+  window.confirm = () => true;
+  try {
+    saveArchiveSnapshot([
+      { id: 42, createdAt: new Date().toISOString(), date: '2/27/2026', prompt: 'Snapshot Prompt', cards: ['one'], ipm: '1.0', duration: '0:10' }
+    ], 'smoke-test', {});
+    const snaps = JSON.parse(localStorage.getItem('writingtools_joterie_snapshots_v1') || '[]');
+    if (!Array.isArray(snaps) || snaps.length === 0) throw new Error('No Joterie snapshot available');
+    restoreArchiveSnapshot(snaps[0].id);
+  } finally {
+    window.confirm = originalConfirm;
+  }
+  const archives = JSON.parse(localStorage.getItem('writingtools_joterie_archives') || '[]');
+  if (!Array.isArray(archives) || archives.length < 1) throw new Error('Joterie archives not restored');
+  if (!String(archives[0]?.prompt || '').includes('Snapshot Prompt')) throw new Error('Joterie restored payload mismatch');
+  return true;
+})()
+JS
+)"
+
 run_eval_check wt-wribbon "Wribbon Gmail export opens a compose target" "$(cat <<'JS'
 (() => {
   const opened = [];

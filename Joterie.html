@@ -359,6 +359,28 @@
             return true;
         }
 
+        function applyArchives(nextArchives) {
+            state.archives = normalizeArchivesPayload(nextArchives);
+            if (state.view === 'history') renderHistory();
+        }
+
+        function restoreArchiveSnapshot(snapshotId) {
+            const snapshots = getArchiveSnapshots();
+            const found = snapshots.find((item) => String(item.id) === String(snapshotId));
+            if (!found || !Array.isArray(found.payload)) return;
+            if (!confirm('Restore this Joterie snapshot and replace current archives?')) return;
+            saveArchiveSnapshot(state.archives, 'manual-restore-backup', { snapshotId: found.id });
+            const payload = normalizeArchivesPayload(found.payload);
+            persistArchives(payload, 'snapshot-restore');
+            applyArchives(payload);
+        }
+
+        function clearArchiveSnapshots() {
+            if (!confirm('Clear all Joterie recovery snapshots?')) return;
+            try { localStorage.removeItem(JOTERIE_SNAPSHOTS_KEY); } catch (_) {}
+            if (state.view === 'history') renderHistory();
+        }
+
         // State Management with LocalStorage persistence for archives
         let state = {
             view: 'home',
@@ -626,8 +648,36 @@
         // History Logic
         function renderHistory() {
             elements.historyList.innerHTML = '';
+            const snapshots = getArchiveSnapshots();
+            if (snapshots.length > 0) {
+                const snapWrap = document.createElement('div');
+                snapWrap.className = 'bg-white/5 p-4 rounded-2xl border history-item-border transition-colors';
+                snapWrap.innerHTML = `
+                    <div class="flex justify-between items-center mb-3">
+                        <div class="text-[10px] font-black tracking-[0.2em] opacity-60 uppercase">Recovery Snapshots</div>
+                        <button id="clear-archive-snapshots-btn" class="text-[9px] font-black tracking-[0.2em] opacity-60 hover:opacity-100 uppercase">Clear</button>
+                    </div>
+                    <div class="grid gap-2">
+                        ${snapshots.slice(0, 8).map((snap) => `
+                            <button data-restore-snapshot="${snap.id}" class="text-left p-2 rounded-lg border history-item-border transition-colors hover:bg-white/5">
+                                <div class="text-[10px] font-black tracking-[0.15em] uppercase">${String(snap.reason || 'snapshot').replace(/-/g, ' ')}</div>
+                                <div class="text-[11px] opacity-50">${snap.at ? new Date(snap.at).toLocaleString() : 'Unknown time'}</div>
+                            </button>
+                        `).join('')}
+                    </div>
+                `;
+                elements.historyList.appendChild(snapWrap);
+                const clearBtn = document.getElementById('clear-archive-snapshots-btn');
+                if (clearBtn) clearBtn.onclick = clearArchiveSnapshots;
+                snapWrap.querySelectorAll('[data-restore-snapshot]').forEach((btn) => {
+                    btn.onclick = () => restoreArchiveSnapshot(btn.getAttribute('data-restore-snapshot'));
+                });
+            }
             if (state.archives.length === 0) {
-                elements.historyList.innerHTML = '<div class="text-center opacity-30 mt-10 font-serif-italic">No archives found.</div>';
+                const empty = document.createElement('div');
+                empty.className = 'text-center opacity-30 mt-10 font-serif-italic';
+                empty.textContent = 'No archives found.';
+                elements.historyList.appendChild(empty);
                 return;
             }
             state.archives.forEach(entry => {
@@ -791,8 +841,7 @@
                     previousRevision: localKnownRevision,
                     incomingRevision: incomingRev
                 });
-                state.archives = remoteArchives;
-                if (state.view === 'history') renderHistory();
+                applyArchives(remoteArchives);
             }
             localKnownRevision = incomingRev;
         });

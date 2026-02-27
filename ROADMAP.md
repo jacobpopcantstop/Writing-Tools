@@ -70,6 +70,7 @@ Delivered:
   - Gmail compose handoff assertions in `ThisButThat`, `Joterie`, `Wribbon`, and `WitherNaught`
   - ThisButThat snapshot restore path verification
   - Joterie revisioned archive persistence path verification
+  - Joterie snapshot restore path verification
   - WitherNaught revisioned prefs persistence path verification
   - BeatHive revisioned local persistence path verification
   - PaperCut revisioned recent-session persistence path verification
@@ -162,6 +163,7 @@ Delivered so far in this phase:
   - Joterie archives now use revision tracking (`writingtools_joterie_revision_v1`) with conflict-safe writes.
   - Automatic Joterie snapshots (`writingtools_joterie_snapshots_v1`) are captured on save conflict and remote sync.
   - Cross-tab Joterie archive sync now preserves local recoverability before applying remote updates.
+  - Joterie archives view now includes Recovery Snapshots controls with restore and clear actions.
   - WitherNaught persisted state now uses revision tracking (`writingtools_withernaught_revision_v1`) across history, streak, and preferences.
   - Automatic WitherNaught snapshots (`writingtools_withernaught_snapshots_v1`) are captured on save conflict and remote sync.
   - Cross-tab WitherNaught sync now preserves local recoverability before applying remote updates.
