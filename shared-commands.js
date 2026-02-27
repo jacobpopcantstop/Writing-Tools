@@ -13,6 +13,8 @@
     return [
       { id: 'open-home', title: 'Open Suite Home', desc: 'Return to the Writing Tools hub', keys: 'home hub index suite', run: function () { openTool('index.html'); } },
       { id: 'open-recent-hub', title: 'Open Recent Sessions Hub', desc: 'Jump to the index recent-session browser', keys: 'recent sessions hub resume', run: function () { openTool('index.html#recent-sessions'); } },
+      { id: 'open-recovery-hub', title: 'Open Recovery Snapshots Hub', desc: 'Jump to the index snapshot recovery panel', keys: 'recovery snapshots backups restore hub', run: function () { openTool('index.html#recovery-grid'); } },
+      { id: 'open-export-reliability', title: 'Open Export Reliability Hub', desc: 'Jump to the index export telemetry panel', keys: 'export reliability gmail email telemetry hub', run: function () { openTool('index.html#export-health-list'); } },
       { id: 'open-synax', title: 'Open Synax', desc: 'Concept and serendipity ideation', keys: 'idea concept synax', run: function () { openTool('Synax.html'); } },
       { id: 'open-thisbutthat', title: 'Open ThisButThat', desc: 'Twist-based premise generation', keys: 'twist premise thisbutthat', run: function () { openTool('ThisButThat.html'); } },
       { id: 'open-beathive', title: 'Open BeatHive', desc: 'Structure and beat mapping', keys: 'structure map beathive', run: function () { openTool('BeatHive.html'); } },
