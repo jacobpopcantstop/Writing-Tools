@@ -248,6 +248,24 @@ run_eval_check wt-withernaught "WitherNaught revisioned prefs persist changes" "
 JS
 )"
 
+run_eval_check wt-beathive "BeatHive revisioned local persistence updates on rename" "$(cat <<'JS'
+(() => {
+  localStorage.removeItem('writingtools_beathive_state_v1');
+  localStorage.removeItem('writingtools_beathive_revision_v1');
+  const input = document.querySelector('header input[aria-label="Project Name"]');
+  if (!input) throw new Error('BeatHive project name input not found');
+  input.value = 'Smoke Hive';
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+  input.dispatchEvent(new Event('change', { bubbles: true }));
+  const rev = parseInt(localStorage.getItem('writingtools_beathive_revision_v1') || '0', 10) || 0;
+  const payload = JSON.parse(localStorage.getItem('writingtools_beathive_state_v1') || '{}');
+  if (!(rev > 0)) throw new Error('BeatHive revision not persisted');
+  if (!payload || !Array.isArray(payload.sketches)) throw new Error('BeatHive persisted payload missing sketches');
+  return true;
+})()
+JS
+)"
+
 run_eval_check wt-courius "Courius append/overwrite import flows update storage" "$(cat <<'JS'
 (() => {
   const bus = window.WTContextBus;

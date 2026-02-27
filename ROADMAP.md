@@ -70,6 +70,7 @@ Delivered:
   - Gmail compose handoff assertions in `ThisButThat`, `Joterie`, `Wribbon`, and `WitherNaught`
   - Joterie revisioned archive persistence path verification
   - WitherNaught revisioned prefs persistence path verification
+  - BeatHive revisioned local persistence path verification
   - Courius transfer append/overwrite storage path verification
   - Courius parenthetical wrapper carryover regression check when cycling element types
   - WitherNaught ring progression after writing input
@@ -157,3 +158,6 @@ Delivered so far in this phase:
   - WitherNaught persisted state now uses revision tracking (`writingtools_withernaught_revision_v1`) across history, streak, and preferences.
   - Automatic WitherNaught snapshots (`writingtools_withernaught_snapshots_v1`) are captured on save conflict and remote sync.
   - Cross-tab WitherNaught sync now preserves local recoverability before applying remote updates.
+  - BeatHive local state now uses revision tracking (`writingtools_beathive_revision_v1`) across sketches, Courius mode, and immersion-tip state.
+  - Automatic BeatHive snapshots (`writingtools_beathive_snapshots_v1`) are captured on save conflict and remote sync.
+  - Cross-tab BeatHive local sync now preserves local recoverability before applying remote updates.

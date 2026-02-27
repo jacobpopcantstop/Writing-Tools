@@ -208,7 +208,48 @@
         const HEX_HEIGHT = 2 * HEX_SIZE;
         const VERT_SPACING = HEX_HEIGHT * 0.75;
         const LOCAL_STORAGE_KEY = 'writingtools_beathive_sketches';
+        const BEATHIVE_STATE_KEY = 'writingtools_beathive_state_v1';
+        const BEATHIVE_REV_KEY = 'writingtools_beathive_revision_v1';
+        const BEATHIVE_SNAPSHOTS_KEY = 'writingtools_beathive_snapshots_v1';
         const getContextBus = () => window.WTContextBus || null;
+
+        function normalizeBeatHiveSketches(list) {
+            if (!Array.isArray(list)) return [];
+            return list
+                .filter((item) => item && typeof item === 'object' && item.id)
+                .map((item) => ({
+                    ...item,
+                    id: String(item.id),
+                    name: String(item.name || 'Untitled Hive'),
+                    cells: Array.isArray(item.cells) ? item.cells : [],
+                    updatedAt: Number(item.updatedAt || Date.now())
+                }));
+        }
+
+        function readBeatHiveStateFromStorage() {
+            try {
+                const modernRaw = localStorage.getItem(BEATHIVE_STATE_KEY);
+                if (modernRaw) {
+                    const parsed = JSON.parse(modernRaw);
+                    if (parsed && typeof parsed === 'object') {
+                        return {
+                            sketches: normalizeBeatHiveSketches(parsed.sketches),
+                            couriusMode: parsed.couriusMode === 'overwrite' ? 'overwrite' : 'append',
+                            immersiveSeen: !!parsed.immersiveSeen
+                        };
+                    }
+                }
+            } catch (_) {}
+            try {
+                return {
+                    sketches: normalizeBeatHiveSketches(JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || '[]')),
+                    couriusMode: localStorage.getItem('writingtools_beathive_courius_mode') === 'overwrite' ? 'overwrite' : 'append',
+                    immersiveSeen: !!localStorage.getItem('writingtools_beathive_immersive_seen')
+                };
+            } catch (_) {
+                return { sketches: [], couriusMode: 'append', immersiveSeen: false };
+            }
+        }
 
         const Icon = ({ name, size = 20, className = "", style = {} }) => {
             const icons = {
@@ -451,9 +492,9 @@
             const [sidebarOpen, setSidebarOpen] = useState(true);
             const [isCreating, setIsCreating] = useState(false);
             const [saveStatus, setSaveStatus] = useState('ready');
-            const [showImmersionTips, setShowImmersionTips] = useState(() => !localStorage.getItem('writingtools_beathive_immersive_seen'));
+            const [showImmersionTips, setShowImmersionTips] = useState(() => !readBeatHiveStateFromStorage().immersiveSeen);
             const [sharedContext, setSharedContext] = useState({ topic: '', constraints: '', lastTool: '', updatedAt: '' });
-            const [couriusMode, setCouriusMode] = useState(() => localStorage.getItem('writingtools_beathive_courius_mode') === 'overwrite' ? 'overwrite' : 'append');
+            const [couriusMode, setCouriusMode] = useState(() => readBeatHiveStateFromStorage().couriusMode);
 
             // Refs
             const keysPressed = useRef({});
@@ -464,6 +505,9 @@
             const cellsRef = useRef([]);
             const nameRef = useRef("");
             const currentIdRef = useRef(null);
+            const sketchesRef = useRef([]);
+            const localRevisionRef = useRef(0);
+            const beatHiveTabIdRef = useRef('beathive-' + Math.random().toString(36).slice(2, 10));
             const canvasRef = useRef(null);
             const svgRef = useRef(null);
             const [dimensions, setDimensions] = useState({ w: window.innerWidth, h: window.innerHeight });
@@ -472,6 +516,7 @@
             useEffect(() => { cellsRef.current = cells; }, [cells]);
             useEffect(() => { nameRef.current = sketchName; }, [sketchName]);
             useEffect(() => { currentIdRef.current = currentId; }, [currentId]);
+            useEffect(() => { sketchesRef.current = sketches; }, [sketches]);
             useEffect(() => {
                 document.body.className = theme === 'dark' ? 'dark-theme' : 'light-theme';
                 localStorage.setItem('writingtools_theme', theme);
@@ -489,14 +534,90 @@
                     setSketchName(sharedContext.topic);
                 }
             }, [sharedContext.topic]);
-            useEffect(() => {
-                localStorage.setItem('writingtools_beathive_courius_mode', couriusMode);
-            }, [couriusMode]);
+            const getLocalPersistedState = useCallback((override = {}) => ({
+                sketches: normalizeBeatHiveSketches(override.sketches || sketchesRef.current),
+                couriusMode: override.couriusMode || couriusMode,
+                immersiveSeen: typeof override.immersiveSeen === 'boolean' ? override.immersiveSeen : !showImmersionTips
+            }), [couriusMode, showImmersionTips]);
+            const localStateComparable = useCallback((payload) => {
+                try { return JSON.stringify(getLocalPersistedState(payload)); } catch (_) { return ''; }
+            }, [getLocalPersistedState]);
+            const saveLocalSnapshot = useCallback((payload, reason, meta) => {
+                try {
+                    const raw = localStorage.getItem(BEATHIVE_SNAPSHOTS_KEY);
+                    const parsed = raw ? JSON.parse(raw) : [];
+                    const snapshots = Array.isArray(parsed) ? parsed : [];
+                    snapshots.unshift({
+                        id: 'snap_' + Date.now() + '_' + Math.floor(Math.random() * 100000),
+                        at: new Date().toISOString(),
+                        reason: String(reason || 'autosave'),
+                        sourceTab: beatHiveTabIdRef.current,
+                        meta: meta && typeof meta === 'object' ? meta : {},
+                        payload: getLocalPersistedState(payload)
+                    });
+                    localStorage.setItem(BEATHIVE_SNAPSHOTS_KEY, JSON.stringify(snapshots.slice(0, 20)));
+                } catch (_) {}
+            }, [getLocalPersistedState]);
+            const persistLocalState = useCallback((override, reason = 'autosave') => {
+                const candidate = getLocalPersistedState(override || {});
+                const remoteRev = parseInt(localStorage.getItem(BEATHIVE_REV_KEY) || '0', 10) || 0;
+                const remoteState = readBeatHiveStateFromStorage();
+                if (
+                    remoteRev > localRevisionRef.current &&
+                    localStateComparable(remoteState) !== localStateComparable(candidate)
+                ) {
+                    saveLocalSnapshot(candidate, 'save-conflict', {
+                        reason: String(reason || 'autosave'),
+                        baseRevision: localRevisionRef.current,
+                        remoteRevision: remoteRev
+                    });
+                    return false;
+                }
+                const nextRev = Math.max(remoteRev, localRevisionRef.current) + 1;
+                localStorage.setItem(BEATHIVE_STATE_KEY, JSON.stringify(candidate));
+                localStorage.setItem(BEATHIVE_REV_KEY, String(nextRev));
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(candidate.sketches));
+                localStorage.setItem('writingtools_beathive_courius_mode', candidate.couriusMode);
+                if (candidate.immersiveSeen) localStorage.setItem('writingtools_beathive_immersive_seen', '1');
+                else localStorage.removeItem('writingtools_beathive_immersive_seen');
+                localRevisionRef.current = nextRev;
+                return true;
+            }, [getLocalPersistedState, localStateComparable, saveLocalSnapshot]);
+            const applyRemoteLocalState = useCallback((payload) => {
+                const normalized = getLocalPersistedState(payload || {});
+                setSketches(normalized.sketches);
+                setCouriusMode(normalized.couriusMode);
+                setShowImmersionTips(!normalized.immersiveSeen);
+                const active = normalized.sketches.find((item) => item.id === currentIdRef.current) || normalized.sketches[0];
+                if (active) {
+                    setCurrentId(active.id);
+                    setCells(active.cells || []);
+                    setSketchName(active.name || '');
+                } else {
+                    setCurrentId(null);
+                    setCells([]);
+                    setSketchName('');
+                }
+            }, [getLocalPersistedState]);
 
-            const loadLocalSketches = () => { try { return JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)) || []; } catch(e) { return []; } };
-            const saveLocalSketches = (list) => { localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list)); setSketches(list); };
+            useEffect(() => {
+                if (user?.uid !== 'local-user') return;
+                persistLocalState({ couriusMode }, 'courius-mode');
+            }, [couriusMode, persistLocalState, user]);
+            useEffect(() => {
+                if (user?.uid !== 'local-user') return;
+                persistLocalState({ immersiveSeen: !showImmersionTips }, 'immersion-tip');
+            }, [showImmersionTips, persistLocalState, user]);
+
+            const loadLocalSketches = () => readBeatHiveStateFromStorage().sketches;
+            const saveLocalSketches = (list) => {
+                const normalized = normalizeBeatHiveSketches(list);
+                setSketches(normalized);
+                persistLocalState({ sketches: normalized }, 'sketch-save');
+            };
 
             useEffect(() => {
+                localRevisionRef.current = parseInt(localStorage.getItem(BEATHIVE_REV_KEY) || '0', 10) || 0;
                 const handleResize = () => setDimensions({ w: window.innerWidth, h: window.innerHeight });
                 window.addEventListener('resize', handleResize);
 
@@ -597,6 +718,27 @@
                     };
                 }
             }, []);
+
+            useEffect(() => {
+                if (user?.uid !== 'local-user') return;
+                const onStorage = (event) => {
+                    if (!event || event.key !== BEATHIVE_REV_KEY) return;
+                    const incomingRev = parseInt(event.newValue || '0', 10) || 0;
+                    if (incomingRev <= localRevisionRef.current) return;
+                    const remote = readBeatHiveStateFromStorage();
+                    const local = getLocalPersistedState();
+                    if (localStateComparable(remote) !== localStateComparable(local)) {
+                        saveLocalSnapshot(local, 'remote-sync', {
+                            previousRevision: localRevisionRef.current,
+                            incomingRevision: incomingRev
+                        });
+                        applyRemoteLocalState(remote);
+                    }
+                    localRevisionRef.current = incomingRev;
+                };
+                window.addEventListener('storage', onStorage);
+                return () => window.removeEventListener('storage', onStorage);
+            }, [applyRemoteLocalState, getLocalPersistedState, localStateComparable, saveLocalSnapshot, user]);
 
             useEffect(() => {
                 if (user?.uid !== 'local-user' && firebase.current.db && !isInitialLoading) {
@@ -1102,7 +1244,6 @@
             }, [save]);
 
             const dismissImmersionTips = useCallback(() => {
-                localStorage.setItem('writingtools_beathive_immersive_seen', '1');
                 setShowImmersionTips(false);
             }, []);
 
