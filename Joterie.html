@@ -270,6 +270,16 @@
     </div>
 
     <script>
+        function loadJoterieArchives() {
+            try {
+                const raw = localStorage.getItem('writingtools_joterie_archives');
+                const parsed = raw ? JSON.parse(raw) : [];
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (_) {
+                return [];
+            }
+        }
+
         // State Management with LocalStorage persistence for archives
         let state = {
             view: 'home',
@@ -281,7 +291,7 @@
             focusPrompt: '',
             timerInterval: null,
             isDarkMode: localStorage.getItem('writingtools_theme') === 'dark' || localStorage.getItem('writingtools_theme') === null,
-            archives: JSON.parse(localStorage.getItem('writingtools_joterie_archives')) || []
+            archives: loadJoterieArchives()
         };
 
         function getContextBus() {

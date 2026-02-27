@@ -679,7 +679,7 @@
                 return getRandom(available);
             };
 
-            const undoGeneration = () => {
+            const undoGeneration = useCallback(() => {
                 if (history.length > 1) {
                 const newHistory = [...history];
                 newHistory.pop();
@@ -687,9 +687,9 @@
                 setHistory(newHistory);
                 setWords(previous);
                 }
-            };
+            }, [history]);
 
-            const handleSwap = (id, type) => {
+            const handleSwap = useCallback((id, type) => {
                 let newWord = "";
 
                 // Helper to get random word by type with repetition prevention
@@ -706,11 +706,11 @@
                 setWords(prevWords => prevWords.map(w =>
                     w.id === id ? { ...w, word: newWord } : w
                 ));
-            };
+            }, [offlineMode, REPETITION_COOLDOWN]);
 
-            const handleDelete = (id) => {
+            const handleDelete = useCallback((id) => {
                 setWords(prevWords => prevWords.filter(w => w.id !== id));
-            };
+            }, []);
 
             const generate = useCallback(async () => {
                 setLoading(true);
@@ -926,31 +926,31 @@
                 }, 100);
             }, [REPETITION_COOLDOWN]);
 
-            const handlePin = (word, type) => {
+            const handlePin = useCallback((word, type) => {
                 if (!pinned.some(p => p.word === word)) {
                 setPinned([...pinned, { word, type, id: Date.now() }]);
                 } else {
                 setPinned(pinned.filter(p => p.word !== word));
                 }
-            };
+            }, [pinned]);
 
-            const fetchDefinition = async (word) => {
+            const fetchDefinition = useCallback(async (word) => {
                 const cleanWord = word.replace(/^The\s+/i, '').trim();
                 if (!cleanWord) return;
                 const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(`${cleanWord} definition`)}`;
                 window.open(searchUrl, '_blank', 'noopener,noreferrer');
-            };
+            }, []);
 
-            const clearHistory = () => {
+            const clearHistory = useCallback(() => {
                 setHistory([]);
                 setWords([]);
-            };
+            }, []);
 
-            const clearCanvas = () => {
+            const clearCanvas = useCallback(() => {
                 if(window.confirm("Clear your writing canvas?")) {
                     setEditorContent('');
                 }
-            };
+            }, []);
 
             const downloadEditorMarkdown = useCallback(() => {
                 const blob = new Blob([editorContent], { type: 'text/markdown' });
