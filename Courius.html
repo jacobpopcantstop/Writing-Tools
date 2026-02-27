@@ -691,6 +691,7 @@
 
 <div id="save-bar">
     <span id="page-count">Pg 1</span> | <span id="save-status">Ready</span>
+    | <button id="writing-timer-btn" type="button" style="all: unset; cursor: pointer; opacity: 0.75;">Timer <span id="writing-timer">00:00</span></button>
 </div>
 
 <a href="index.html" style="position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%); z-index: 10; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.15; color: var(--text-color); text-decoration: none; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.5'" onmouseout="this.style.opacity='0.15'">Writing Tools Suite</a>
@@ -727,6 +728,12 @@
     let locationSet = new Set();
     let saveTimeout;
     let importHistory = [];
+    let writingTimerElapsed = 0;
+    let writingTimerLastStart = null;
+    let writingTimerInterval = null;
+    let writingTimerIdleTimeout = null;
+    const WRITING_TIMER_KEY = 'writingtools_courius_timer_v1';
+    const WRITING_TIMER_IDLE_MS = 15000;
 
     // --- Autocomplete state ---
     const DROPDOWN = document.getElementById('autocomplete-dropdown');
@@ -843,6 +850,7 @@
     window.addEventListener('DOMContentLoaded', () => {
         const content = localStorage.getItem(STORAGE_KEY);
         if (content) EDITOR.innerHTML = content;
+        loadWritingTimer();
         normalizeLegacyImportMarkers();
         if (!EDITOR.innerHTML.trim() || (EDITOR.children.length === 0)) {
             // Ensure at least one line if empty
@@ -860,6 +868,7 @@
         updateSelectorUI();
         updatePageCount();
         updateContextTip();
+        renderWritingTimer();
         renderImportHistory();
         if (window.WTContextBus && typeof window.WTContextBus.subscribe === 'function') {
             window.WTContextBus.subscribe(() => updateContextTip());
@@ -1037,6 +1046,8 @@
             e.preventDefault();
             if (DROPDOWN.classList.contains('visible')) {
                 acceptFromDropdown(dropdownBlock, dropdownMatches[dropdownActiveIndex]);
+                createLine(NEXT_ELEMENT[type] || 'action', currentBlock);
+                updateSelectorUI();
                 return;
             }
             const sugg = currentBlock.querySelector('.suggestion');
@@ -1062,6 +1073,7 @@
         updateSelectorUI();
         triggerSave();
         updatePageCount();
+        nudgeWritingTimer();
     });
 
     // Add mouse interactions for UI sync
@@ -1375,6 +1387,68 @@
         }, 1000);
     }
 
+    function formatWritingTimer(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    function getWritingTimerSeconds() {
+        if (!writingTimerLastStart) return writingTimerElapsed;
+        return writingTimerElapsed + Math.max(0, Math.floor((Date.now() - writingTimerLastStart) / 1000));
+    }
+
+    function renderWritingTimer() {
+        const timer = document.getElementById('writing-timer');
+        const button = document.getElementById('writing-timer-btn');
+        if (!timer || !button) return;
+        timer.textContent = formatWritingTimer(getWritingTimerSeconds());
+        button.style.opacity = writingTimerLastStart ? '1' : '0.75';
+    }
+
+    function persistWritingTimer() {
+        localStorage.setItem(WRITING_TIMER_KEY, JSON.stringify({
+            elapsed: getWritingTimerSeconds(),
+            updatedAt: Date.now()
+        }));
+    }
+
+    function startWritingTimer() {
+        if (writingTimerLastStart) return;
+        writingTimerLastStart = Date.now();
+        if (!writingTimerInterval) {
+            writingTimerInterval = setInterval(renderWritingTimer, 1000);
+        }
+        renderWritingTimer();
+    }
+
+    function pauseWritingTimer() {
+        if (!writingTimerLastStart) return;
+        writingTimerElapsed = getWritingTimerSeconds();
+        writingTimerLastStart = null;
+        persistWritingTimer();
+        renderWritingTimer();
+    }
+
+    function nudgeWritingTimer() {
+        startWritingTimer();
+        clearTimeout(writingTimerIdleTimeout);
+        writingTimerIdleTimeout = setTimeout(() => {
+            pauseWritingTimer();
+        }, WRITING_TIMER_IDLE_MS);
+        persistWritingTimer();
+    }
+
+    function loadWritingTimer() {
+        try {
+            const raw = localStorage.getItem(WRITING_TIMER_KEY);
+            const parsed = raw ? JSON.parse(raw) : null;
+            writingTimerElapsed = Number.isFinite(parsed?.elapsed) ? parsed.elapsed : 0;
+        } catch (_) {
+            writingTimerElapsed = 0;
+        }
+    }
+
     function updateSuggestions() {
         characterSet.clear(); locationSet.clear();
         document.querySelectorAll('.character').forEach(d => { const t = getPureText(d).trim().toUpperCase(); if (t) characterSet.add(t); });
@@ -1568,6 +1642,28 @@
         }
     };
 
+    EDITOR.addEventListener('focusin', () => {
+        if (EDITOR.textContent.trim()) {
+            nudgeWritingTimer();
+        }
+    });
+
+    EDITOR.addEventListener('focusout', () => {
+        clearTimeout(writingTimerIdleTimeout);
+        writingTimerIdleTimeout = setTimeout(() => {
+            pauseWritingTimer();
+        }, 500);
+    });
+
+    document.getElementById('writing-timer-btn').addEventListener('click', () => {
+        if (writingTimerLastStart) {
+            clearTimeout(writingTimerIdleTimeout);
+            pauseWritingTimer();
+        } else {
+            nudgeWritingTimer();
+        }
+    });
+
     // --- Help Modal ---
     function toggleHelp() {
         document.getElementById('help-modal').classList.toggle('open');
@@ -1599,6 +1695,12 @@
             e.preventDefault();
             toggleSceneNav();
         }
+    });
+
+    window.addEventListener('beforeunload', () => {
+        clearTimeout(writingTimerIdleTimeout);
+        if (writingTimerInterval) clearInterval(writingTimerInterval);
+        pauseWritingTimer();
     });
 </script>
 </body>

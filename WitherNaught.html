@@ -472,19 +472,32 @@ const THEMES = {
       const body = encodeURIComponent(bodyText);
       const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&tf=1&su=${subject}&body=${body}`;
       const mailtoUrl = `mailto:?subject=${encodeURIComponent(subjectText)}&body=${encodeURIComponent(bodyText)}`;
+      const isMobile = window.matchMedia('(max-width: 820px)').matches || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+      if (isMobile) {
+        window.location.assign(gmailUrl);
+        return;
+      }
 
       let popup = null;
       try {
         popup = window.open(gmailUrl, '_blank', 'noopener,noreferrer');
       } catch (_) {}
-      if (popup) return;
+      if (popup && !popup.closed) return;
 
-      window.location.href = gmailUrl;
+      const link = document.createElement('a');
+      link.href = gmailUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
       setTimeout(() => {
-        if (document.visibilityState === 'visible') {
-          window.location.href = mailtoUrl;
+        if (document.visibilityState === 'visible' && document.hasFocus()) {
+          window.location.assign(mailtoUrl);
         }
-      }, 800);
+      }, 900);
     }
 
     function syncSharedContext() {
@@ -1068,6 +1081,23 @@ const THEMES = {
       dom.wordCountDisplay = document.getElementById('word-count-display');
     }
 
+    function updateRingDisplay() {
+      if (!dom.ringCount || !dom.ringMeta || !dom.ringActive || !dom.ringTrack) return;
+      const { totalRings, activeProgress } = getRingStats();
+      const maxR = 52;
+      const minR = 20;
+      const activeRadius = maxR - ((maxR - minR) * activeProgress);
+      const circumference = 2 * Math.PI * activeRadius;
+      const offset = circumference * (1 - activeProgress);
+
+      dom.ringCount.textContent = totalRings.toLocaleString();
+      dom.ringMeta.textContent = `Active Ring ${Math.round(activeProgress * 100)}%`;
+      dom.ringTrack.setAttribute('r', activeRadius.toFixed(3));
+      dom.ringActive.setAttribute('r', activeRadius.toFixed(3));
+      dom.ringActive.setAttribute('stroke-dasharray', circumference.toFixed(3));
+      dom.ringActive.setAttribute('stroke-dashoffset', offset.toFixed(3));
+    }
+
     function attachEventListeners() {
       if (dom.textarea) {
         dom.textarea.addEventListener('input', handleTextInput);
@@ -1125,6 +1155,7 @@ const THEMES = {
       if (dom.overlay) {
         dom.overlay.innerHTML = renderHighlightedText();
       }
+      updateRingDisplay();
     }
 
     function triggerSpark(currentWordCount) {
@@ -1209,7 +1240,7 @@ const THEMES = {
 
           updateFlowBar();
           updateTimeDisplay();
-          updateScoreDisplay(deltaTime);
+          updateRingDisplay();
           updateWordCountDisplay();
         }
       }
@@ -1249,11 +1280,7 @@ const THEMES = {
     }
 
     function updateScoreDisplay(deltaTime) {
-      if (!dom.scoreDisplay) return;
-      // Smooth lerp toward actual score — feels like a live counter
-      const lerpSpeed = Math.min(1, deltaTime * 3);
-      state.displayScore += (state.score - state.displayScore) * lerpSpeed;
-      dom.scoreDisplay.textContent = Math.floor(state.displayScore).toLocaleString();
+      state.displayScore = state.score;
     }
 
     function updateWordCountDisplay() {

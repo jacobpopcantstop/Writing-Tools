@@ -437,6 +437,7 @@
             draggingAnnotationId: null,
             dragOffset: { x: 0, y: 0 }
         };
+        let renderSequence = 0;
 
         const dom = {
             fileInput: document.getElementById('file-input'),
@@ -707,9 +708,14 @@
 
         // Helper to get original page number from mapping
         function getOriginalPageNumber(doc) {
+            if (!doc || !Array.isArray(doc.pageMapping)) return null;
+            doc.totalPages = doc.pageMapping.length;
+            if (doc.totalPages < 1) return null;
+            doc.currentPage = Math.min(Math.max(1, doc.currentPage || 1), doc.totalPages);
             // doc.currentPage is 1-based index into our valid pages
             // pageMapping is 0-indexed array of original 1-based page numbers
-            return doc.pageMapping[doc.currentPage - 1];
+            const originalPageNum = doc.pageMapping[doc.currentPage - 1];
+            return Number.isInteger(originalPageNum) && originalPageNum > 0 ? originalPageNum : null;
         }
 
         async function renderPage() {
@@ -717,30 +723,43 @@
             if (!doc || !doc.pdf || doc.totalPages === 0) return;
 
             const originalPageNum = getOriginalPageNumber(doc);
-            const page = await doc.pdf.getPage(originalPageNum);
-            
-            const rotation = (doc.pageRotations[originalPageNum] || 0) + page.rotate;
-            const viewport = page.getViewport({ scale: state.scale, rotation });
+            if (!originalPageNum) {
+                console.warn('PaperCut skipped render due to invalid page mapping', doc.currentPage, doc.pageMapping);
+                return;
+            }
 
-            dom.pdfCanvas.width = viewport.width;
-            dom.pdfCanvas.height = viewport.height;
-            dom.annotationLayer.style.width = viewport.width + 'px';
-            dom.annotationLayer.style.height = viewport.height + 'px';
+            const currentRender = ++renderSequence;
 
-            const pageWidth = (viewport.width / state.scale / 72).toFixed(2);
-            const pageHeight = (viewport.height / state.scale / 72).toFixed(2);
-            document.getElementById('prop-pagesize').textContent = `${pageWidth}" x ${pageHeight}"`;
+            try {
+                const page = await doc.pdf.getPage(originalPageNum);
+                if (currentRender !== renderSequence) return;
+                
+                const rotation = (doc.pageRotations[originalPageNum] || 0) + page.rotate;
+                const viewport = page.getViewport({ scale: state.scale, rotation });
 
-            const ctx = dom.pdfCanvas.getContext('2d');
-            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+                dom.pdfCanvas.width = viewport.width;
+                dom.pdfCanvas.height = viewport.height;
+                dom.annotationLayer.style.width = viewport.width + 'px';
+                dom.annotationLayer.style.height = viewport.height + 'px';
 
-            dom.pageInput.value = doc.currentPage;
-            dom.zoomValue.textContent = Math.round(state.scale * 100) + '%';
-            
-            renderAnnotations();
-            document.querySelectorAll('.thumbnail').forEach((thumb, idx) => {
-                thumb.classList.toggle('active', idx + 1 === doc.currentPage);
-            });
+                const pageWidth = (viewport.width / state.scale / 72).toFixed(2);
+                const pageHeight = (viewport.height / state.scale / 72).toFixed(2);
+                document.getElementById('prop-pagesize').textContent = `${pageWidth}" x ${pageHeight}"`;
+
+                const ctx = dom.pdfCanvas.getContext('2d');
+                await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+                if (currentRender !== renderSequence) return;
+
+                dom.pageInput.value = doc.currentPage;
+                dom.zoomValue.textContent = Math.round(state.scale * 100) + '%';
+                
+                renderAnnotations();
+                document.querySelectorAll('.thumbnail').forEach((thumb, idx) => {
+                    thumb.classList.toggle('active', idx + 1 === doc.currentPage);
+                });
+            } catch (error) {
+                console.error('PaperCut renderPage failed', error);
+            }
         }
 
         async function renderThumbnails() {
@@ -752,6 +771,7 @@
             for (let i = 0; i < doc.pageMapping.length; i++) {
                 const logicalPageNum = i + 1;
                 const originalPageNum = doc.pageMapping[i];
+                if (!Number.isInteger(originalPageNum) || originalPageNum < 1) continue;
                 
                 const page = await doc.pdf.getPage(originalPageNum);
                 const viewport = page.getViewport({ scale: 0.2 });
@@ -792,8 +812,10 @@
 
         function goToPage(num) {
             const doc = getActiveDoc();
-            if (!doc || num < 1 || num > doc.totalPages) return;
-            doc.currentPage = num;
+            if (!doc) return;
+            doc.totalPages = Array.isArray(doc.pageMapping) ? doc.pageMapping.length : 0;
+            if (doc.totalPages < 1) return;
+            doc.currentPage = Math.min(Math.max(1, Number(num) || 1), doc.totalPages);
             renderPage();
         }
 
