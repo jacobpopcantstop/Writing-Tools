@@ -1127,6 +1127,10 @@
             const beatMetrics = useMemo(() => {
                 const withContent = cells.filter(c => getCellContentText(c).length > 0);
                 const storyBeats = withContent.filter(c => c.type !== 'note');
+                const orderedStoryBeats = storyBeats.slice().sort((a, b) => {
+                    if (a.r === b.r) return a.q - b.q;
+                    return a.r - b.r;
+                });
                 const distinctTypes = new Set(storyBeats.map(c => c.type)).size;
                 const momentum = Math.min(100, Math.round((storyBeats.length * 11) + (distinctTypes * 9)));
                 const typeCounts = storyBeats.reduce((acc, beat) => {
@@ -1163,6 +1167,46 @@
                 if (unresolvedEstimate > 0) diagnostics.push({ level: 'warn', text: `${unresolvedEstimate} unresolved tension marker${unresolvedEstimate === 1 ? '' : 's'} (twist/secret/weird).` });
                 if (!diagnostics.length && storyBeats.length > 0) diagnostics.push({ level: 'ok', text: 'Spine and escalation look balanced. Expand with side branches.' });
 
+                const lastStoryBeat = orderedStoryBeats[orderedStoryBeats.length - 1] || null;
+                const nextMoves = [];
+                const enqueueMove = (type, reason, placement) => {
+                    if (!type || nextMoves.some((item) => item.type === type)) return;
+                    const typeData = BEAT_TYPES.find((item) => item.id === type) || BEAT_TYPES[4];
+                    nextMoves.push({
+                        type,
+                        label: typeData.label,
+                        reason,
+                        placement
+                    });
+                };
+                if (missingSpine.length) {
+                    const firstMissing = missingSpine[0];
+                    if (firstMissing === 'Normal World') {
+                        enqueueMove('setup', 'Ground the protagonist before complications stack up.', 'Place it above your current chain.');
+                    } else if (firstMissing === 'First Weird Thing') {
+                        enqueueMove('inciting', 'Trigger the turn that forces a new plan.', 'Place it right after your setup beat.');
+                    } else if (firstMissing === 'Heightening') {
+                        enqueueMove('heightening', 'Escalate the cost or reveal to keep the spine moving.', 'Drop it after the current disruption.');
+                    } else if (firstMissing === 'Ending') {
+                        enqueueMove('blowoff', 'Cash out the pressure with a decisive resolution.', 'Anchor it at the tail of the main line.');
+                    }
+                }
+                if (lastStoryBeat && lastStoryBeat.type === 'setup' && !hasInciting) {
+                    enqueueMove('inciting', 'Your latest beat is still setup; it needs a destabilizing event.', 'Attach it directly below the current end beat.');
+                }
+                if (storyBeats.length >= 2 && escalationCount < 2) {
+                    enqueueMove('heightening', 'The middle lacks enough pressure spikes to feel like a climb.', 'Branch it off the last major consequence.');
+                }
+                if (unresolvedEstimate > 0 && hasEnding) {
+                    enqueueMove('blowoff', 'You closed the spine, but open twists still need payoff.', 'Append a final resolution or convert an ending into a fuller payoff.');
+                }
+                if (!hasEnding && storyBeats.length >= 4) {
+                    enqueueMove('blowoff', 'You have enough runway to land the story now.', 'Add it at the bottom of the throughline.');
+                }
+                if (!nextMoves.length && storyBeats.length > 0) {
+                    enqueueMove('note', 'The spine holds. Add a side branch to track a callback, secret, or rule.', 'Use an adjacent side hex to preserve the main line.');
+                }
+
                 return {
                     withContent: withContent.length,
                     storyBeats: storyBeats.length,
@@ -1172,7 +1216,8 @@
                     missingSpine,
                     escalationCount,
                     unresolvedEstimate,
-                    diagnostics
+                    diagnostics,
+                    nextMoves
                 };
             }, [cells, getCellContentText]);
             const pullContextToMap = useCallback(() => {
@@ -1608,6 +1653,24 @@
                                             </div>
                                         ))}
                                     </div>
+                                    {beatMetrics.nextMoves.length > 0 && (
+                                        <div className={`rounded-xl border p-3 space-y-2 ${theme === 'dark' ? 'border-white/10 bg-white/5' : 'border-[#432818]/10 bg-black/5'}`}>
+                                            <div className="flex items-center justify-between gap-3">
+                                                <span className="text-[9px] font-black opacity-45 uppercase tracking-[0.2em]">Next Moves</span>
+                                                <span className="text-[9px] font-black opacity-35 uppercase tracking-[0.2em]">Sequence-aware</span>
+                                            </div>
+                                            {beatMetrics.nextMoves.slice(0, 2).map((move, idx) => (
+                                                <div key={`next-move-${idx}`} className={`rounded-lg px-2.5 py-2 border ${theme === 'dark' ? 'border-indigo-400/20 bg-indigo-500/10' : 'border-indigo-500/20 bg-indigo-500/5'}`}>
+                                                    <div className="flex items-center justify-between gap-3 mb-1">
+                                                        <span className="text-[10px] font-black uppercase tracking-[0.14em]">{move.label}</span>
+                                                        <span className="text-[9px] opacity-45 uppercase">{move.type}</span>
+                                                    </div>
+                                                    <div className="text-[10px] leading-relaxed opacity-90">{move.reason}</div>
+                                                    <div className="text-[9px] mt-1 opacity-55">{move.placement}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                                 {selectedCell ? (
                                     <>

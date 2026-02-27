@@ -107,6 +107,7 @@ Delivered so far in this phase:
   - Missing-spine detection (Normal World, First Weird Thing, Heightening, Ending).
   - Escalation depth signal and unresolved tension estimate from story tags.
   - Actionable diagnostic hints surfaced inline while mapping beats.
+  - New sequence-aware "Next Moves" recommendations now suggest the most useful next beat type and placement based on current spine gaps, latest beat progression, and unresolved tension.
 - Courius autocomplete now adapts to active screenplay structure:
   - Learns scene heading location cores + time tokens from the current draft.
   - Supports `INT./EXT. LOCATION -` time completion suggestions (`DAY.`, `NIGHT.`, etc.).
