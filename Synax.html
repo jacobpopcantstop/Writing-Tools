@@ -353,6 +353,7 @@
         const SYNAX_STATE_KEY = 'writingtools_synax_state_v1';
         const SYNAX_REV_KEY = 'writingtools_synax_revision_v1';
         const SYNAX_SNAPSHOTS_KEY = 'writingtools_synax_snapshots_v1';
+        const BEATHIVE_HANDOFF_KEY = 'writingtools_beathive_handoff_v1';
         const getRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
         // Diverse seed concepts for API-powered serendipity
@@ -1219,9 +1220,18 @@
                     .slice(0, 6)
                     .map((w) => `${w.type}: ${w.word}`)
                     .join(' | ');
-                publishContext({ topic: topTopic, constraints });
-                window.open('BeatHive.html', '_blank', 'noopener');
-            }, [contextInput, words, publishContext]);
+                if (topTopic || constraints) {
+                    try {
+                        localStorage.setItem(BEATHIVE_HANDOFF_KEY, JSON.stringify({
+                            topic: topTopic,
+                            constraints,
+                            source: 'Synax',
+                            createdAt: new Date().toISOString()
+                        }));
+                    } catch (_) {}
+                }
+                window.open('BeatHive.html#handoff', '_blank', 'noopener');
+            }, [contextInput, words]);
 
             useEffect(() => {
                 window.WTToolActions = {

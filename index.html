@@ -538,6 +538,61 @@
       gap: 6px;
       flex-wrap: wrap;
     }
+    .suite-ops {
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+    }
+    .suite-ops > section {
+      margin-bottom: 0;
+      padding: 12px;
+    }
+    .suite-ops .context-head {
+      margin-bottom: 8px;
+    }
+    .suite-ops .context-head h3 {
+      font-size: 11px;
+      letter-spacing: .08em;
+    }
+    .suite-ops .context-grid,
+    .suite-ops .recent-grid,
+    .suite-ops .recovery-grid,
+    .suite-ops .export-health-grid {
+      gap: 8px;
+    }
+    .suite-ops .recent-toolbar,
+    .suite-ops .context-actions {
+      margin-top: 8px;
+    }
+    .suite-ops .context-field input,
+    .suite-ops .context-field textarea,
+    .suite-ops .recent-search {
+      padding: 8px 10px;
+    }
+    .suite-ops .context-field textarea {
+      min-height: 56px;
+    }
+    .suite-ops .ctx-btn,
+    .suite-ops .recent-filter,
+    .suite-ops .recent-open,
+    .suite-ops .recovery-btn {
+      font-size: 10px;
+      padding: 7px 10px;
+    }
+    .suite-ops .recent-title {
+      font-size: 15px;
+    }
+    .suite-ops .recent-meta,
+    .suite-ops .recovery-meta,
+    .suite-ops .export-health-list {
+      font-size: 12px;
+    }
+    .suite-ops .export-health-value {
+      font-size: 13px;
+    }
+    .suite-ops .export-health-list {
+      max-height: 140px;
+    }
     .recovery-btn {
       border: 1px solid var(--line);
       border-radius: 999px;
@@ -707,87 +762,6 @@
       </div>
     </div>
 
-    <section class="context-workspace" aria-label="Shared Project Context">
-      <div class="context-head">
-        <h3>Project Context Bus</h3>
-        <span id="ctx-meta" class="card-cta">Not Saved</span>
-      </div>
-      <div class="context-grid">
-        <div class="context-field">
-          <label for="ctx-topic">Topic</label>
-          <input id="ctx-topic" type="text" placeholder="Bruce Lee, climate comedy, startup satire..." />
-        </div>
-        <div class="context-field">
-          <label for="ctx-tone">Tone</label>
-          <input id="ctx-tone" type="text" placeholder="Sharp, absurdist, dry, cinematic..." />
-        </div>
-        <div class="context-field">
-          <label for="ctx-audience">Audience</label>
-          <input id="ctx-audience" type="text" placeholder="Late-night, Gen Z, broad streaming..." />
-        </div>
-        <div class="context-field">
-          <label for="ctx-constraints">Constraints</label>
-          <textarea id="ctx-constraints" placeholder="No politics, PG-13, 2 locations max, 5-minute set..."></textarea>
-        </div>
-      </div>
-      <div class="context-actions">
-        <button class="ctx-btn primary" id="ctx-save" type="button">Save Context</button>
-        <button class="ctx-btn" id="ctx-clear" type="button">Clear</button>
-        <button class="ctx-btn" id="ctx-open-synax" type="button">Open Synax</button>
-        <button class="ctx-btn" id="ctx-open-thisbutthat" type="button">Open ThisButThat</button>
-        <button class="ctx-btn" id="ctx-open-joterie" type="button">Open Joterie</button>
-      </div>
-    </section>
-
-    <section id="recent-sessions" class="recent-browser" aria-label="Recent Sessions">
-      <div class="context-head">
-        <h3>Recent Sessions</h3>
-        <span class="card-cta">Resume without searching</span>
-      </div>
-      <div class="recent-toolbar">
-        <input id="recent-search" class="recent-search" type="text" placeholder="Search recent sessions..." />
-        <button type="button" class="recent-filter active" data-recent-filter="all">All</button>
-        <button type="button" class="recent-filter" data-recent-filter="Ideation">Ideation</button>
-        <button type="button" class="recent-filter" data-recent-filter="Drafting">Drafting</button>
-        <button type="button" class="recent-filter" data-recent-filter="Output">Output</button>
-      </div>
-      <div id="recent-sessions-grid" class="recent-grid"></div>
-      <div id="recent-sessions-empty" class="recent-empty" hidden>No recent local sessions yet.</div>
-    </section>
-
-    <section class="export-health" aria-label="Export Reliability">
-      <div class="context-head">
-        <h3>Export Reliability</h3>
-        <button class="ctx-btn" id="export-health-clear" type="button">Clear Metrics</button>
-      </div>
-      <div class="export-health-grid">
-        <div class="export-health-card">
-          <div class="export-health-label">Events (30d)</div>
-          <div class="export-health-value" id="export-health-events">0</div>
-        </div>
-        <div class="export-health-card">
-          <div class="export-health-label">Fallback Rate</div>
-          <div class="export-health-value" id="export-health-fallback">0%</div>
-        </div>
-        <div class="export-health-card">
-          <div class="export-health-label">Top Transport</div>
-          <div class="export-health-value" id="export-health-top">-</div>
-        </div>
-        <div class="export-health-card">
-          <div class="export-health-label">Trimmed Gmail</div>
-          <div class="export-health-value" id="export-health-trimmed">0</div>
-        </div>
-      </div>
-      <div id="export-health-list" class="export-health-list"></div>
-    </section>
-    <section class="recovery-health" aria-label="Recovery Snapshots">
-      <div class="context-head">
-        <h3>Recovery Snapshots</h3>
-        <button class="ctx-btn" id="recovery-clear-all" type="button">Clear All</button>
-      </div>
-      <div id="recovery-grid" class="recovery-grid"></div>
-    </section>
-
     <main class="sections">
       <section class="section">
         <div class="section-head"><div class="section-title">Ideation</div></div>
@@ -885,6 +859,90 @@
         </div>
       </section>
     </main>
+
+    <div class="suite-ops">
+      <section class="context-workspace" aria-label="Shared Project Context">
+        <div class="context-head">
+          <h3>Project Context Bus</h3>
+          <span id="ctx-meta" class="card-cta">Not Saved</span>
+        </div>
+        <div class="context-grid">
+          <div class="context-field">
+            <label for="ctx-topic">Topic</label>
+            <input id="ctx-topic" type="text" placeholder="Bruce Lee, climate comedy, startup satire..." />
+          </div>
+          <div class="context-field">
+            <label for="ctx-tone">Tone</label>
+            <input id="ctx-tone" type="text" placeholder="Sharp, absurdist, dry, cinematic..." />
+          </div>
+          <div class="context-field">
+            <label for="ctx-audience">Audience</label>
+            <input id="ctx-audience" type="text" placeholder="Late-night, Gen Z, broad streaming..." />
+          </div>
+          <div class="context-field">
+            <label for="ctx-constraints">Constraints</label>
+            <textarea id="ctx-constraints" placeholder="No politics, PG-13, 2 locations max, 5-minute set..."></textarea>
+          </div>
+        </div>
+        <div class="context-actions">
+          <button class="ctx-btn primary" id="ctx-save" type="button">Save Context</button>
+          <button class="ctx-btn" id="ctx-clear" type="button">Clear</button>
+          <button class="ctx-btn" id="ctx-open-synax" type="button">Open Synax</button>
+          <button class="ctx-btn" id="ctx-open-thisbutthat" type="button">Open ThisButThat</button>
+          <button class="ctx-btn" id="ctx-open-joterie" type="button">Open Joterie</button>
+        </div>
+      </section>
+
+      <section id="recent-sessions" class="recent-browser" aria-label="Recent Sessions">
+        <div class="context-head">
+          <h3>Recent Sessions</h3>
+          <span class="card-cta">Resume without searching</span>
+        </div>
+        <div class="recent-toolbar">
+          <input id="recent-search" class="recent-search" type="text" placeholder="Search recent sessions..." />
+          <button type="button" class="recent-filter active" data-recent-filter="all">All</button>
+          <button type="button" class="recent-filter" data-recent-filter="Ideation">Ideation</button>
+          <button type="button" class="recent-filter" data-recent-filter="Drafting">Drafting</button>
+          <button type="button" class="recent-filter" data-recent-filter="Output">Output</button>
+        </div>
+        <div id="recent-sessions-grid" class="recent-grid"></div>
+        <div id="recent-sessions-empty" class="recent-empty" hidden>No recent local sessions yet.</div>
+      </section>
+
+      <section class="export-health" aria-label="Export Reliability">
+        <div class="context-head">
+          <h3>Export Reliability</h3>
+          <button class="ctx-btn" id="export-health-clear" type="button">Clear Metrics</button>
+        </div>
+        <div class="export-health-grid">
+          <div class="export-health-card">
+            <div class="export-health-label">Events (30d)</div>
+            <div class="export-health-value" id="export-health-events">0</div>
+          </div>
+          <div class="export-health-card">
+            <div class="export-health-label">Fallback Rate</div>
+            <div class="export-health-value" id="export-health-fallback">0%</div>
+          </div>
+          <div class="export-health-card">
+            <div class="export-health-label">Top Transport</div>
+            <div class="export-health-value" id="export-health-top">-</div>
+          </div>
+          <div class="export-health-card">
+            <div class="export-health-label">Trimmed Gmail</div>
+            <div class="export-health-value" id="export-health-trimmed">0</div>
+          </div>
+        </div>
+        <div id="export-health-list" class="export-health-list"></div>
+      </section>
+
+      <section class="recovery-health" aria-label="Recovery Snapshots">
+        <div class="context-head">
+          <h3>Recovery Snapshots</h3>
+          <button class="ctx-btn" id="recovery-clear-all" type="button">Clear All</button>
+        </div>
+        <div id="recovery-grid" class="recovery-grid"></div>
+      </section>
+    </div>
 
     <footer>Writing Tools Suite · Local Storage Powered</footer>
   </div>

@@ -1112,7 +1112,7 @@ const THEMES = {
             ${renderSparks(t)}
           </div>
 
-          <header class="w-full max-w-4xl flex justify-between items-center mb-12 md:mb-20 z-20 animate-fade-in">
+          <header class="w-full max-w-4xl flex justify-between items-center mb-12 md:mb-20 z-20 animate-fade-in transition-all duration-500 ${state.gameState === 'ended' ? 'opacity-0 pointer-events-none max-h-0 mb-0 overflow-hidden' : ''}">
             <div class="flex items-center gap-4 cursor-default group">
               <div class="p-2 rounded-xl transition-all duration-500 group-hover:scale-110" style="color: ${t.accent}; background: ${t.accentLight};">
                 ${icons.feather}

@@ -211,6 +211,7 @@
         const BEATHIVE_STATE_KEY = 'writingtools_beathive_state_v1';
         const BEATHIVE_REV_KEY = 'writingtools_beathive_revision_v1';
         const BEATHIVE_SNAPSHOTS_KEY = 'writingtools_beathive_snapshots_v1';
+        const BEATHIVE_HANDOFF_KEY = 'writingtools_beathive_handoff_v1';
         const getContextBus = () => window.WTContextBus || null;
 
         function normalizeBeatHiveSketches(list) {
@@ -822,6 +823,53 @@
                 setSaveStatus('saved');
                 setTimeout(() => setSaveStatus('ready'), 2000);
             }, [user]);
+
+            useEffect(() => {
+                if (isInitialLoading || !user) return;
+                let payload = null;
+                try {
+                    const raw = localStorage.getItem(BEATHIVE_HANDOFF_KEY);
+                    payload = raw ? JSON.parse(raw) : null;
+                } catch (_) {
+                    payload = null;
+                }
+                if (!payload || typeof payload !== 'object') return;
+                try { localStorage.removeItem(BEATHIVE_HANDOFF_KEY); } catch (_) {}
+
+                const nextTopic = String(payload.topic || '').trim();
+                const nextConstraints = String(payload.constraints || '').trim();
+                const source = String(payload.source || 'tool').trim() || 'tool';
+                if (!nextTopic && !nextConstraints) return;
+
+                const bus = getContextBus();
+                if (bus && typeof bus.mergeContext === 'function') {
+                    const patch = { lastTool: source };
+                    if (nextTopic) patch.topic = nextTopic;
+                    if (nextConstraints) patch.constraints = nextConstraints;
+                    try { bus.mergeContext(patch); } catch (_) {}
+                }
+
+                setSharedContext((prev) => ({
+                    ...prev,
+                    topic: nextTopic || prev.topic,
+                    constraints: nextConstraints || prev.constraints,
+                    lastTool: source,
+                    updatedAt: String(payload.createdAt || new Date().toISOString())
+                }));
+
+                const currentName = String(nameRef.current || '').trim();
+                const shouldAdoptTopic = !!nextTopic && (
+                    !currentName ||
+                    currentName === 'Local Demo Map' ||
+                    currentName === 'Welcome Map' ||
+                    currentName === 'New Beat Map' ||
+                    currentName === 'Untitled Hive'
+                );
+                if (shouldAdoptTopic) {
+                    if (currentIdRef.current) save(null, nextTopic);
+                    else setSketchName(nextTopic);
+                }
+            }, [isInitialLoading, save, user]);
 
             const getCellContentText = useCallback((cell) => {
                 if (!cell) return '';
