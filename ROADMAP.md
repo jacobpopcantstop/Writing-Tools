@@ -93,6 +93,10 @@ Delivered so far in this phase:
   - Learns scene heading location cores + time tokens from the current draft.
   - Supports `INT./EXT. LOCATION -` time completion suggestions (`DAY.`, `NIGHT.`, etc.).
   - Learns character turn pairs and prioritizes likely alternating speakers.
+- WitherNaught ring progression now reflects usable output:
+  - Score gain tied to net new words, completed sentences, and paragraph progression.
+  - Removed passive time-based score inflation from the loop.
+  - Ring status now indicates output progress (`Output Ring`), aligning progression with draft quality.
 
 ## Phase 4 (Later): Reliability + Platform Hardening
 Status: Planned

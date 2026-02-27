@@ -232,6 +232,10 @@
       SCORE_UPDATE_INTERVAL_MS: 5000, // unused, kept for reference
       SCORE_PER_RING: 800,
       RING_FILL_FACTOR: 0.2,
+      SCORE_PER_NEW_WORD: 2,
+      SCORE_PER_SENTENCE: 18,
+      SCORE_PER_PARAGRAPH: 10,
+      SCORE_COMBO_BONUS_CAP: 1.5
     };
 
     const DIFFICULTIES = {
@@ -342,6 +346,18 @@ const THEMES = {
 
     function getScorePerRing() {
       return Math.max(1, Math.floor(CONSTANTS.SCORE_PER_RING * CONSTANTS.RING_FILL_FACTOR));
+    }
+
+    function countSentences(text) {
+      const sample = String(text || '').trim();
+      if (!sample) return 0;
+      return (sample.match(/[.!?](?=\s|$)/g) || []).length;
+    }
+
+    function countParagraphs(text) {
+      const sample = String(text || '');
+      if (!sample.trim()) return 0;
+      return sample.split(/\n+/).map((line) => line.trim()).filter(Boolean).length;
     }
 
     function generateSparks(count) {
@@ -1147,7 +1163,7 @@ const THEMES = {
       const offset = circumference * (1 - activeProgress);
 
       dom.ringCount.textContent = totalRings.toLocaleString();
-      dom.ringMeta.textContent = `Active Ring ${Math.round(activeProgress * 100)}%`;
+      dom.ringMeta.textContent = `Output Ring ${Math.round(activeProgress * 100)}%`;
       dom.ringActive.setAttribute('stroke-dasharray', circumference.toFixed(3));
       dom.ringActive.setAttribute('stroke-dashoffset', offset.toFixed(3));
       if (dom.ringHistory) {
@@ -1181,6 +1197,7 @@ const THEMES = {
     function handleTextInput(e) {
       if (state.gameState === 'ended' || state.gameState === 'paused') return;
       
+      const previousText = state.text;
       const newText = e.target.value;
       const isAdding = newText.length > state.text.length;
 
@@ -1195,8 +1212,24 @@ const THEMES = {
         state.targetFlow = Math.min(100, state.targetFlow + DIFFICULTIES[state.difficulty].gainRate);
         state.combo++;
 
-        const wordsArray = newText.trim().split(/\s+/).filter(w => w.length > 0);
-        const currentWordCount = wordsArray.length;
+        const previousWordCount = (previousText.trim().split(/\s+/).filter(w => w.length > 0)).length;
+        const currentWordCount = (newText.trim().split(/\s+/).filter(w => w.length > 0)).length;
+        const newWords = Math.max(0, currentWordCount - previousWordCount);
+        const previousSentenceCount = countSentences(previousText);
+        const currentSentenceCount = countSentences(newText);
+        const newSentences = Math.max(0, currentSentenceCount - previousSentenceCount);
+        const previousParagraphs = countParagraphs(previousText);
+        const currentParagraphs = countParagraphs(newText);
+        const newParagraphs = Math.max(0, currentParagraphs - previousParagraphs);
+
+        if (newWords > 0 || newSentences > 0 || newParagraphs > 0) {
+          const basePoints = (newWords * CONSTANTS.SCORE_PER_NEW_WORD) +
+            (newSentences * CONSTANTS.SCORE_PER_SENTENCE) +
+            (newParagraphs * CONSTANTS.SCORE_PER_PARAGRAPH);
+          const comboBonus = Math.floor(state.combo / CONSTANTS.COMBO_THRESHOLD) * 0.08;
+          const multiplier = Math.min(CONSTANTS.SCORE_COMBO_BONUS_CAP, 1 + comboBonus);
+          state.score += basePoints * multiplier;
+        }
 
         if (currentWordCount > state.wordCount) {
           state.wordCount = currentWordCount;
@@ -1294,8 +1327,6 @@ const THEMES = {
           handleGameOver();
         } else {
           state.totalTime += deltaTime;
-          const multiplier = 1 + (Math.floor(state.combo / CONSTANTS.COMBO_THRESHOLD) * 0.1);
-          state.score += deltaTime * 10 * multiplier;
 
           updateFlowBar();
           updateTimeDisplay();
