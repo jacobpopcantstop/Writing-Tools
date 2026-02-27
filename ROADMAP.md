@@ -22,7 +22,7 @@ Delivered in this phase:
 - QA pass completed across Courius + BeatHive + Wribbon + WitherNaught, including mobile/desktop validation for Courius import panel and restore flow.
 
 ## Phase 2 (Next): Command Palette + Session Navigation
-Status: In progress
+Status: Completed
 
 Goals:
 - Add a global command palette (`Cmd/Ctrl+K`) and mobile quick-actions button.
@@ -192,3 +192,11 @@ Delivered so far in this phase:
   - Automatic PaperCut snapshots (`writingtools_papercut_snapshots_v1`) are captured on save conflict and remote sync.
   - Cross-tab PaperCut sync now preserves local recoverability before applying remote updates.
   - PaperCut toolbar now includes recovery actions to restore the latest snapshot or clear snapshots.
+
+## Closeout
+Status: Final polish
+
+Current state:
+- Core roadmap deliverables are implemented and covered by the smoke suite.
+- Remaining work is optional polish, edge-case bug fixes, and future expansion rather than missing foundational systems.
+- The suite is now in "ship and refine" mode rather than active platform build-out.
