@@ -1274,15 +1274,24 @@
       let activeIndex = 0;
       let isOpen = false;
 
+      function escapeHtml(value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
       function render() {
         if (!filtered.length) {
           list.innerHTML = '<div class="cmdk-empty">No matching actions.</div>';
           return;
         }
         list.innerHTML = filtered.map((cmd, idx) => `
-          <button type="button" class="cmdk-item ${idx === activeIndex ? 'active' : ''}" data-cmd="${cmd.id}">
-            <strong>${cmd.title}</strong>
-            <span>${cmd.desc}</span>
+          <button type="button" class="cmdk-item ${idx === activeIndex ? 'active' : ''}" data-cmd-idx="${idx}">
+            <strong>${escapeHtml(cmd.title)}</strong>
+            <span>${escapeHtml(cmd.desc)}</span>
           </button>
         `).join('');
       }
@@ -1334,10 +1343,10 @@
 
       input.addEventListener('input', () => filterCommands(input.value));
       list.addEventListener('click', (e) => {
-        const btn = e.target.closest('[data-cmd]');
+        const btn = e.target.closest('[data-cmd-idx]');
         if (!btn) return;
-        const idx = filtered.findIndex((item) => item.id === btn.getAttribute('data-cmd'));
-        if (idx >= 0) {
+        const idx = Number(btn.getAttribute('data-cmd-idx'));
+        if (!Number.isNaN(idx) && idx >= 0 && idx < filtered.length) {
           activeIndex = idx;
           runActive();
         }

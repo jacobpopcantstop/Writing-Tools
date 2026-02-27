@@ -61,6 +61,15 @@
     });
   }
 
+  function escapeHtml(value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   function buildBaseCommands() {
     var list = [];
     if (window.WTCommands && typeof window.WTCommands.build === 'function') {
@@ -156,9 +165,9 @@
         return;
       }
       list.innerHTML = filtered.map(function (cmd, idx) {
-        return '<button type="button" class="wtp-item ' + (idx === activeIndex ? 'active' : '') + '" data-cmd="' + cmd.id + '">' +
-          '<strong>' + cmd.title + '</strong>' +
-          '<span>' + cmd.desc + '</span>' +
+        return '<button type="button" class="wtp-item ' + (idx === activeIndex ? 'active' : '') + '" data-cmd-idx="' + idx + '">' +
+          '<strong>' + escapeHtml(cmd.title) + '</strong>' +
+          '<span>' + escapeHtml(cmd.desc) + '</span>' +
         '</button>';
       }).join('');
     }
@@ -209,11 +218,10 @@
 
     input.addEventListener('input', function () { filterCommands(input.value); });
     list.addEventListener('click', function (e) {
-      var btn = e.target.closest('[data-cmd]');
+      var btn = e.target.closest('[data-cmd-idx]');
       if (!btn) return;
-      var id = btn.getAttribute('data-cmd');
-      var idx = filtered.findIndex(function (item) { return item.id === id; });
-      if (idx >= 0) {
+      var idx = Number(btn.getAttribute('data-cmd-idx'));
+      if (!Number.isNaN(idx) && idx >= 0 && idx < filtered.length) {
         activeIndex = idx;
         runActive();
       }

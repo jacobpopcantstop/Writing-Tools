@@ -88,6 +88,8 @@ Delivered:
   - Courius parenthetical wrapper carryover regression check when cycling element types
   - WitherNaught ring progression after writing input
   - PaperCut page nav + rotate/delete control safety without an active PDF
+- Final bug-seeking hardening pass:
+  - Escaped recent-session and command text in both command palette implementations to prevent malformed local session metadata from breaking the suite action UI.
 
 ## Phase 3 (Later): Adaptive Assistance + Structural Intelligence
 Status: In progress
