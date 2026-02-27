@@ -129,3 +129,7 @@ Delivered so far in this phase:
   - Imports panel now includes a "Recovery Snapshots" section.
   - Snapshot `Append`/`Replace` restore actions with timestamped previews.
   - One-click snapshot clearing for local reset.
+- Added baseline PWA/offline shell support:
+  - Introduced `manifest.webmanifest` and suite app icons (`icon-192.svg`, `icon-512.svg`).
+  - Added shared service worker registration (`shared-pwa.js`) across the suite.
+  - Added `sw.js` cache layer for core pages/shared scripts with offline fallback to suite home.
