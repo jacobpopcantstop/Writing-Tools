@@ -95,6 +95,11 @@
       transition: transform .2s ease, background .2s ease;
     }
     .theme-btn:hover { transform: translateY(-2px); background: var(--card-hover); }
+    .theme-btn svg {
+      width: 18px;
+      height: 18px;
+      display: block;
+    }
 
     .hero {
       border: 1px solid var(--line);
@@ -740,7 +745,7 @@
     <div class="topbar">
       <div class="brand"><span class="brand-dot"></span> Writing Tools Suite</div>
       <button id="theme-btn" class="theme-btn" aria-label="Switch theme">
-        <i data-lucide="sun" id="theme-icon" style="width:18px;height:18px;"></i>
+        <span id="theme-icon" aria-hidden="true"></span>
       </button>
     </div>
 
@@ -983,12 +988,34 @@
       catch { return 'dark'; }
     }
 
+    function getThemeIconSvg(theme) {
+      if (theme === 'dark') {
+        return `
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2.2"></path>
+            <path d="M12 19.8V22"></path>
+            <path d="M4.93 4.93l1.56 1.56"></path>
+            <path d="M17.51 17.51l1.56 1.56"></path>
+            <path d="M2 12h2.2"></path>
+            <path d="M19.8 12H22"></path>
+            <path d="M4.93 19.07l1.56-1.56"></path>
+            <path d="M17.51 6.49l1.56-1.56"></path>
+          </svg>
+        `;
+      }
+      return `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20.2 14.4A8.6 8.6 0 0 1 9.6 3.8a9.4 9.4 0 1 0 10.6 10.6Z"></path>
+        </svg>
+      `;
+    }
+
     function applyTheme(theme) {
       document.documentElement.setAttribute('data-wt-theme', theme);
       const icon = document.getElementById('theme-icon');
-      if (icon && typeof lucide !== 'undefined') {
-        icon.setAttribute('data-lucide', theme === 'dark' ? 'sun' : 'moon');
-        lucide.createIcons();
+      if (icon) {
+        icon.innerHTML = getThemeIconSvg(theme);
       }
       const metaTheme = document.querySelector('meta[name="theme-color"]');
       if (metaTheme) metaTheme.content = theme === 'dark' ? '#0b0c10' : '#f7f3ea';
