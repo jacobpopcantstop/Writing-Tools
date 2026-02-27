@@ -824,18 +824,18 @@
                 }
             }
 
-            if ((!currentTopic || twists.length === 0) && state.history.length === 0) return null;
+            if ((!currentTopic || currentTwists.length === 0) && state.history.length === 0) return null;
 
             let body = '';
 
             // Current session
-            if (currentTopic && twists.length > 0) {
+            if (currentTopic && currentTwists.length > 0) {
                 body += `===== CURRENT SESSION =====\n\n`;
                 body += `TOPIC: ${currentTopic.text}\nCONTEXT: ${currentTopic.description}\n\nTHE TWISTS:\n`;
-                twists.forEach((t, i) => {
+                currentTwists.forEach((t, i) => {
                     body += `${i + 1}. BUT ${t}\n`;
                 });
-                const count = twists.length;
+                const count = currentTwists.length;
                 const medal = count >= 5 ? 'GOLD' : count >= 4 ? 'SILVER' : count >= 3 ? 'BRONZE' : null;
                 if(medal) body += `\n🏅 Rank Achieved: ${medal}`;
             }
@@ -845,8 +845,9 @@
                 if (body) body += `\n\n`;
                 body += `===== FULL HISTORY (${state.history.length} sessions) =====\n`;
                 state.history.forEach((session, idx) => {
+                    const sessionTopic = session.prompt?.text || session.topic?.text || 'Untitled';
                     body += `\n--- Session ${idx + 1} (${session.date}) ---\n`;
-                    body += `TOPIC: ${session.prompt.text}\n`;
+                    body += `TOPIC: ${sessionTopic}\n`;
                     session.twists.forEach((t, i) => {
                         body += `  ${i + 1}. BUT ${t}\n`;
                     });
@@ -877,20 +878,36 @@
             const encodedBody = encodeURIComponent(bodyForUrl);
             const gmailUrl = `${gmailBase}&tf=1&su=${encodedSubject}&body=${encodedBody}`;
             const mailtoUrl = `mailto:?subject=${encodeURIComponent(data.subject)}&body=${encodeURIComponent(data.body)}`;
+            const isMobile = window.matchMedia('(max-width: 820px)').matches || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
             if (fullData && (wasTrimmed || fullData.body.length > bodyForUrl.length)) {
                 navigator.clipboard.writeText(fullData.body).catch(() => {});
             }
 
-            const win = window.open(gmailUrl, '_blank', 'noopener,noreferrer');
-            if (!win) {
-                window.location.href = gmailUrl;
-                setTimeout(() => {
-                    if (document.visibilityState === 'visible') {
-                        window.location.href = mailtoUrl;
-                    }
-                }, 800);
+            if (isMobile) {
+                window.location.assign(gmailUrl);
+                return;
             }
+
+            let win = null;
+            try {
+                win = window.open(gmailUrl, '_blank', 'noopener,noreferrer');
+            } catch (_) {}
+            if (win && !win.closed) return;
+
+            const link = document.createElement('a');
+            link.href = gmailUrl;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+
+            setTimeout(() => {
+                if (document.visibilityState === 'visible' && document.hasFocus()) {
+                    window.location.assign(mailtoUrl);
+                }
+            }, 900);
         }
 
         function sendToBeatHive() {

@@ -179,11 +179,27 @@
             letter-spacing: 1px;
             color: var(--suggestion);
             opacity: 0.8;
-            pointer-events: none;
+            pointer-events: auto;
             background: var(--ui-bg);
             padding: 4px 10px;
             border-radius: 4px;
             color: var(--ui-text);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            z-index: 1400;
+        }
+
+        #writing-timer-btn {
+            border: 1px solid transparent;
+            border-radius: 999px;
+            padding: 2px 7px;
+            transition: background 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+        }
+
+        #writing-timer-btn:hover {
+            background: var(--button-hover);
+            border-color: var(--guide-color);
         }
 
         /* --- Screenplay Elements --- */
@@ -691,7 +707,7 @@
 
 <div id="save-bar">
     <span id="page-count">Pg 1</span> | <span id="save-status">Ready</span>
-    | <button id="writing-timer-btn" type="button" style="all: unset; cursor: pointer; opacity: 0.75;">Timer <span id="writing-timer">00:00</span></button>
+    | <button id="writing-timer-btn" type="button" title="Click to pause or resume. Double-click to set time.">Timer <span id="writing-timer">00:00</span></button>
 </div>
 
 <a href="index.html" style="position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%); z-index: 10; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.15; color: var(--text-color); text-decoration: none; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.5'" onmouseout="this.style.opacity='0.15'">Writing Tools Suite</a>
@@ -1662,6 +1678,18 @@
         } else {
             nudgeWritingTimer();
         }
+    });
+
+    document.getElementById('writing-timer-btn').addEventListener('dblclick', () => {
+        const current = getWritingTimerSeconds();
+        const input = window.prompt('Set writing timer minutes', String(Math.floor(current / 60)));
+        if (input === null) return;
+        const minutes = Number(input);
+        if (!Number.isFinite(minutes) || minutes < 0) return;
+        writingTimerElapsed = Math.round(minutes * 60);
+        writingTimerLastStart = null;
+        persistWritingTimer();
+        renderWritingTimer();
     });
 
     // --- Help Modal ---

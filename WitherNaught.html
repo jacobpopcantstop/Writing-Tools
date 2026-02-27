@@ -634,9 +634,7 @@ const THEMES = {
 
     function renderRingMeter(t) {
       const { totalRings, activeProgress } = getRingStats();
-      const maxR = 52;
-      const minR = 20;
-      const activeRadius = maxR - ((maxR - minR) * activeProgress);
+      const activeRadius = 52;
       const circumference = 2 * Math.PI * activeRadius;
       const offset = circumference * (1 - activeProgress);
 
@@ -645,6 +643,9 @@ const THEMES = {
           <svg width="150" height="150" viewBox="0 0 150 150" class="shrink-0">
             <circle cx="75" cy="75" r="56" fill="none" stroke="${t.border}" stroke-width="1.5" opacity="0.35"></circle>
             <circle cx="75" cy="75" r="14" fill="${t.accentLight}" opacity="0.8"></circle>
+            <g id="ring-history">
+              ${renderCompletedRings(totalRings, t)}
+            </g>
             <g transform="rotate(-90 75 75)">
               <circle id="ring-track" cx="75" cy="75" r="${activeRadius.toFixed(3)}" fill="none" stroke="${t.border}" stroke-width="6" opacity="0.4"></circle>
               <circle id="ring-active" cx="75" cy="75" r="${activeRadius.toFixed(3)}" fill="none" stroke="${t.accent}" stroke-width="6" stroke-linecap="round" stroke-dasharray="${circumference.toFixed(3)}" stroke-dashoffset="${offset.toFixed(3)}" style="transition: r 220ms ease, stroke-dashoffset 120ms linear, stroke-dasharray 220ms ease;"></circle>
@@ -659,6 +660,18 @@ const THEMES = {
           </div>
         </div>
       `;
+    }
+
+    function renderCompletedRings(totalRings, t) {
+      const visible = Math.min(totalRings, 7);
+      if (visible < 1) return '';
+      const startRadius = 18;
+      const spacing = 4.2;
+      return Array.from({ length: visible }, (_, idx) => {
+        const radius = startRadius + (idx * spacing);
+        const opacity = 0.28 + (idx * 0.08);
+        return `<circle cx="75" cy="75" r="${radius.toFixed(2)}" fill="none" stroke="${t.accent}" stroke-width="2.2" opacity="${Math.min(opacity, 0.82).toFixed(2)}"></circle>`;
+      }).join('');
     }
 
     function renderEndScreen(t) {
@@ -1075,6 +1088,7 @@ const THEMES = {
       dom.ringMeta = document.getElementById('ring-meta');
       dom.ringActive = document.getElementById('ring-active');
       dom.ringTrack = document.getElementById('ring-track');
+      dom.ringHistory = document.getElementById('ring-history');
       dom.timeDisplay = document.getElementById('time-display');
       dom.comboDisplay = document.getElementById('combo-display');
       dom.sparksContainer = document.getElementById('sparks-container');
@@ -1084,18 +1098,17 @@ const THEMES = {
     function updateRingDisplay() {
       if (!dom.ringCount || !dom.ringMeta || !dom.ringActive || !dom.ringTrack) return;
       const { totalRings, activeProgress } = getRingStats();
-      const maxR = 52;
-      const minR = 20;
-      const activeRadius = maxR - ((maxR - minR) * activeProgress);
+      const activeRadius = 52;
       const circumference = 2 * Math.PI * activeRadius;
       const offset = circumference * (1 - activeProgress);
 
       dom.ringCount.textContent = totalRings.toLocaleString();
       dom.ringMeta.textContent = `Active Ring ${Math.round(activeProgress * 100)}%`;
-      dom.ringTrack.setAttribute('r', activeRadius.toFixed(3));
-      dom.ringActive.setAttribute('r', activeRadius.toFixed(3));
       dom.ringActive.setAttribute('stroke-dasharray', circumference.toFixed(3));
       dom.ringActive.setAttribute('stroke-dashoffset', offset.toFixed(3));
+      if (dom.ringHistory) {
+        dom.ringHistory.innerHTML = renderCompletedRings(totalRings, THEMES[state.theme]);
+      }
     }
 
     function attachEventListeners() {
