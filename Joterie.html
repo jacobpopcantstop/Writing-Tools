@@ -273,14 +273,90 @@
     </div>
 
     <script>
+        const JOTERIE_ARCHIVES_KEY = 'writingtools_joterie_archives';
+        const JOTERIE_REV_KEY = 'writingtools_joterie_revision_v1';
+        const JOTERIE_SNAPSHOTS_KEY = 'writingtools_joterie_snapshots_v1';
+        const JOTERIE_TAB_ID = 'joterie-' + Math.random().toString(36).slice(2, 10);
+        let localKnownRevision = 0;
+
+        function normalizeArchivesPayload(input) {
+            if (!Array.isArray(input)) return [];
+            return input
+                .filter((entry) => entry && Array.isArray(entry.cards))
+                .map((entry) => ({
+                    id: Number(entry.id) || Date.now(),
+                    createdAt: entry.createdAt || new Date().toISOString(),
+                    date: entry.date || new Date().toLocaleDateString(),
+                    prompt: String(entry.prompt || 'Untitled Session'),
+                    cards: entry.cards.map((card) => String(card || '').trim()).filter(Boolean),
+                    ipm: String(entry.ipm || '0'),
+                    duration: String(entry.duration || '0:00')
+                }))
+                .filter((entry) => entry.cards.length > 0)
+                .slice(0, 250);
+        }
+
         function loadJoterieArchives() {
             try {
-                const raw = localStorage.getItem('writingtools_joterie_archives');
+                const raw = localStorage.getItem(JOTERIE_ARCHIVES_KEY);
+                const parsed = raw ? JSON.parse(raw) : [];
+                return normalizeArchivesPayload(parsed);
+            } catch (_) {
+                return [];
+            }
+        }
+
+        function getArchiveSnapshots() {
+            try {
+                const raw = localStorage.getItem(JOTERIE_SNAPSHOTS_KEY);
                 const parsed = raw ? JSON.parse(raw) : [];
                 return Array.isArray(parsed) ? parsed : [];
             } catch (_) {
                 return [];
             }
+        }
+
+        function saveArchiveSnapshot(archives, reason, meta) {
+            try {
+                const normalized = normalizeArchivesPayload(archives);
+                if (!normalized.length) return;
+                const snapshots = getArchiveSnapshots();
+                snapshots.unshift({
+                    id: 'snap_' + Date.now() + '_' + Math.floor(Math.random() * 100000),
+                    at: new Date().toISOString(),
+                    reason: String(reason || 'autosave'),
+                    sourceTab: JOTERIE_TAB_ID,
+                    meta: meta && typeof meta === 'object' ? meta : {},
+                    payload: normalized
+                });
+                localStorage.setItem(JOTERIE_SNAPSHOTS_KEY, JSON.stringify(snapshots.slice(0, 20)));
+            } catch (_) {}
+        }
+
+        function archivesComparable(archives) {
+            try { return JSON.stringify(normalizeArchivesPayload(archives)); } catch (_) { return ''; }
+        }
+
+        function persistArchives(nextArchives, reason = 'autosave') {
+            const candidate = normalizeArchivesPayload(nextArchives);
+            const remoteRev = parseInt(localStorage.getItem(JOTERIE_REV_KEY) || '0', 10) || 0;
+            const remoteArchives = loadJoterieArchives();
+            if (
+                remoteRev > localKnownRevision &&
+                archivesComparable(remoteArchives) !== archivesComparable(candidate)
+            ) {
+                saveArchiveSnapshot(candidate, 'save-conflict', {
+                    reason: String(reason || 'autosave'),
+                    baseRevision: localKnownRevision,
+                    remoteRevision: remoteRev
+                });
+                return false;
+            }
+            const nextRev = Math.max(remoteRev, localKnownRevision) + 1;
+            localStorage.setItem(JOTERIE_ARCHIVES_KEY, JSON.stringify(candidate));
+            localStorage.setItem(JOTERIE_REV_KEY, String(nextRev));
+            localKnownRevision = nextRev;
+            return true;
         }
 
         // State Management with LocalStorage persistence for archives
@@ -536,7 +612,7 @@
                 duration: formatTime(totalSecs)
             };
             state.archives.unshift(archiveEntry);
-            localStorage.setItem('writingtools_joterie_archives', JSON.stringify(state.archives));
+            persistArchives(state.archives, 'save-harvest');
 
             // Show Summary
             elements.summaryStat.innerText = `${kept.length} Kept / ${state.sessionCards.length} Total`;
@@ -694,6 +770,7 @@
         };
 
         // Init
+        localKnownRevision = parseInt(localStorage.getItem(JOTERIE_REV_KEY) || '0', 10) || 0;
         applyTheme();
         const bus = getContextBus();
         if (bus) {
@@ -704,6 +781,21 @@
             bus.subscribe(() => refreshContextBadge());
         }
         refreshContextBadge();
+        window.addEventListener('storage', (event) => {
+            if (!event || event.key !== JOTERIE_REV_KEY) return;
+            const incomingRev = parseInt(event.newValue || '0', 10) || 0;
+            if (incomingRev <= localKnownRevision) return;
+            const remoteArchives = loadJoterieArchives();
+            if (archivesComparable(state.archives) !== archivesComparable(remoteArchives)) {
+                saveArchiveSnapshot(state.archives, 'remote-sync', {
+                    previousRevision: localKnownRevision,
+                    incomingRevision: incomingRev
+                });
+                state.archives = remoteArchives;
+                if (state.view === 'history') renderHistory();
+            }
+            localKnownRevision = incomingRev;
+        });
         elements.homePrompt.focus();
         window.WTToolActions = {
             exportPrimary: exportText,

@@ -159,6 +159,32 @@ run_eval_check wt-joterie "Joterie Gmail export opens a compose target" "$(cat <
 JS
 )"
 
+run_eval_check wt-joterie "Joterie revisioned archives persist on harvest save" "$(cat <<'JS'
+(() => {
+  localStorage.removeItem('writingtools_joterie_archives');
+  localStorage.removeItem('writingtools_joterie_revision_v1');
+  const prompt = document.getElementById('home-prompt');
+  const start = document.getElementById('start-btn');
+  const input = document.getElementById('sprint-input');
+  const finish = document.getElementById('finish-early-btn');
+  const save = document.getElementById('save-harvest-btn');
+  if (!prompt || !start || !input || !finish || !save) throw new Error('Joterie controls missing');
+  prompt.value = 'Smoke prompt';
+  start.click();
+  input.value = 'First jot';
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+  input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  finish.click();
+  save.click();
+  const rev = parseInt(localStorage.getItem('writingtools_joterie_revision_v1') || '0', 10) || 0;
+  const parsed = JSON.parse(localStorage.getItem('writingtools_joterie_archives') || '[]');
+  if (!(rev > 0)) throw new Error('Joterie revision not persisted');
+  if (!Array.isArray(parsed) || parsed.length < 1) throw new Error('Joterie archive missing after save');
+  return true;
+})()
+JS
+)"
+
 run_eval_check wt-wribbon "Wribbon Gmail export opens a compose target" "$(cat <<'JS'
 (() => {
   const opened = [];

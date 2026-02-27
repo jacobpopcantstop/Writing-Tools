@@ -68,6 +68,7 @@ Delivered:
 - Added critical interaction checks to `scripts/smoke-suite.sh` for:
   - Synax revisioned persistence path verification
   - Gmail compose handoff assertions in `ThisButThat`, `Joterie`, `Wribbon`, and `WitherNaught`
+  - Joterie revisioned archive persistence path verification
   - Courius transfer append/overwrite storage path verification
   - Courius parenthetical wrapper carryover regression check when cycling element types
   - WitherNaught ring progression after writing input
@@ -149,3 +150,6 @@ Delivered so far in this phase:
   - Automatic Synax snapshots (`writingtools_synax_snapshots_v1`) are captured on save conflicts and remote sync.
   - Cross-tab Synax sync now preserves a recoverable local state before applying remote updates.
   - Synax settings now include Recovery Snapshots controls with one-click restore and clear actions.
+  - Joterie archives now use revision tracking (`writingtools_joterie_revision_v1`) with conflict-safe writes.
+  - Automatic Joterie snapshots (`writingtools_joterie_snapshots_v1`) are captured on save conflict and remote sync.
+  - Cross-tab Joterie archive sync now preserves local recoverability before applying remote updates.
