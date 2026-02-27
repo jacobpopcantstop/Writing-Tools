@@ -45,6 +45,27 @@ Delivered so far in this phase:
 - Added a visible recent-session browser on `index.html`, backed by shared recent-session discovery.
 - Added broader common action IDs: suite home, recent hub, and tool-specific primary handoff actions where available.
 - Added grouped/filterable recent-session browsing on the index with category filters and search.
+- Completed audit-driven reliability fixes:
+  - Wribbon Gmail handoff aligned with suite-safe fallback behavior.
+  - WitherNaught removed duplicate global click-listener accumulation across renders.
+  - Shared recent-session browser now reads latest WitherNaught entry correctly.
+  - Courius/shared-context import path sanitizes HTML before insertion/persistence.
+
+## QA Baseline (Now): Suite Smoke Checks
+Status: Completed
+
+Delivered:
+- Added repeatable Playwright CLI smoke harness at `scripts/smoke-suite.sh`.
+- Harness validates all core tools open and asserts zero console errors:
+  - `index`, `Synax`, `ThisButThat`, `Joterie`, `BeatHive`, `Wribbon`, `WitherNaught`, `Courius`, `PaperCut`.
+- Harness starts/stops a local static server automatically and exits non-zero on failure.
+
+Next under QA:
+- Add critical interaction checks (not just open/console) for:
+  - Gmail export buttons
+  - Courius transfer append/replace flows
+  - WitherNaught alarm + ring progression
+  - PaperCut page navigation and rotate/delete safety paths
 
 ## Phase 3 (Later): Adaptive Assistance + Structural Intelligence
 Status: Planned
