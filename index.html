@@ -1087,6 +1087,12 @@
       });
     }
 
+    function focusSectionById(id) {
+      const node = document.getElementById(id);
+      if (!node) return;
+      node.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
     function getExportEvents() {
       try {
         const raw = localStorage.getItem(EXPORT_EVENTS_KEY);
@@ -1232,7 +1238,35 @@
       }
 
       function buildCommands() {
-        return [...getRecentCommands(), ...baseCommands];
+        const recent = window.WTRecentSessions && typeof window.WTRecentSessions.list === 'function'
+          ? window.WTRecentSessions.list()
+          : [];
+        const suiteCommands = [
+          {
+            id: 'index-recovery-hub',
+            title: 'Open Recovery Snapshots',
+            desc: 'Jump to snapshot counts and cleanup controls',
+            keys: 'recovery snapshots restore backups',
+            run: () => focusSectionById('recovery-grid')
+          },
+          {
+            id: 'index-export-health',
+            title: 'Open Export Reliability',
+            desc: 'Jump to local Gmail/email export telemetry',
+            keys: 'export reliability gmail email telemetry',
+            run: () => focusSectionById('export-health-list')
+          }
+        ];
+        if (recent[0]) {
+          suiteCommands.unshift({
+            id: 'resume-most-recent',
+            title: `Resume ${recent[0].tool}`,
+            desc: recent[0].meta,
+            keys: `resume recent latest ${String(recent[0].tool || '').toLowerCase()}`,
+            run: () => openWithContext(recent[0].path)
+          });
+        }
+        return [...suiteCommands, ...getRecentCommands(), ...baseCommands];
       }
 
       let commands = buildCommands();
@@ -1322,6 +1356,21 @@
       initExportHealth();
       initRecoveryHealth();
       initCommandPalette();
+      window.addEventListener('storage', (e) => {
+        const key = String((e && e.key) || '');
+        if (!key) return;
+        if (
+          key.indexOf('writingtools_') === 0 ||
+          key === 'flowstate_history_v13' ||
+          key === 'flowstate_streak_v13' ||
+          key === 'flowstate_prefs_v13' ||
+          key === 'thisButThatHistory'
+        ) {
+          renderRecentSessions();
+          renderExportHealth();
+          renderRecoveryHealth();
+        }
+      });
     });
   </script>
 </body>

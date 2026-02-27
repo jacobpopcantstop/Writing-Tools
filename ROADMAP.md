@@ -54,6 +54,9 @@ Delivered so far in this phase:
   - WitherNaught removed duplicate global click-listener accumulation across renders.
   - Shared recent-session browser now reads latest WitherNaught entry correctly.
   - Courius/shared-context import path sanitizes HTML before insertion/persistence.
+- Added index hub polish for faster recovery/navigation:
+  - Command palette now includes direct actions for `Resume Most Recent`, `Open Recovery Snapshots`, and `Open Export Reliability`.
+  - Index home panels now live-refresh on cross-tab `storage` updates for recent sessions, export telemetry, and recovery snapshot counts.
 
 ## QA Baseline (Now): Suite Smoke Checks
 Status: Completed
