@@ -133,3 +133,7 @@ Delivered so far in this phase:
   - Introduced `manifest.webmanifest` and suite app icons (`icon-192.svg`, `icon-512.svg`).
   - Added shared service worker registration (`shared-pwa.js`) across the suite.
   - Added `sw.js` cache layer for core pages/shared scripts with offline fallback to suite home.
+- Added export reliability visibility on suite home:
+  - New "Export Reliability" panel on `index.html` reads `writingtools_export_events_v1`.
+  - Surfaces 30-day event volume, fallback rate, top transport, and trimmed-Gmail count.
+  - Includes recent transport timeline and local metric reset action.

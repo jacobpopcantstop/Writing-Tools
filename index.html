@@ -451,6 +451,56 @@
       color: var(--muted);
       font-size: 14px;
     }
+    .export-health {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: color-mix(in srgb, var(--card) 95%, transparent);
+      padding: 16px;
+      margin-bottom: 18px;
+      display: grid;
+      gap: 12px;
+    }
+    .export-health-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .export-health-card {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px;
+      background: var(--bg-soft);
+      display: grid;
+      gap: 4px;
+    }
+    .export-health-label {
+      color: var(--muted);
+      font: 700 10px/1 "IBM Plex Mono", monospace;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .export-health-value {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: .01em;
+    }
+    .export-health-list {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      max-height: 170px;
+      overflow: auto;
+      display: grid;
+      gap: 6px;
+      font-size: 11px;
+    }
+    .export-health-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      color: var(--muted);
+    }
+    .export-health-row strong { color: var(--text); font-weight: 700; }
 
     footer {
       margin-top: 26px;
@@ -572,6 +622,7 @@
       .ctx-btn { min-height: 44px; }
       .cmdk-trigger { display: inline-flex; }
       .recent-group-grid { grid-template-columns: 1fr; }
+      .export-health-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -652,6 +703,32 @@
       </div>
       <div id="recent-sessions-grid" class="recent-grid"></div>
       <div id="recent-sessions-empty" class="recent-empty" hidden>No recent local sessions yet.</div>
+    </section>
+
+    <section class="export-health" aria-label="Export Reliability">
+      <div class="context-head">
+        <h3>Export Reliability</h3>
+        <button class="ctx-btn" id="export-health-clear" type="button">Clear Metrics</button>
+      </div>
+      <div class="export-health-grid">
+        <div class="export-health-card">
+          <div class="export-health-label">Events (30d)</div>
+          <div class="export-health-value" id="export-health-events">0</div>
+        </div>
+        <div class="export-health-card">
+          <div class="export-health-label">Fallback Rate</div>
+          <div class="export-health-value" id="export-health-fallback">0%</div>
+        </div>
+        <div class="export-health-card">
+          <div class="export-health-label">Top Transport</div>
+          <div class="export-health-value" id="export-health-top">-</div>
+        </div>
+        <div class="export-health-card">
+          <div class="export-health-label">Trimmed Gmail</div>
+          <div class="export-health-value" id="export-health-trimmed">0</div>
+        </div>
+      </div>
+      <div id="export-health-list" class="export-health-list"></div>
     </section>
 
     <main class="sections">
@@ -873,6 +950,7 @@
       filter: 'all',
       query: ''
     };
+    const EXPORT_EVENTS_KEY = 'writingtools_export_events_v1';
 
     function renderRecentSessions() {
       const grid = document.getElementById('recent-sessions-grid');
@@ -940,6 +1018,66 @@
           renderRecentSessions();
         });
       });
+    }
+
+    function getExportEvents() {
+      try {
+        const raw = localStorage.getItem(EXPORT_EVENTS_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (_) {
+        return [];
+      }
+    }
+
+    function renderExportHealth() {
+      const eventsNode = document.getElementById('export-health-events');
+      const fallbackNode = document.getElementById('export-health-fallback');
+      const topNode = document.getElementById('export-health-top');
+      const trimmedNode = document.getElementById('export-health-trimmed');
+      const listNode = document.getElementById('export-health-list');
+      if (!eventsNode || !fallbackNode || !topNode || !trimmedNode || !listNode) return;
+
+      const since = Date.now() - (30 * 24 * 60 * 60 * 1000);
+      const events = getExportEvents().filter((item) => Number(item && item.at) >= since);
+      eventsNode.textContent = String(events.length);
+
+      const fallbackCount = events.filter((item) => String(item.transport || '').includes('fallback')).length;
+      const fallbackRate = events.length ? Math.round((fallbackCount / events.length) * 100) : 0;
+      fallbackNode.textContent = `${fallbackRate}%`;
+
+      const trimmedCount = events.filter((item) => !!item.trimmed).length;
+      trimmedNode.textContent = String(trimmedCount);
+
+      const byTransport = events.reduce((acc, item) => {
+        const key = String(item.transport || 'unknown');
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      }, {});
+      const topTransport = Object.entries(byTransport).sort((a, b) => b[1] - a[1])[0];
+      topNode.textContent = topTransport ? topTransport[0] : '-';
+
+      if (!events.length) {
+        listNode.innerHTML = '<div class="export-health-row"><strong>No export telemetry yet.</strong><span>Use Gmail/Email in tools to collect metrics.</span></div>';
+        return;
+      }
+      listNode.innerHTML = events.slice(0, 12).map((item) => {
+        const stamp = item.at ? new Date(item.at).toLocaleString() : '';
+        const tool = String(item.tool || 'tool');
+        const transport = String(item.transport || 'unknown');
+        return `<div class="export-health-row"><strong>${tool}</strong><span>${transport}${item.trimmed ? ' · trimmed' : ''} · ${stamp}</span></div>`;
+      }).join('');
+    }
+
+    function initExportHealth() {
+      const clearBtn = document.getElementById('export-health-clear');
+      if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+          localStorage.removeItem(EXPORT_EVENTS_KEY);
+          renderExportHealth();
+        });
+      }
+      renderExportHealth();
     }
 
     function initCommandPalette() {
@@ -1062,6 +1200,7 @@
       initContextWorkspace();
       initRecentBrowser();
       renderRecentSessions();
+      initExportHealth();
       initCommandPalette();
     });
   </script>
