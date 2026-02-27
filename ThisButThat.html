@@ -395,6 +395,38 @@
             return true;
         }
 
+        function applyPersistedState(nextState) {
+            const normalized = {
+                history: normalizeHistoryPayload(nextState && nextState.history),
+                cache: Array.isArray(nextState && nextState.cache) ? nextState.cache : []
+            };
+            state.history = normalized.history;
+            renderTwistList();
+            renderHistory();
+            return normalized;
+        }
+
+        function restoreSnapshot(snapshotId) {
+            const snapshots = getSnapshots();
+            const found = snapshots.find((item) => String(item.id) === String(snapshotId));
+            if (!found || !found.payload) return;
+            if (!confirm('Restore this snapshot and replace current This But That history/cache state?')) return;
+            saveSnapshot(readPersistedState(), 'manual-restore-backup', { snapshotId: found.id });
+            const payload = {
+                history: normalizeHistoryPayload(found.payload.history),
+                cache: Array.isArray(found.payload.cache) ? found.payload.cache : []
+            };
+            persistState(payload, 'snapshot-restore');
+            applyPersistedState(payload);
+            notifyPersistence('This But That snapshot restored', 'info');
+        }
+
+        function clearSnapshots() {
+            if (!confirm('Clear all This But That recovery snapshots?')) return;
+            try { localStorage.removeItem(TBT_SNAPSHOTS_KEY); } catch (_) {}
+            renderHistory();
+        }
+
         function publishTopicToContext(topicText) {
             const bus = getContextBus();
             if (!bus) return;
@@ -443,9 +475,7 @@
                     previousRevision: localKnownRevision,
                     incomingRevision: incomingRev
                 });
-                state.history = remoteState.history;
-                renderTwistList();
-                renderHistory();
+                applyPersistedState(remoteState);
                 notifyPersistence('This But That synced from another tab; local snapshot saved', 'info');
             }
             localKnownRevision = incomingRev;
@@ -814,14 +844,37 @@
         function renderHistory() {
             const container = document.getElementById('history-content');
             container.innerHTML = '';
+            const snapshots = getSnapshots();
+
+            if (snapshots.length > 0) {
+                const snapWrap = document.createElement('div');
+                snapWrap.className = 'p-4 rounded-xl border-2 border-neonPink/40 bg-neonPink/5 dark:bg-neonPink/10 dark:text-white';
+                snapWrap.innerHTML = `
+                    <div class="flex justify-between items-center mb-3">
+                        <h4 class="text-xs font-black uppercase tracking-[0.2em] text-neonPink">Recovery Snapshots</h4>
+                        <button onclick="clearSnapshots()" class="text-[10px] font-bold uppercase tracking-widest text-neonPink hover:opacity-80">Clear</button>
+                    </div>
+                    <div class="space-y-2">
+                        ${snapshots.slice(0, 8).map((snap) => `
+                            <button onclick="restoreSnapshot('${snap.id}')" class="w-full text-left p-2 rounded border border-neonPink/20 hover:border-neonPink/50 transition-colors">
+                                <div class="text-[11px] font-bold uppercase tracking-wider">${String(snap.reason || 'snapshot').replace(/-/g, ' ')}</div>
+                                <div class="text-[10px] opacity-60">${snap.at ? new Date(snap.at).toLocaleString() : 'Unknown time'}</div>
+                            </button>
+                        `).join('')}
+                    </div>
+                `;
+                container.appendChild(snapWrap);
+            }
 
             if (state.history.length === 0) {
-                container.innerHTML = `
-                     <div class="text-center text-gray-400 mt-20">
+                const empty = document.createElement('div');
+                empty.innerHTML = `
+                     <div class="text-center text-gray-400 ${snapshots.length ? 'mt-8' : 'mt-20'}">
                         <i data-lucide="history" class="w-12 h-12 mx-auto mb-4 opacity-50"></i>
                         <p>No history yet.</p>
                     </div>
                 `;
+                container.appendChild(empty);
             } else {
                 state.history.forEach(session => {
                     const div = document.createElement('div');

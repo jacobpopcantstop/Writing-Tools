@@ -137,6 +137,32 @@ run_eval_check wt-thisbutthat "ThisButThat Gmail export opens a compose target" 
 JS
 )"
 
+run_eval_check wt-thisbutthat "ThisButThat snapshot restore applies persisted state" "$(cat <<'JS'
+(() => {
+  if (typeof restoreSnapshot !== 'function' || typeof saveSnapshot !== 'function') {
+    throw new Error('ThisButThat snapshot controls unavailable');
+  }
+  const originalConfirm = window.confirm;
+  window.confirm = () => true;
+  try {
+    saveSnapshot({
+      history: [{ id: 99, date: '2026-02-27', prompt: { text: 'Snapshot Topic' }, twists: ['alpha'], medal: 'bronze' }],
+      cache: []
+    }, 'smoke-test', {});
+    const snaps = JSON.parse(localStorage.getItem('writingtools_thisbutthat_snapshots_v1') || '[]');
+    if (!Array.isArray(snaps) || snaps.length === 0) throw new Error('No ThisButThat snapshot found');
+    restoreSnapshot(snaps[0].id);
+  } finally {
+    window.confirm = originalConfirm;
+  }
+  const history = JSON.parse(localStorage.getItem('thisButThatHistory') || '[]');
+  if (!Array.isArray(history) || history.length < 1) throw new Error('ThisButThat history not restored');
+  if (!String(history[0]?.prompt?.text || '').includes('Snapshot Topic')) throw new Error('ThisButThat restored payload mismatch');
+  return true;
+})()
+JS
+)"
+
 run_eval_check wt-joterie "Joterie Gmail export opens a compose target" "$(cat <<'JS'
 (() => {
   const opened = [];
