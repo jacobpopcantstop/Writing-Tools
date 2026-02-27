@@ -501,6 +501,55 @@
       color: var(--muted);
     }
     .export-health-row strong { color: var(--text); font-weight: 700; }
+    .recovery-health {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: color-mix(in srgb, var(--card) 95%, transparent);
+      padding: 16px;
+      margin-bottom: 18px;
+      display: grid;
+      gap: 10px;
+    }
+    .recovery-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .recovery-card {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      background: var(--bg-soft);
+      display: grid;
+      gap: 6px;
+    }
+    .recovery-tool {
+      font: 700 10px/1 "IBM Plex Mono", monospace;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .recovery-meta {
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .recovery-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .recovery-btn {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--card);
+      color: var(--text);
+      padding: 6px 9px;
+      font: 700 10px/1 "IBM Plex Mono", monospace;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .recovery-btn:hover { background: var(--card-hover); }
 
     footer {
       margin-top: 26px;
@@ -623,6 +672,7 @@
       .cmdk-trigger { display: inline-flex; }
       .recent-group-grid { grid-template-columns: 1fr; }
       .export-health-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .recovery-grid { grid-template-columns: 1fr; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -729,6 +779,13 @@
         </div>
       </div>
       <div id="export-health-list" class="export-health-list"></div>
+    </section>
+    <section class="recovery-health" aria-label="Recovery Snapshots">
+      <div class="context-head">
+        <h3>Recovery Snapshots</h3>
+        <button class="ctx-btn" id="recovery-clear-all" type="button">Clear All</button>
+      </div>
+      <div id="recovery-grid" class="recovery-grid"></div>
     </section>
 
     <main class="sections">
@@ -951,6 +1008,16 @@
       query: ''
     };
     const EXPORT_EVENTS_KEY = 'writingtools_export_events_v1';
+    const RECOVERY_SNAPSHOT_CONFIG = [
+      { tool: 'Synax', key: 'writingtools_synax_snapshots_v1', path: 'Synax.html' },
+      { tool: 'ThisButThat', key: 'writingtools_thisbutthat_snapshots_v1', path: 'ThisButThat.html' },
+      { tool: 'Joterie', key: 'writingtools_joterie_snapshots_v1', path: 'Joterie.html' },
+      { tool: 'Wribbon', key: 'writingtools_wribbon_snapshots_v1', path: 'Wribbon.html' },
+      { tool: 'WitherNaught', key: 'writingtools_withernaught_snapshots_v1', path: 'WitherNaught.html' },
+      { tool: 'Courius', key: 'writingtools_courius_snapshots_v1', path: 'Courius.html' },
+      { tool: 'BeatHive', key: 'writingtools_beathive_snapshots_v1', path: 'BeatHive.html' },
+      { tool: 'PaperCut', key: 'writingtools_papercut_snapshots_v1', path: 'PaperCut.html' }
+    ];
 
     function renderRecentSessions() {
       const grid = document.getElementById('recent-sessions-grid');
@@ -1080,6 +1147,58 @@
       renderExportHealth();
     }
 
+    function readSnapshotCount(key) {
+      try {
+        const raw = localStorage.getItem(key);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed.length : 0;
+      } catch (_) {
+        return 0;
+      }
+    }
+
+    function renderRecoveryHealth() {
+      const grid = document.getElementById('recovery-grid');
+      if (!grid) return;
+      grid.innerHTML = RECOVERY_SNAPSHOT_CONFIG.map((item) => {
+        const count = readSnapshotCount(item.key);
+        return `
+          <div class="recovery-card">
+            <div class="recovery-tool">${item.tool}</div>
+            <div class="recovery-meta">${count} snapshot${count === 1 ? '' : 's'}</div>
+            <div class="recovery-actions">
+              <button type="button" class="recovery-btn" data-recovery-open="${item.path}">Open</button>
+              <button type="button" class="recovery-btn" data-recovery-clear="${item.key}">Clear</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+      grid.querySelectorAll('[data-recovery-open]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const path = btn.getAttribute('data-recovery-open');
+          (window.__wtOpenToolWithContext || ((p) => window.open(p, '_blank', 'noopener')))(path);
+        });
+      });
+      grid.querySelectorAll('[data-recovery-clear]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const key = btn.getAttribute('data-recovery-clear');
+          localStorage.removeItem(key);
+          renderRecoveryHealth();
+        });
+      });
+    }
+
+    function initRecoveryHealth() {
+      const clearAllBtn = document.getElementById('recovery-clear-all');
+      if (clearAllBtn) {
+        clearAllBtn.addEventListener('click', () => {
+          RECOVERY_SNAPSHOT_CONFIG.forEach((item) => localStorage.removeItem(item.key));
+          renderRecoveryHealth();
+        });
+      }
+      renderRecoveryHealth();
+    }
+
     function initCommandPalette() {
       const root = document.getElementById('cmdk');
       const trigger = document.getElementById('cmdk-trigger');
@@ -1201,6 +1320,7 @@
       initRecentBrowser();
       renderRecentSessions();
       initExportHealth();
+      initRecoveryHealth();
       initCommandPalette();
     });
   </script>
