@@ -72,7 +72,7 @@ Delivered:
   - PaperCut page nav + rotate/delete control safety without an active PDF
 
 ## Phase 3 (Later): Adaptive Assistance + Structural Intelligence
-Status: Planned
+Status: In progress
 
 Goals:
 - Make each tool context-aware and behaviorally smarter.
@@ -82,6 +82,13 @@ Scope:
 - BeatHive structural diagnostics (spine, escalation, unresolved beats).
 - Courius context-aware autocomplete from current script entities.
 - WitherNaught progression tied to usable writing outcomes.
+
+Delivered so far in this phase:
+- BeatHive now includes a live "Story Audit" panel in the inspector:
+  - Structure score (0-100) from core spine/archetype coverage.
+  - Missing-spine detection (Normal World, First Weird Thing, Heightening, Ending).
+  - Escalation depth signal and unresolved tension estimate from story tags.
+  - Actionable diagnostic hints surfaced inline while mapping beats.
 
 ## Phase 4 (Later): Reliability + Platform Hardening
 Status: Planned

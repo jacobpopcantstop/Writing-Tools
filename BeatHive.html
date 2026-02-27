@@ -961,7 +961,51 @@
                 const storyBeats = withContent.filter(c => c.type !== 'note');
                 const distinctTypes = new Set(storyBeats.map(c => c.type)).size;
                 const momentum = Math.min(100, Math.round((storyBeats.length * 11) + (distinctTypes * 9)));
-                return { withContent: withContent.length, storyBeats: storyBeats.length, distinctTypes, momentum };
+                const typeCounts = storyBeats.reduce((acc, beat) => {
+                    const key = beat && beat.type ? beat.type : 'note';
+                    acc[key] = (acc[key] || 0) + 1;
+                    return acc;
+                }, {});
+                const hasSetup = (typeCounts.setup || 0) > 0;
+                const hasInciting = (typeCounts.inciting || 0) > 0;
+                const hasHeightening = (typeCounts.heightening || 0) > 0;
+                const hasEnding = (typeCounts.blowoff || 0) > 0;
+                const missingSpine = [];
+                if (!hasSetup) missingSpine.push('Normal World');
+                if (!hasInciting) missingSpine.push('First Weird Thing');
+                if (!hasHeightening) missingSpine.push('Heightening');
+                if (!hasEnding) missingSpine.push('Ending');
+
+                const escalationCount = typeCounts.heightening || 0;
+                const openMysteryTags = storyBeats.filter((beat) => Array.isArray(beat.tags) && beat.tags.some((tag) => tag === 'secret' || tag === 'twist' || tag === 'weird')).length;
+                const unresolvedEstimate = hasEnding ? Math.max(0, openMysteryTags - (typeCounts.blowoff || 0)) : openMysteryTags;
+
+                let structureScore = 0;
+                if (hasSetup) structureScore += 20;
+                if (hasInciting) structureScore += 20;
+                if (hasHeightening) structureScore += 20;
+                if (hasEnding) structureScore += 20;
+                if (escalationCount >= 2) structureScore += 10;
+                if (storyBeats.length >= 5) structureScore += 10;
+                structureScore = Math.max(0, Math.min(100, structureScore));
+
+                const diagnostics = [];
+                if (missingSpine.length) diagnostics.push({ level: 'warn', text: `Missing spine: ${missingSpine.join(', ')}` });
+                if (escalationCount < 2) diagnostics.push({ level: 'info', text: 'Add another Heightening beat to sharpen escalation.' });
+                if (unresolvedEstimate > 0) diagnostics.push({ level: 'warn', text: `${unresolvedEstimate} unresolved tension marker${unresolvedEstimate === 1 ? '' : 's'} (twist/secret/weird).` });
+                if (!diagnostics.length && storyBeats.length > 0) diagnostics.push({ level: 'ok', text: 'Spine and escalation look balanced. Expand with side branches.' });
+
+                return {
+                    withContent: withContent.length,
+                    storyBeats: storyBeats.length,
+                    distinctTypes,
+                    momentum,
+                    structureScore,
+                    missingSpine,
+                    escalationCount,
+                    unresolvedEstimate,
+                    diagnostics
+                };
             }, [cells, getCellContentText]);
             const pullContextToMap = useCallback(() => {
                 if (!sharedContext.topic) return;
@@ -1190,6 +1234,11 @@
                                         Add 3 beats to unlock rhythm
                                     </div>
                                 )}
+                                {beatMetrics.storyBeats >= 3 && (
+                                    <div className={`px-4 py-2 rounded-xl text-[10px] font-bold tracking-wider uppercase ${theme === 'dark' ? 'bg-black/70 border border-white/10 text-white/60' : 'bg-white/85 border border-black/10 text-black/60'}`}>
+                                        Story Audit {beatMetrics.structureScore}/100
+                                    </div>
+                                )}
                             </div>
 
                             {/* Minimap */}
@@ -1346,6 +1395,36 @@
 
                         <aside className={`sidebar-panel border-l backdrop-blur-sm ${sidebarOpen ? 'w-[320px]' : 'w-0'}`}>
                             <div className="sidebar-inner p-8 space-y-8">
+                                <div className={`rounded-2xl border p-4 space-y-3 ${theme === 'dark' ? 'border-white/10 bg-black/30' : 'border-[#432818]/15 bg-white/70'}`}>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] font-black opacity-40 uppercase tracking-[0.2em]">Story Audit</span>
+                                        <span className="text-[11px] font-black tabular-nums">{beatMetrics.structureScore}/100</span>
+                                    </div>
+                                    <div className="h-1.5 rounded-full bg-current/15 overflow-hidden">
+                                        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${beatMetrics.structureScore}%`, background: 'linear-gradient(90deg, #22c55e, #6366f1)' }}></div>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2 text-center">
+                                        <div className={`rounded-lg p-2 ${theme === 'dark' ? 'bg-white/5' : 'bg-black/5'}`}>
+                                            <div className="text-[9px] uppercase opacity-50">Spine</div>
+                                            <div className="text-[11px] font-black">{4 - beatMetrics.missingSpine.length}/4</div>
+                                        </div>
+                                        <div className={`rounded-lg p-2 ${theme === 'dark' ? 'bg-white/5' : 'bg-black/5'}`}>
+                                            <div className="text-[9px] uppercase opacity-50">Escal.</div>
+                                            <div className="text-[11px] font-black">{beatMetrics.escalationCount}</div>
+                                        </div>
+                                        <div className={`rounded-lg p-2 ${theme === 'dark' ? 'bg-white/5' : 'bg-black/5'}`}>
+                                            <div className="text-[9px] uppercase opacity-50">Open</div>
+                                            <div className="text-[11px] font-black">{beatMetrics.unresolvedEstimate}</div>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        {beatMetrics.diagnostics.slice(0, 2).map((item, idx) => (
+                                            <div key={`diag-${idx}`} className={`text-[10px] leading-relaxed rounded-lg px-2.5 py-2 border ${item.level === 'ok' ? (theme === 'dark' ? 'border-emerald-400/30 bg-emerald-500/10 text-emerald-200' : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700') : (item.level === 'warn' ? (theme === 'dark' ? 'border-amber-300/25 bg-amber-500/10 text-amber-100' : 'border-amber-500/30 bg-amber-500/10 text-amber-700') : (theme === 'dark' ? 'border-indigo-400/25 bg-indigo-500/10 text-indigo-100' : 'border-indigo-500/30 bg-indigo-500/10 text-indigo-700'))}`}>
+                                                {item.text}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
                                 {selectedCell ? (
                                     <>
                                         <div className="space-y-4">
