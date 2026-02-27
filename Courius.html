@@ -194,12 +194,28 @@
             border: 1px solid transparent;
             border-radius: 999px;
             padding: 2px 7px;
-            transition: background 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+            transition: background 0.2s ease, border-color 0.2s ease, opacity 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
         }
 
         #writing-timer-btn:hover {
             background: var(--button-hover);
             border-color: var(--guide-color);
+        }
+
+        #writing-timer-btn.timer-armed {
+            border-color: var(--accent);
+        }
+
+        #writing-timer-btn.timer-triggered {
+            color: #fca5a5;
+            border-color: #fca5a5;
+            box-shadow: 0 0 0 1px rgba(252, 165, 165, 0.35), 0 0 14px rgba(252, 165, 165, 0.18);
+            animation: couriusTimerAlarm 1s ease-in-out infinite;
+        }
+
+        @keyframes couriusTimerAlarm {
+            0%, 100% { opacity: 1; transform: translateY(0); }
+            50% { opacity: 0.72; transform: translateY(-1px); }
         }
 
         /* --- Screenplay Elements --- */
@@ -707,7 +723,7 @@
 
 <div id="save-bar">
     <span id="page-count">Pg 1</span> | <span id="save-status">Ready</span>
-    | <button id="writing-timer-btn" type="button" title="Click to pause or resume. Double-click to set time.">Timer <span id="writing-timer">00:00</span></button>
+    | <button id="writing-timer-btn" type="button" title="Click to start or pause the alarm. Double-click to set minutes.">Alarm <span id="writing-timer">25:00</span></button>
 </div>
 
 <a href="index.html" style="position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%); z-index: 10; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.15; color: var(--text-color); text-decoration: none; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.5'" onmouseout="this.style.opacity='0.15'">Writing Tools Suite</a>
@@ -744,12 +760,11 @@
     let locationSet = new Set();
     let saveTimeout;
     let importHistory = [];
-    let writingTimerElapsed = 0;
+    let writingTimerDuration = 25 * 60;
     let writingTimerLastStart = null;
     let writingTimerInterval = null;
-    let writingTimerIdleTimeout = null;
+    let writingTimerTriggered = false;
     const WRITING_TIMER_KEY = 'writingtools_courius_timer_v1';
-    const WRITING_TIMER_IDLE_MS = 15000;
 
     // --- Autocomplete state ---
     const DROPDOWN = document.getElementById('autocomplete-dropdown');
@@ -884,6 +899,9 @@
         updateSelectorUI();
         updatePageCount();
         updateContextTip();
+        if (writingTimerLastStart && !writingTimerInterval) {
+            writingTimerInterval = setInterval(tickWritingTimer, 250);
+        }
         renderWritingTimer();
         renderImportHistory();
         if (window.WTContextBus && typeof window.WTContextBus.subscribe === 'function') {
@@ -1089,7 +1107,6 @@
         updateSelectorUI();
         triggerSave();
         updatePageCount();
-        nudgeWritingTimer();
     });
 
     // Add mouse interactions for UI sync
@@ -1404,64 +1421,114 @@
     }
 
     function formatWritingTimer(seconds) {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
+        const safeSeconds = Math.max(0, Math.floor(seconds));
+        const mins = Math.floor(safeSeconds / 60);
+        const secs = safeSeconds % 60;
         return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
     }
 
-    function getWritingTimerSeconds() {
-        if (!writingTimerLastStart) return writingTimerElapsed;
-        return writingTimerElapsed + Math.max(0, Math.floor((Date.now() - writingTimerLastStart) / 1000));
+    function getWritingTimerRemainingSeconds() {
+        if (!writingTimerLastStart) return writingTimerDuration;
+        return Math.max(0, writingTimerDuration - Math.floor((Date.now() - writingTimerLastStart) / 1000));
     }
 
     function renderWritingTimer() {
         const timer = document.getElementById('writing-timer');
         const button = document.getElementById('writing-timer-btn');
         if (!timer || !button) return;
-        timer.textContent = formatWritingTimer(getWritingTimerSeconds());
-        button.style.opacity = writingTimerLastStart ? '1' : '0.75';
+        const remaining = getWritingTimerRemainingSeconds();
+        timer.textContent = formatWritingTimer(remaining);
+        button.style.opacity = writingTimerTriggered || writingTimerLastStart ? '1' : '0.75';
+        button.classList.toggle('timer-armed', !!writingTimerLastStart && !writingTimerTriggered);
+        button.classList.toggle('timer-triggered', writingTimerTriggered);
     }
 
     function persistWritingTimer() {
         localStorage.setItem(WRITING_TIMER_KEY, JSON.stringify({
-            elapsed: getWritingTimerSeconds(),
+            duration: getWritingTimerRemainingSeconds(),
+            isRunning: !!writingTimerLastStart,
+            triggered: writingTimerTriggered,
             updatedAt: Date.now()
         }));
     }
 
     function startWritingTimer() {
-        if (writingTimerLastStart) return;
+        if (writingTimerLastStart || writingTimerDuration <= 0) return;
+        writingTimerTriggered = false;
         writingTimerLastStart = Date.now();
         if (!writingTimerInterval) {
-            writingTimerInterval = setInterval(renderWritingTimer, 1000);
+            writingTimerInterval = setInterval(tickWritingTimer, 250);
         }
+        persistWritingTimer();
         renderWritingTimer();
     }
 
     function pauseWritingTimer() {
         if (!writingTimerLastStart) return;
-        writingTimerElapsed = getWritingTimerSeconds();
+        writingTimerDuration = getWritingTimerRemainingSeconds();
         writingTimerLastStart = null;
         persistWritingTimer();
         renderWritingTimer();
     }
 
-    function nudgeWritingTimer() {
-        startWritingTimer();
-        clearTimeout(writingTimerIdleTimeout);
-        writingTimerIdleTimeout = setTimeout(() => {
-            pauseWritingTimer();
-        }, WRITING_TIMER_IDLE_MS);
+    function triggerWritingAlarm() {
+        writingTimerLastStart = null;
+        writingTimerDuration = 0;
+        writingTimerTriggered = true;
         persistWritingTimer();
+        renderWritingTimer();
+        try {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) {
+                const ctx = new AudioCtx();
+                [0, 0.22, 0.44].forEach((offset, index) => {
+                    const oscillator = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    oscillator.type = 'sine';
+                    oscillator.frequency.value = index === 1 ? 880 : 660;
+                    gain.gain.value = 0.0001;
+                    oscillator.connect(gain);
+                    gain.connect(ctx.destination);
+                    const startAt = ctx.currentTime + offset;
+                    gain.gain.exponentialRampToValueAtTime(0.08, startAt + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, startAt + 0.18);
+                    oscillator.start(startAt);
+                    oscillator.stop(startAt + 0.2);
+                });
+            }
+        } catch (_) {}
+        if (navigator.vibrate) navigator.vibrate([120, 80, 120]);
+        window.setTimeout(() => {
+            if (document.visibilityState === 'visible') {
+                window.alert('Courius alarm complete.');
+            }
+        }, 60);
+    }
+
+    function tickWritingTimer() {
+        if (!writingTimerLastStart) {
+            renderWritingTimer();
+            return;
+        }
+        if (getWritingTimerRemainingSeconds() <= 0) {
+            triggerWritingAlarm();
+            return;
+        }
+        renderWritingTimer();
     }
 
     function loadWritingTimer() {
         try {
             const raw = localStorage.getItem(WRITING_TIMER_KEY);
             const parsed = raw ? JSON.parse(raw) : null;
-            writingTimerElapsed = Number.isFinite(parsed?.elapsed) ? parsed.elapsed : 0;
+            writingTimerDuration = Number.isFinite(parsed?.duration) ? Math.max(0, parsed.duration) : 25 * 60;
+            writingTimerTriggered = !!parsed?.triggered;
+            if (parsed?.isRunning && writingTimerDuration > 0) {
+                writingTimerLastStart = Date.now();
+            }
         } catch (_) {
-            writingTimerElapsed = 0;
+            writingTimerDuration = 25 * 60;
+            writingTimerTriggered = false;
         }
     }
 
@@ -1658,36 +1725,28 @@
         }
     };
 
-    EDITOR.addEventListener('focusin', () => {
-        if (EDITOR.textContent.trim()) {
-            nudgeWritingTimer();
-        }
-    });
-
-    EDITOR.addEventListener('focusout', () => {
-        clearTimeout(writingTimerIdleTimeout);
-        writingTimerIdleTimeout = setTimeout(() => {
-            pauseWritingTimer();
-        }, 500);
-    });
-
     document.getElementById('writing-timer-btn').addEventListener('click', () => {
         if (writingTimerLastStart) {
-            clearTimeout(writingTimerIdleTimeout);
             pauseWritingTimer();
+        } else if (writingTimerTriggered) {
+            writingTimerTriggered = false;
+            writingTimerDuration = writingTimerDuration > 0 ? writingTimerDuration : 25 * 60;
+            persistWritingTimer();
+            renderWritingTimer();
         } else {
-            nudgeWritingTimer();
+            startWritingTimer();
         }
     });
 
     document.getElementById('writing-timer-btn').addEventListener('dblclick', () => {
-        const current = getWritingTimerSeconds();
-        const input = window.prompt('Set writing timer minutes', String(Math.floor(current / 60)));
+        const current = getWritingTimerRemainingSeconds();
+        const input = window.prompt('Set alarm minutes', String(Math.max(1, Math.floor(current / 60) || 25)));
         if (input === null) return;
         const minutes = Number(input);
         if (!Number.isFinite(minutes) || minutes < 0) return;
-        writingTimerElapsed = Math.round(minutes * 60);
+        writingTimerDuration = Math.round(minutes * 60);
         writingTimerLastStart = null;
+        writingTimerTriggered = false;
         persistWritingTimer();
         renderWritingTimer();
     });
@@ -1726,9 +1785,12 @@
     });
 
     window.addEventListener('beforeunload', () => {
-        clearTimeout(writingTimerIdleTimeout);
         if (writingTimerInterval) clearInterval(writingTimerInterval);
-        pauseWritingTimer();
+        if (writingTimerLastStart) {
+            writingTimerDuration = getWritingTimerRemainingSeconds();
+            writingTimerLastStart = null;
+        }
+        persistWritingTimer();
     });
 </script>
 </body>
