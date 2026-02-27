@@ -210,6 +210,24 @@ run_eval_check wt-courius "Courius append/overwrite import flows update storage"
 JS
 )"
 
+run_eval_check wt-courius "Courius parenthetical wrappers do not carry across type changes" "$(cat <<'JS'
+(() => {
+  const block = Array.from(document.querySelectorAll('#page > div')).find((el) => !el.classList.contains('title-page-container'));
+  if (!block) throw new Error('No editable Courius block found');
+  block.className = 'parenthetical';
+  block.innerText = '(WHISPERING)';
+  if (typeof setBlockType !== 'function') throw new Error('setBlockType not available');
+  setBlockType(block, 'dialogue');
+  const txt = (block.innerText || '').trim();
+  if (txt.includes('(') || txt.includes(')')) {
+    throw new Error('Parenthetical wrapper leaked to non-parenthetical type');
+  }
+  if (block.className !== 'dialogue') throw new Error('Block type change failed');
+  return true;
+})()
+JS
+)"
+
 run_eval_check wt-withernaught "WitherNaught ring starts progressing after input" "$(cat <<'JS'
 (() => {
   if (!window.WitherNaught || typeof window.WitherNaught.startNextRound !== 'function') {

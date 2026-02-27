@@ -1380,7 +1380,13 @@
     function setBlockType(div, type) {
         const oldType = div.className;
         if (oldType === 'parenthetical' && type !== 'parenthetical') {
-            let text = getPureText(div).trim().replace(/^\(|\)$/g, '');
+            // Parenthetical wrappers should never leak when cycling to another element type.
+            let text = getPureText(div)
+                .replace(/\u00a0/g, ' ')
+                .replace(/^\s*\(+\s*/, '')
+                .replace(/\s*\)+\s*$/, '')
+                .replace(/\s+/g, ' ')
+                .trim();
             div.innerText = text || '\n';
         }
         div.className = type;

@@ -68,6 +68,7 @@ Delivered:
 - Added critical interaction checks to `scripts/smoke-suite.sh` for:
   - Gmail compose handoff assertions in `ThisButThat`, `Joterie`, `Wribbon`, and `WitherNaught`
   - Courius transfer append/overwrite storage path verification
+  - Courius parenthetical wrapper carryover regression check when cycling element types
   - WitherNaught ring progression after writing input
   - PaperCut page nav + rotate/delete control safety without an active PDF
 
@@ -93,6 +94,7 @@ Delivered so far in this phase:
   - Learns scene heading location cores + time tokens from the current draft.
   - Supports `INT./EXT. LOCATION -` time completion suggestions (`DAY.`, `NIGHT.`, etc.).
   - Learns character turn pairs and prioritizes likely alternating speakers.
+  - Parenthetical wrapper punctuation is normalized away when cycling to non-parenthetical line types.
 - WitherNaught ring progression now reflects usable output:
   - Score gain tied to net new words, completed sentences, and paragraph progression.
   - Removed passive time-based score inflation from the loop.
