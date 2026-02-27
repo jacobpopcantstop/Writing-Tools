@@ -72,6 +72,7 @@ Delivered:
   - Joterie revisioned archive persistence path verification
   - Joterie snapshot restore path verification
   - WitherNaught revisioned prefs persistence path verification
+  - WitherNaught snapshot restore path verification
   - BeatHive revisioned local persistence path verification
   - PaperCut revisioned recent-session persistence path verification
   - Courius transfer append/overwrite storage path verification
@@ -167,6 +168,7 @@ Delivered so far in this phase:
   - WitherNaught persisted state now uses revision tracking (`writingtools_withernaught_revision_v1`) across history, streak, and preferences.
   - Automatic WitherNaught snapshots (`writingtools_withernaught_snapshots_v1`) are captured on save conflict and remote sync.
   - Cross-tab WitherNaught sync now preserves local recoverability before applying remote updates.
+  - WitherNaught stats overlay now includes Recovery Snapshots controls with restore and clear actions.
   - BeatHive local state now uses revision tracking (`writingtools_beathive_revision_v1`) across sketches, Courius mode, and immersion-tip state.
   - Automatic BeatHive snapshots (`writingtools_beathive_snapshots_v1`) are captured on save conflict and remote sync.
   - Cross-tab BeatHive local sync now preserves local recoverability before applying remote updates.

@@ -517,6 +517,33 @@ const THEMES = {
       } catch (_) {}
     }
 
+    function getWitherSnapshots() {
+      try {
+        const raw = localStorage.getItem(WITHER_SNAP_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (_) {
+        return [];
+      }
+    }
+
+    function restoreWitherSnapshot(snapshotId) {
+      const snapshots = getWitherSnapshots();
+      const found = snapshots.find((item) => String(item.id) === String(snapshotId));
+      if (!found || !found.payload) return;
+      if (!confirm('Restore this WitherNaught snapshot and replace local stats/preferences?')) return;
+      persistSnapshots(buildPersistedState(), 'manual-restore-backup', { snapshotId: found.id });
+      applyPersistedState(found.payload);
+      persistWitherState('snapshot-restore');
+      render();
+    }
+
+    function clearWitherSnapshots() {
+      if (!confirm('Clear all WitherNaught recovery snapshots?')) return;
+      try { localStorage.removeItem(WITHER_SNAP_KEY); } catch (_) {}
+      render();
+    }
+
     function persistedComparable(payload) {
       try { return JSON.stringify(normalizePersistedState(payload)); } catch (_) { return ''; }
     }
@@ -919,6 +946,7 @@ const THEMES = {
       const totalWords = state.history.reduce((acc, curr) => acc + curr.words, 0);
       const totalTimeMinutes = Math.floor(state.history.reduce((acc, curr) => acc + curr.time, 0) / 60);
       const avgWpm = state.history.length > 0 ? Math.floor(state.history.reduce((acc, curr) => acc + curr.wpm, 0) / state.history.length) : 0;
+      const snapshots = getWitherSnapshots();
 
       return `
         <div class="absolute inset-0 z-50 flex items-center justify-center rounded-2xl glass" style="background: ${t.card};">
@@ -942,6 +970,28 @@ const THEMES = {
               </div>
 
               <div class="space-y-12">
+                <section class="animate-slide-up stagger-2 p-4 rounded-xl border" style="border-color: ${t.border}; background: ${t.cardSolid};">
+                  <div class="flex items-center justify-between gap-3 mb-3">
+                    <div>
+                      <div class="text-[10px] uppercase tracking-[0.25em] opacity-50 font-sans mb-1">Recovery Snapshots</div>
+                      <div class="text-sm font-sans">${snapshots.length} snapshot${snapshots.length === 1 ? '' : 's'}</div>
+                    </div>
+                    ${snapshots.length ? `
+                      <button onclick="WitherNaught.clearWitherSnapshots()" class="px-3 py-2 rounded-lg text-[10px] uppercase tracking-wider font-sans border opacity-70 hover:opacity-100" style="border-color: ${t.border};">Clear</button>
+                    ` : ''}
+                  </div>
+                  <div class="space-y-2">
+                    ${snapshots.length ? snapshots.slice(0, 6).map((snap) => `
+                      <button onclick="WitherNaught.restoreWitherSnapshot('${snap.id}')" class="w-full text-left px-3 py-2 rounded-lg border opacity-80 hover:opacity-100 transition-all" style="border-color: ${t.border}; background: ${t.accentLight};">
+                        <div class="text-[10px] uppercase tracking-[0.18em] font-sans">${String(snap.reason || 'snapshot').replace(/-/g, ' ')}</div>
+                        <div class="text-[11px] opacity-55 font-sans">${snap.at ? new Date(snap.at).toLocaleString() : 'Unknown time'}</div>
+                      </button>
+                    `).join('') : `
+                      <div class="text-sm opacity-35 italic">No recovery snapshots yet.</div>
+                    `}
+                  </div>
+                </section>
+
                 <section class="animate-slide-up stagger-2 p-4 rounded-xl border" style="border-color: ${t.border}; background: ${t.accentLight};">
                   <div class="flex items-center justify-between gap-3">
                     <div>
@@ -1531,7 +1581,9 @@ const THEMES = {
       sendToCourius,
       setCouriusMode,
       pushToContext,
-      pullContextIntoDraft
+      pullContextIntoDraft,
+      restoreWitherSnapshot,
+      clearWitherSnapshots
     };
 
     // ===== INIT =====

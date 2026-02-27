@@ -299,6 +299,38 @@ run_eval_check wt-withernaught "WitherNaught revisioned prefs persist changes" "
 JS
 )"
 
+run_eval_check wt-withernaught "WitherNaught snapshot restore applies persisted prefs" "$(cat <<'JS'
+(() => {
+  if (!window.WitherNaught || typeof window.WitherNaught.restoreWitherSnapshot !== 'function') {
+    throw new Error('WitherNaught snapshot controls unavailable');
+  }
+  const originalConfirm = window.confirm;
+  window.confirm = () => true;
+  try {
+    const snaps = [{
+      id: 'smoke-snap',
+      at: new Date().toISOString(),
+      reason: 'smoke-test',
+      payload: {
+        history: [],
+        streak: { current: 2, lastDate: new Date().toDateString() },
+        prefs: { theme: 'cool', difficulty: 'Master', couriusMode: 'append' }
+      }
+    }];
+    localStorage.setItem('writingtools_withernaught_snapshots_v1', JSON.stringify(snaps));
+    window.WitherNaught.restoreWitherSnapshot('smoke-snap');
+  } finally {
+    window.confirm = originalConfirm;
+  }
+  const payload = JSON.parse(localStorage.getItem('writingtools_withernaught_state_v1') || '{}');
+  if (!payload || !payload.prefs || payload.prefs.difficulty !== 'Master') {
+    throw new Error('WitherNaught restored payload mismatch');
+  }
+  return true;
+})()
+JS
+)"
+
 run_eval_check wt-beathive "BeatHive revisioned local persistence updates on rename" "$(cat <<'JS'
 (() => {
   localStorage.removeItem('writingtools_beathive_state_v1');
