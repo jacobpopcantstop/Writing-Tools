@@ -119,3 +119,7 @@ Delivered so far in this phase:
   - `Joterie`
   - `Wribbon`
   - `WitherNaught`
+- Added conflict-safe Courius persistence with recovery snapshots:
+  - Revision-aware autosave (`writingtools_courius_revision_v1`) to avoid silent cross-tab overwrite.
+  - Automatic local snapshots (`writingtools_courius_snapshots_v1`) on save conflict and remote sync.
+  - Cross-tab storage sync now preserves a recoverable local draft before applying remote updates.

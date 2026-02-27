@@ -789,6 +789,8 @@
     const STATUS = document.getElementById('save-status');
     const PAGE_COUNT = document.getElementById('page-count');
     const STORAGE_KEY = 'writingtools_courius_storage';
+    const STORAGE_REV_KEY = 'writingtools_courius_revision_v1';
+    const STORAGE_SNAPSHOTS_KEY = 'writingtools_courius_snapshots_v1';
     const IMPORTS_KEY = 'writingtools_courius_imports_v1';
     // NEW KEY to avoid conflict with previous Light Mode settings
     const THEME_STORAGE_KEY = 'courius_theme_v2'; 
@@ -830,6 +832,8 @@
     let dropdownBlock = null;
     let dropdownMatches = [];
     let dropdownActiveIndex = 0;
+    let localKnownRevision = 0;
+    const COURIUS_TAB_ID = 'courius-' + Math.random().toString(36).slice(2, 10);
 
     function getSharedContext() {
         const bus = window.WTContextBus;
@@ -962,8 +966,75 @@
         el.classList.add('visible');
     }
 
+    function getStorageComparableHtml(rawHtml) {
+        return String(rawHtml || '')
+            .replace(/<span class="suggestion">[\s\S]*?<\/span>/gi, '')
+            .trim();
+    }
+
+    function getEditorHtmlForStorage() {
+        const clone = EDITOR.cloneNode(true);
+        clone.querySelectorAll('.suggestion').forEach((s) => s.remove());
+        return clone.innerHTML;
+    }
+
+    function getSnapshotList() {
+        try {
+            const raw = localStorage.getItem(STORAGE_SNAPSHOTS_KEY);
+            const parsed = raw ? JSON.parse(raw) : [];
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (_) {
+            return [];
+        }
+    }
+
+    function saveRecoverySnapshot(html, reason, meta) {
+        const payload = String(html || '').trim();
+        if (!payload) return;
+        try {
+            const snapshots = getSnapshotList();
+            snapshots.unshift({
+                id: 'snap_' + Date.now() + '_' + Math.floor(Math.random() * 100000),
+                at: new Date().toISOString(),
+                reason: String(reason || 'autosave'),
+                sourceTab: COURIUS_TAB_ID,
+                meta: meta && typeof meta === 'object' ? meta : {},
+                payload: payload
+            });
+            localStorage.setItem(STORAGE_SNAPSHOTS_KEY, JSON.stringify(snapshots.slice(0, 20)));
+        } catch (_) {}
+    }
+
+    function persistCouriusDocument(nextHtml, reason) {
+        const candidate = String(nextHtml || '');
+        const comparableNext = getStorageComparableHtml(candidate);
+        if (!comparableNext) return true;
+
+        const currentRev = parseInt(localStorage.getItem(STORAGE_REV_KEY) || '0', 10) || 0;
+        const currentStored = String(localStorage.getItem(STORAGE_KEY) || '');
+        const comparableStored = getStorageComparableHtml(currentStored);
+
+        if (currentRev > localKnownRevision && comparableStored !== comparableNext) {
+            saveRecoverySnapshot(candidate, 'save-conflict', {
+                reason: String(reason || 'autosave'),
+                baseRevision: localKnownRevision,
+                remoteRevision: currentRev
+            });
+            STATUS.innerText = 'Conflict detected; local snapshot saved';
+            return false;
+        }
+
+        const nextRev = Math.max(currentRev, localKnownRevision) + 1;
+        localStorage.setItem(STORAGE_KEY, candidate);
+        localStorage.setItem(STORAGE_REV_KEY, String(nextRev));
+        localStorage.setItem('writingtools_courius_updated_at', String(Date.now()));
+        localKnownRevision = nextRev;
+        return true;
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
         const content = localStorage.getItem(STORAGE_KEY);
+        localKnownRevision = parseInt(localStorage.getItem(STORAGE_REV_KEY) || '0', 10) || 0;
         if (content) EDITOR.innerHTML = sanitizeImportedHtml(content);
         loadWritingTimer();
         normalizeLegacyImportMarkers();
@@ -991,6 +1062,28 @@
         if (window.WTContextBus && typeof window.WTContextBus.subscribe === 'function') {
             window.WTContextBus.subscribe(() => updateContextTip());
         }
+    });
+
+    window.addEventListener('storage', (e) => {
+        if (!e || e.key !== STORAGE_REV_KEY) return;
+        const incomingRev = parseInt(e.newValue || '0', 10) || 0;
+        if (incomingRev <= localKnownRevision) return;
+        const remoteRaw = String(localStorage.getItem(STORAGE_KEY) || '');
+        const remoteHtml = sanitizeImportedHtml(remoteRaw);
+        const localHtml = getEditorHtmlForStorage();
+        const sameContent = getStorageComparableHtml(localHtml) === getStorageComparableHtml(remoteHtml);
+        if (!sameContent) {
+            saveRecoverySnapshot(localHtml, 'remote-sync', {
+                previousRevision: localKnownRevision,
+                incomingRevision: incomingRev
+            });
+            EDITOR.innerHTML = remoteHtml;
+            updateSuggestions();
+            updateSelectorUI();
+            updatePageCount();
+            STATUS.innerText = 'Synced from another tab; snapshot saved';
+        }
+        localKnownRevision = incomingRev;
     });
 
     function focusEditor(e) {
@@ -1574,11 +1667,9 @@
         STATUS.innerText = 'Syncing...';
         clearTimeout(saveTimeout);
         saveTimeout = setTimeout(() => {
-            const clone = EDITOR.cloneNode(true);
-            clone.querySelectorAll('.suggestion').forEach(s => s.remove());
-            localStorage.setItem(STORAGE_KEY, clone.innerHTML);
-            localStorage.setItem('writingtools_courius_updated_at', String(Date.now()));
-            STATUS.innerText = 'Saved';
+            const html = getEditorHtmlForStorage();
+            const ok = persistCouriusDocument(html, 'autosave');
+            if (ok) STATUS.innerText = 'Saved';
             updateSuggestions();
         }, 1000);
     }
