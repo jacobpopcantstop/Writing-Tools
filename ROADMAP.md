@@ -60,12 +60,12 @@ Delivered:
   - `index`, `Synax`, `ThisButThat`, `Joterie`, `BeatHive`, `Wribbon`, `WitherNaught`, `Courius`, `PaperCut`.
 - Harness starts/stops a local static server automatically and exits non-zero on failure.
 
-Next under QA:
-- Add critical interaction checks (not just open/console) for:
-  - Gmail export buttons
-  - Courius transfer append/replace flows
-  - WitherNaught alarm + ring progression
-  - PaperCut page navigation and rotate/delete safety paths
+Delivered:
+- Added critical interaction checks to `scripts/smoke-suite.sh` for:
+  - Gmail compose handoff assertions in `ThisButThat`, `Joterie`, `Wribbon`, and `WitherNaught`
+  - Courius transfer append/overwrite storage path verification
+  - WitherNaught ring progression after writing input
+  - PaperCut page nav + rotate/delete control safety without an active PDF
 
 ## Phase 3 (Later): Adaptive Assistance + Structural Intelligence
 Status: Planned
