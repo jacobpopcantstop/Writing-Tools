@@ -148,3 +148,4 @@ Delivered so far in this phase:
   - Synax workspace state now uses revision tracking (`writingtools_synax_revision_v1`) across words, narrative context, canvas, and generator settings.
   - Automatic Synax snapshots (`writingtools_synax_snapshots_v1`) are captured on save conflicts and remote sync.
   - Cross-tab Synax sync now preserves a recoverable local state before applying remote updates.
+  - Synax settings now include Recovery Snapshots controls with one-click restore and clear actions.
