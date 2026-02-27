@@ -366,6 +366,30 @@ run_eval_check wt-papercut "PaperCut revisioned recent-session persistence updat
 JS
 )"
 
+run_eval_check wt-papercut "PaperCut latest snapshot restore applies persisted state" "$(cat <<'JS'
+(() => {
+  if (typeof restoreLatestPaperCutSnapshot !== 'function') throw new Error('restoreLatestPaperCutSnapshot unavailable');
+  const originalConfirm = window.confirm;
+  window.confirm = () => true;
+  try {
+    localStorage.setItem('writingtools_papercut_snapshots_v1', JSON.stringify([{
+      id: 'snap-smoke',
+      at: new Date().toISOString(),
+      reason: 'smoke-test',
+      payload: { theme: 'light', recentSession: { fileName: 'restored.pdf', totalPages: 4, currentPage: 2, updatedAt: Date.now() } }
+    }]));
+    restoreLatestPaperCutSnapshot();
+  } finally {
+    window.confirm = originalConfirm;
+  }
+  const payload = JSON.parse(localStorage.getItem('writingtools_papercut_state_v1') || '{}');
+  if (!payload || payload.theme !== 'light') throw new Error('PaperCut theme not restored');
+  if (!payload.recentSession || payload.recentSession.fileName !== 'restored.pdf') throw new Error('PaperCut recent session not restored');
+  return true;
+})()
+JS
+)"
+
 run_eval_check wt-courius "Courius append/overwrite import flows update storage" "$(cat <<'JS'
 (() => {
   const bus = window.WTContextBus;

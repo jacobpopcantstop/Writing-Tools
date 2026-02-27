@@ -75,6 +75,7 @@ Delivered:
   - WitherNaught snapshot restore path verification
   - BeatHive revisioned local persistence path verification
   - PaperCut revisioned recent-session persistence path verification
+  - PaperCut latest snapshot restore path verification
   - Courius transfer append/overwrite storage path verification
   - Courius parenthetical wrapper carryover regression check when cycling element types
   - WitherNaught ring progression after writing input
@@ -175,3 +176,4 @@ Delivered so far in this phase:
   - PaperCut local state now uses revision tracking (`writingtools_papercut_revision_v1`) across recent-session metadata and theme state.
   - Automatic PaperCut snapshots (`writingtools_papercut_snapshots_v1`) are captured on save conflict and remote sync.
   - Cross-tab PaperCut sync now preserves local recoverability before applying remote updates.
+  - PaperCut toolbar now includes recovery actions to restore the latest snapshot or clear snapshots.

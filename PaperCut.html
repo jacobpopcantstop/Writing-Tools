@@ -342,6 +342,10 @@
                     <button class="tool-btn" id="convert-btn" title="Convert"><i data-lucide="refresh-cw" style="width: 20px; height: 20px;"></i></button>
                     <button class="tool-btn" id="extract-text-btn" title="Extract Text"><i data-lucide="file-text" style="width: 20px; height: 20px;"></i></button>
                 </div>
+                <div class="toolbar-group">
+                    <button class="tool-btn" id="restore-snapshot-btn" title="Restore Latest Snapshot"><i data-lucide="history" style="width: 20px; height: 20px;"></i></button>
+                    <button class="tool-btn" id="clear-snapshots-btn" title="Clear Snapshots"><i data-lucide="eraser" style="width: 20px; height: 20px;"></i></button>
+                </div>
             </div>
 
             <div class="canvas-container" id="canvas-container">
@@ -528,6 +532,50 @@
             } catch (_) {}
         }
 
+        function getPaperCutSnapshots() {
+            try {
+                const raw = localStorage.getItem(PAPERCUT_SNAPSHOT_KEY);
+                const parsed = raw ? JSON.parse(raw) : [];
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (_) {
+                return [];
+            }
+        }
+
+        function updateSnapshotControls() {
+            const restoreBtn = document.getElementById('restore-snapshot-btn');
+            const clearBtn = document.getElementById('clear-snapshots-btn');
+            const count = getPaperCutSnapshots().length;
+            if (restoreBtn) {
+                restoreBtn.disabled = count < 1;
+                restoreBtn.title = count > 0 ? `Restore Latest Snapshot (${count})` : 'No Snapshots Available';
+            }
+            if (clearBtn) {
+                clearBtn.disabled = count < 1;
+                clearBtn.title = count > 0 ? `Clear Snapshots (${count})` : 'No Snapshots Available';
+            }
+        }
+
+        function restoreLatestPaperCutSnapshot() {
+            const latest = getPaperCutSnapshots()[0];
+            if (!latest || !latest.payload) return;
+            if (!confirm('Restore the latest PaperCut snapshot and replace local theme/recent state?')) return;
+            savePaperCutSnapshot({
+                theme: document.documentElement.getAttribute('data-wt-theme') === 'light' ? 'light' : 'dark',
+                recentSession: state.recentSession
+            }, 'manual-restore-backup', { snapshotId: latest.id });
+            state.recentSession = latest.payload.recentSession || null;
+            setTheme(latest.payload.theme === 'light' ? 'light' : 'dark', false);
+            persistPaperCutState(latest.payload, 'snapshot-restore');
+            updateSnapshotControls();
+        }
+
+        function clearPaperCutSnapshots() {
+            if (!confirm('Clear all PaperCut recovery snapshots?')) return;
+            try { localStorage.removeItem(PAPERCUT_SNAPSHOT_KEY); } catch (_) {}
+            updateSnapshotControls();
+        }
+
         function persistPaperCutState(partial, reason = 'autosave') {
             const current = readPaperCutState();
             const candidate = {
@@ -553,6 +601,7 @@
             localStorage.setItem('writingtools_theme', candidate.theme === 'light' ? 'light' : 'dark');
             localStorage.setItem(PAPERCUT_REV_KEY, String(nextRev));
             localKnownRevision = nextRev;
+            updateSnapshotControls();
             return true;
         }
 
@@ -574,6 +623,7 @@
             localKnownRevision = parseInt(localStorage.getItem(PAPERCUT_REV_KEY) || '0', 10) || 0;
             loadTheme();
             setupEventListeners();
+            updateSnapshotControls();
             if (typeof lucide !== 'undefined') lucide.createIcons();
             else setTimeout(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); }, 500);
             window.addEventListener('storage', (event) => {
@@ -592,6 +642,7 @@
                     });
                     state.recentSession = remote.recentSession || null;
                     setTheme(remote.theme, false);
+                    updateSnapshotControls();
                 }
                 localKnownRevision = incomingRev;
             });
@@ -661,6 +712,8 @@
             document.getElementById('save-btn').addEventListener('click', downloadPDF);
             document.getElementById('convert-btn').addEventListener('click', openConvertModal);
             document.getElementById('extract-text-btn').addEventListener('click', extractText);
+            document.getElementById('restore-snapshot-btn').addEventListener('click', restoreLatestPaperCutSnapshot);
+            document.getElementById('clear-snapshots-btn').addEventListener('click', clearPaperCutSnapshots);
             document.getElementById('convert-cancel-btn').addEventListener('click', closeConvertModal);
             document.getElementById('convert-confirm-btn').addEventListener('click', performConversion);
 
