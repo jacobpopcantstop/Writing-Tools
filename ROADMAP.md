@@ -45,6 +45,10 @@ Delivered so far in this phase:
 - Added a visible recent-session browser on `index.html`, backed by shared recent-session discovery.
 - Added broader common action IDs: suite home, recent hub, and tool-specific primary handoff actions where available.
 - Added grouped/filterable recent-session browsing on the index with category filters and search.
+- Expanded recent-session metadata coverage:
+  - Added timestamped session ordering for Synax, Wribbon, and Courius drafts.
+  - Fixed Joterie recent-session card counts and ISO timestamp handling.
+  - Added PaperCut recent PDF session tracking (filename + page position).
 - Completed audit-driven reliability fixes:
   - Wribbon Gmail handoff aligned with suite-safe fallback behavior.
   - WitherNaught removed duplicate global click-listener accumulation across renders.

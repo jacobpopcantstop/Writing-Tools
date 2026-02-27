@@ -23,6 +23,16 @@
     return new Date(timestamp).toLocaleDateString();
   }
 
+  function readMillis(key) {
+    try {
+      var raw = localStorage.getItem(key);
+      var value = parseInt(raw || '0', 10);
+      return Number.isFinite(value) ? value : 0;
+    } catch (_) {
+      return 0;
+    }
+  }
+
   function categoryForTool(tool) {
     if (tool === 'Synax' || tool === 'ThisButThat' || tool === 'Joterie') return 'Ideation';
     if (tool === 'BeatHive' || tool === 'WitherNaught' || tool === 'Wribbon') return 'Drafting';
@@ -37,6 +47,7 @@
       var wribbonText = localStorage.getItem('writingtools_wribbon_text') || '';
       var wribbonWords = wordCount(wribbonText);
       if (wribbonWords > 0) {
+        var wribbonUpdatedAt = readMillis('writingtools_wribbon_updated_at');
         out.push({
           id: 'recent-wribbon',
           tool: 'Wribbon',
@@ -44,7 +55,7 @@
           title: 'Wribbon Draft',
           meta: wribbonWords + ' words cached',
           path: 'Wribbon.html',
-          updatedAt: 0,
+          updatedAt: wribbonUpdatedAt,
           updatedLabel: ''
         });
       }
@@ -54,6 +65,7 @@
       var couriusHtml = localStorage.getItem('writingtools_courius_storage') || '';
       var couriusWords = wordCount(couriusHtml.replace(/<[^>]+>/g, ' '));
       if (couriusWords > 0) {
+        var couriusUpdatedAt = readMillis('writingtools_courius_updated_at');
         out.push({
           id: 'recent-courius',
           tool: 'Courius',
@@ -61,7 +73,7 @@
           title: 'Courius Script',
           meta: couriusWords + ' words in screenplay buffer',
           path: 'Courius.html',
-          updatedAt: 0,
+          updatedAt: couriusUpdatedAt,
           updatedLabel: ''
         });
       }
@@ -117,6 +129,7 @@
       var synaxText = localStorage.getItem('writingtools_synax_editor') || '';
       var synaxWords = wordCount(synaxText);
       if (synaxWords > 0) {
+        var synaxUpdatedAt = readMillis('writingtools_synax_updated_at');
         out.push({
           id: 'recent-synax',
           tool: 'Synax',
@@ -124,7 +137,7 @@
           title: 'Synax Idea Canvas',
           meta: synaxWords + ' words in editor',
           path: 'Synax.html',
-          updatedAt: 0,
+          updatedAt: synaxUpdatedAt,
           updatedLabel: ''
         });
       }
@@ -135,7 +148,8 @@
       var archives = joterieRaw ? JSON.parse(joterieRaw) : [];
       if (Array.isArray(archives) && archives.length) {
         var recentArchive = archives[0] || {};
-        var keepCount = Array.isArray(recentArchive.kept) ? recentArchive.kept.length : 0;
+        var keepCount = Array.isArray(recentArchive.cards) ? recentArchive.cards.length : 0;
+        var joterieUpdatedAt = new Date(recentArchive.createdAt || recentArchive.updatedAt || recentArchive.date || 0).getTime() || 0;
         out.push({
           id: 'recent-joterie',
           tool: 'Joterie',
@@ -143,7 +157,7 @@
           title: trimTitle(recentArchive.prompt || 'Joterie Harvest', 28),
           meta: keepCount + ' kept cards',
           path: 'Joterie.html',
-          updatedAt: new Date(recentArchive.date || 0).getTime() || 0,
+          updatedAt: joterieUpdatedAt,
           updatedLabel: ''
         });
       }
@@ -168,6 +182,29 @@
         });
       }
     } catch (_) {}
+
+    try {
+      var paperRaw = localStorage.getItem('writingtools_papercut_recent_v1');
+      var paper = paperRaw ? JSON.parse(paperRaw) : null;
+      if (paper && (paper.fileName || paper.totalPages || paper.currentPage)) {
+        var totalPages = parseInt(paper.totalPages || 0, 10) || 0;
+        var currentPage = parseInt(paper.currentPage || 0, 10) || 0;
+        var pageMeta = totalPages > 0
+          ? ('page ' + Math.min(Math.max(1, currentPage || 1), totalPages) + ' of ' + totalPages)
+          : 'recent PDF session';
+        out.push({
+          id: 'recent-papercut',
+          tool: 'PaperCut',
+          category: categoryForTool('PaperCut'),
+          title: trimTitle(paper.fileName || 'PaperCut PDF Session', 28),
+          meta: pageMeta,
+          path: 'PaperCut.html',
+          updatedAt: parseInt(paper.updatedAt || 0, 10) || 0,
+          updatedLabel: ''
+        });
+      }
+    } catch (_) {}
+
     return out
       .sort(function (a, b) { return (b.updatedAt || 0) - (a.updatedAt || 0); })
       .map(function (item) {

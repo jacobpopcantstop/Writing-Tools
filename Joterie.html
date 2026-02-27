@@ -525,6 +525,7 @@
             // Persist to Archive
             const archiveEntry = {
                 id: Date.now(),
+                createdAt: new Date().toISOString(),
                 date: new Date().toLocaleDateString(),
                 prompt: state.focusPrompt || "Untitled Session",
                 cards: kept.map(c => c.text),

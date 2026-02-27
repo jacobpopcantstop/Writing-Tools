@@ -1496,6 +1496,7 @@
             const clone = EDITOR.cloneNode(true);
             clone.querySelectorAll('.suggestion').forEach(s => s.remove());
             localStorage.setItem(STORAGE_KEY, clone.innerHTML);
+            localStorage.setItem('writingtools_courius_updated_at', String(Date.now()));
             STATUS.innerText = 'Saved';
             updateSuggestions();
         }, 1000);

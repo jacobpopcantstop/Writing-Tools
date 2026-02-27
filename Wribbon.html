@@ -850,6 +850,7 @@
                 localStorage.setItem('writingtools_wribbon_text', this.state.text);
                 localStorage.setItem('writingtools_theme', this.state.theme); // Suite-wide sync
                 localStorage.setItem('writingtools_wribbon_courius_mode', this.state.couriusMode);
+                localStorage.setItem('writingtools_wribbon_updated_at', String(Date.now()));
             },
 
             setCouriusMode(mode) {

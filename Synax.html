@@ -520,6 +520,7 @@
 
             useEffect(() => {
                 localStorage.setItem('writingtools_synax_editor', editorContent);
+                localStorage.setItem('writingtools_synax_updated_at', String(Date.now()));
             }, [editorContent]);
 
             useEffect(() => {

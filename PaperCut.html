@@ -441,6 +441,7 @@
             draggingAnnotationId: null,
             dragOffset: { x: 0, y: 0 }
         };
+        const PAPERCUT_RECENT_KEY = 'writingtools_papercut_recent_v1';
         let renderSequence = 0;
 
         const dom = {
@@ -468,6 +469,21 @@
 
         function getActiveDoc() {
             return state.documents.find(d => d.id === state.activeDocId);
+        }
+
+        function persistRecentSession(doc) {
+            if (!doc) return;
+            const safeTotal = parseInt(doc.totalPages || 0, 10) || 0;
+            const safeCurrent = Math.min(Math.max(1, parseInt(doc.currentPage || 1, 10) || 1), Math.max(1, safeTotal || 1));
+            const payload = {
+                fileName: doc.fileName || 'Untitled PDF',
+                totalPages: safeTotal,
+                currentPage: safeCurrent,
+                updatedAt: Date.now()
+            };
+            try {
+                localStorage.setItem(PAPERCUT_RECENT_KEY, JSON.stringify(payload));
+            } catch (_) {}
         }
 
         function init() {
@@ -651,6 +667,7 @@
                 dom.toolbar.style.display = 'none';
                 document.body.classList.remove('has-doc');
                 dom.thumbnails.innerHTML = '';
+                try { localStorage.removeItem(PAPERCUT_RECENT_KEY); } catch (_) {}
             } else {
                 updateUIForActiveDoc();
             }
@@ -705,6 +722,7 @@
             document.getElementById('prop-filename').textContent = doc.fileName;
             document.getElementById('prop-pages').textContent = doc.totalPages;
             document.getElementById('prop-size').textContent = formatFileSize(doc.fileSize);
+            persistRecentSession(doc);
 
             renderPage();
             renderThumbnails();
@@ -820,6 +838,7 @@
             doc.totalPages = Array.isArray(doc.pageMapping) ? doc.pageMapping.length : 0;
             if (doc.totalPages < 1) return;
             doc.currentPage = Math.min(Math.max(1, Number(num) || 1), doc.totalPages);
+            persistRecentSession(doc);
             renderPage();
         }
 
@@ -1087,6 +1106,7 @@
                     doc.currentPage = doc.totalPages;
                 }
                 
+                persistRecentSession(doc);
                 updateUIForActiveDoc();
             }
         }
