@@ -1144,13 +1144,14 @@
                         .replace(/>/g, '&gt;');
                     return safe.trim() ? `<div class="action">${safe}</div>` : '<div class="action"><br></div>';
                 }).join('');
+                let transferOk = false;
                 try {
                     if (bus && typeof bus.transferToCourius === 'function') {
-                        bus.transferToCourius(html, 'Wribbon', mode);
+                        transferOk = !!bus.transferToCourius(html, 'Wribbon', mode);
                     } else if (bus && mode === 'overwrite' && typeof bus.overwriteCourius === 'function') {
-                        bus.overwriteCourius(html, 'Wribbon');
+                        transferOk = !!bus.overwriteCourius(html, 'Wribbon');
                     } else if (bus && typeof bus.appendToCourius === 'function') {
-                        bus.appendToCourius(html, 'Wribbon');
+                        transferOk = !!bus.appendToCourius(html, 'Wribbon');
                     } else {
                         const key = 'writingtools_courius_storage';
                         const existing = localStorage.getItem(key) || '';
@@ -1160,8 +1161,17 @@
                             const divider = existing && existing.trim() ? '<div class="action"><br></div><div class="action">--- WRIBBON ---</div>' : '';
                             localStorage.setItem(key, `${existing}${divider}${html}`);
                         }
+                        transferOk = true;
                     }
                 } catch (_) {}
+                if (bus && typeof bus.notify === 'function') {
+                    bus.notify(
+                        transferOk
+                            ? `Sent to Courius (${mode === 'overwrite' ? 'replace' : 'append'})`
+                            : 'Courius transfer failed',
+                        transferOk ? 'success' : 'error'
+                    );
+                }
 
                 window.open('Courius.html', '_blank', 'noopener');
                 this.toggleExportMenu();

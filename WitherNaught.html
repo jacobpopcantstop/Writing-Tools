@@ -582,14 +582,15 @@ const THEMES = {
         if (!line.trim()) return '<div class="action"><br></div>';
         return `<div class="action">${escapeHtml(line)}</div>`;
       }).join('');
+      let transferOk = false;
+      const bus = window.WTContextBus;
       try {
-        const bus = window.WTContextBus;
         if (bus && typeof bus.transferToCourius === 'function') {
-          bus.transferToCourius(html, 'WitherNaught', mode);
+          transferOk = !!bus.transferToCourius(html, 'WitherNaught', mode);
         } else if (bus && mode === 'overwrite' && typeof bus.overwriteCourius === 'function') {
-          bus.overwriteCourius(html, 'WitherNaught');
+          transferOk = !!bus.overwriteCourius(html, 'WitherNaught');
         } else if (bus && typeof bus.appendToCourius === 'function') {
-          bus.appendToCourius(html, 'WitherNaught');
+          transferOk = !!bus.appendToCourius(html, 'WitherNaught');
         } else {
           const key = 'writingtools_courius_storage';
           const existing = localStorage.getItem(key) || '';
@@ -599,9 +600,18 @@ const THEMES = {
             const divider = existing && existing.trim() ? '<div class="action"><br></div><div class="action">--- WITHERNAUGHT ---</div>' : '';
             localStorage.setItem(key, `${existing}${divider}${html}`);
           }
+          transferOk = true;
         }
       } catch (_) {}
       pushToContext();
+      if (bus && typeof bus.notify === 'function') {
+        bus.notify(
+          transferOk
+            ? `Sent to Courius (${mode === 'overwrite' ? 'replace' : 'append'})`
+            : 'Courius transfer failed',
+          transferOk ? 'success' : 'error'
+        );
+      }
       window.open('Courius.html', '_blank', 'noopener');
     }
 

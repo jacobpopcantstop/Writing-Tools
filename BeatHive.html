@@ -996,6 +996,7 @@
                 }).join('');
 
                 const mode = couriusMode === 'overwrite' ? 'overwrite' : 'append';
+                let transferOk = false;
 
                 if (bus) {
                     bus.mergeContext({
@@ -1004,11 +1005,11 @@
                         lastTool: 'BeatHive'
                     });
                     if (typeof bus.transferToCourius === 'function') {
-                        bus.transferToCourius(html, 'BeatHive', mode);
+                        transferOk = !!bus.transferToCourius(html, 'BeatHive', mode);
                     } else if (mode === 'overwrite' && typeof bus.overwriteCourius === 'function') {
-                        bus.overwriteCourius(html, 'BeatHive');
+                        transferOk = !!bus.overwriteCourius(html, 'BeatHive');
                     } else if (typeof bus.appendToCourius === 'function') {
-                        bus.appendToCourius(html, 'BeatHive');
+                        transferOk = !!bus.appendToCourius(html, 'BeatHive');
                     } else {
                         const key = 'writingtools_courius_storage';
                         const existing = localStorage.getItem(key) || '';
@@ -1018,6 +1019,15 @@
                             const divider = existing && existing.trim() ? '<div class="action"><br></div><div class="action">--- BEATHIVE ---</div>' : '';
                             localStorage.setItem(key, `${existing}${divider}${html}`);
                         }
+                        transferOk = true;
+                    }
+                    if (typeof bus.notify === 'function') {
+                        bus.notify(
+                            transferOk
+                                ? `Sent to Courius (${mode === 'overwrite' ? 'replace' : 'append'})`
+                                : 'Courius transfer failed',
+                            transferOk ? 'success' : 'error'
+                        );
                     }
                 }
                 window.open('Courius.html', '_blank', 'noopener');
