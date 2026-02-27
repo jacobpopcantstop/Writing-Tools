@@ -962,7 +962,7 @@
                 URL.revokeObjectURL(url);
             }, [editorContent]);
 
-            const sendToBeatHive = () => {
+            const sendToBeatHive = useCallback(() => {
                 const topTopic = contextInput.trim() || (words[0]?.word || '').trim();
                 const constraints = words
                     .slice(0, 6)
@@ -970,7 +970,7 @@
                     .join(' | ');
                 publishContext({ topic: topTopic, constraints });
                 window.open('BeatHive.html', '_blank', 'noopener');
-            };
+            }, [contextInput, words, publishContext]);
 
             useEffect(() => {
                 window.WTToolActions = {
