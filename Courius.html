@@ -665,6 +665,14 @@
             font-size: 0.6rem;
             padding: 10px 6px;
         }
+        .imports-section-title {
+            padding: 2px 4px 0;
+            opacity: 0.55;
+            font-size: 0.54rem;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
 
         @media (max-width: 1024px) {
             main { padding: 14px 10px 126px 10px; }
@@ -898,11 +906,8 @@
         const list = document.getElementById('imports-list');
         if (!list) return;
         importHistory = getImportHistory();
-        if (!importHistory.length) {
-            list.innerHTML = '<div class="imports-empty">No imports yet.</div>';
-            return;
-        }
-        list.innerHTML = importHistory.slice(0, 24).map((item) => {
+        const snapshots = getSnapshotList();
+        const importItemsHtml = importHistory.slice(0, 24).map((item) => {
             const source = escapeHtml(String(item.source || 'tool').toUpperCase());
             const stamp = item.createdAt ? new Date(item.createdAt).toLocaleString() : '';
             const previewText = String(item.payload || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
@@ -920,6 +925,42 @@
                 </div>
             </div>`;
         }).join('');
+
+        const snapshotItemsHtml = snapshots.slice(0, 12).map((snap) => {
+            const id = escapeHtml(String(snap.id || ''));
+            const stamp = snap.at ? new Date(snap.at).toLocaleString() : '';
+            const reason = escapeHtml(String(snap.reason || 'snapshot').replace(/-/g, ' '));
+            const previewText = String(snap.payload || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+            const preview = escapeHtml(previewText.slice(0, 110) || '(no preview)');
+            return `<div class="imports-item">
+                <div class="imports-item-header">
+                    <span class="context-source-badge">SNAPSHOT</span>
+                    <span class="context-source-meta">${escapeHtml(stamp)}</span>
+                </div>
+                <div class="context-source-meta" style="margin-bottom:6px;">${reason}</div>
+                <div>${preview}${previewText.length > 110 ? '...' : ''}</div>
+                <div class="imports-item-actions">
+                    <button onclick="restoreSnapshot('${id}', 'append')">Append</button>
+                    <button onclick="restoreSnapshot('${id}', 'overwrite')">Replace</button>
+                </div>
+            </div>`;
+        }).join('');
+
+        if (!importItemsHtml && !snapshotItemsHtml) {
+            list.innerHTML = '<div class="imports-empty">No imports or snapshots yet.</div>';
+            return;
+        }
+        const clearSnapshotsBtn = snapshots.length
+            ? '<button onclick="clearRecoverySnapshots()">Clear Snapshots</button>'
+            : '';
+        list.innerHTML = `
+            <div class="imports-section-title">Courius Imports</div>
+            ${importItemsHtml || '<div class="imports-empty">No imports yet.</div>'}
+            <div class="imports-section-title" style="margin-top:4px; display:flex; align-items:center; justify-content:space-between;">
+                <span>Recovery Snapshots</span>${clearSnapshotsBtn}
+            </div>
+            ${snapshotItemsHtml || '<div class="imports-empty">No recovery snapshots.</div>'}
+        `;
     }
 
     function toggleImportsPanel(forceOpen) {
@@ -951,6 +992,34 @@
         }
         triggerSave();
         toggleImportsPanel(false);
+    }
+
+    function restoreSnapshot(snapshotId, mode) {
+        const snapshots = getSnapshotList();
+        const found = snapshots.find((item) => String(item.id) === String(snapshotId));
+        if (!found || !found.payload) return;
+        const marker = makeImportMarker('Snapshot', found.at);
+        const sanitizedPayload = sanitizeImportedHtml(found.payload);
+        if (!sanitizedPayload) return;
+        const payload = `${marker}${sanitizedPayload}`;
+        const shouldOverwrite = String(mode || '').toLowerCase() === 'overwrite';
+        if (shouldOverwrite) {
+            if (!confirm('Replace current draft with this recovery snapshot?')) return;
+            EDITOR.innerHTML = payload;
+        } else {
+            const divider = EDITOR.innerHTML.trim() ? '<div class="action"><br></div>' : '';
+            EDITOR.insertAdjacentHTML('beforeend', `${divider}${payload}`);
+        }
+        triggerSave();
+        toggleImportsPanel(false);
+    }
+
+    function clearRecoverySnapshots() {
+        if (!confirm('Clear all Courius recovery snapshots?')) return;
+        try {
+            localStorage.removeItem(STORAGE_SNAPSHOTS_KEY);
+        } catch (_) {}
+        renderImportHistory();
     }
 
     function updateContextTip() {

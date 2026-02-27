@@ -123,3 +123,7 @@ Delivered so far in this phase:
   - Revision-aware autosave (`writingtools_courius_revision_v1`) to avoid silent cross-tab overwrite.
   - Automatic local snapshots (`writingtools_courius_snapshots_v1`) on save conflict and remote sync.
   - Cross-tab storage sync now preserves a recoverable local draft before applying remote updates.
+- Added in-app Courius recovery controls:
+  - Imports panel now includes a "Recovery Snapshots" section.
+  - Snapshot `Append`/`Replace` restore actions with timestamped previews.
+  - One-click snapshot clearing for local reset.
