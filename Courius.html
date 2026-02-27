@@ -791,6 +791,29 @@
         }
     }
 
+    function sanitizeImportedHtml(html) {
+        const raw = String(html || '');
+        if (!raw.trim()) return '';
+        const container = document.createElement('div');
+        container.innerHTML = raw;
+        container.querySelectorAll('script,iframe,object,embed,link,meta').forEach((node) => node.remove());
+        container.querySelectorAll('*').forEach((el) => {
+            Array.from(el.attributes).forEach((attr) => {
+                const name = String(attr.name || '').toLowerCase();
+                const value = String(attr.value || '');
+                if (!name) return;
+                if (name.startsWith('on')) {
+                    el.removeAttribute(attr.name);
+                    return;
+                }
+                if ((name === 'href' || name === 'src') && /^\s*javascript:/i.test(value)) {
+                    el.removeAttribute(attr.name);
+                }
+            });
+        });
+        return container.innerHTML;
+    }
+
     function makeImportMarker(source, createdAt) {
         const safeSource = escapeHtml(String(source || 'tool'));
         const stampText = createdAt ? new Date(createdAt).toLocaleString() : '';
@@ -852,7 +875,9 @@
         const found = importHistory.find((item) => String(item.id) === String(importId));
         if (!found || !found.payload) return;
         const marker = makeImportMarker(found.source, found.createdAt);
-        const payload = `${marker}${String(found.payload)}`;
+        const sanitizedPayload = sanitizeImportedHtml(found.payload);
+        if (!sanitizedPayload) return;
+        const payload = `${marker}${sanitizedPayload}`;
         const shouldOverwrite = String(mode || '').toLowerCase() === 'overwrite';
         if (shouldOverwrite) {
             if (!confirm('Replace current draft with this import snapshot?')) return;
@@ -880,7 +905,7 @@
 
     window.addEventListener('DOMContentLoaded', () => {
         const content = localStorage.getItem(STORAGE_KEY);
-        if (content) EDITOR.innerHTML = content;
+        if (content) EDITOR.innerHTML = sanitizeImportedHtml(content);
         loadWritingTimer();
         normalizeLegacyImportMarkers();
         if (!EDITOR.innerHTML.trim() || (EDITOR.children.length === 0)) {

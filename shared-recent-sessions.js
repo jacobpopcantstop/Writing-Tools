@@ -97,7 +97,8 @@
       var rawHistory = localStorage.getItem('flowstate_history_v13');
       var history = rawHistory ? JSON.parse(rawHistory) : [];
       if (Array.isArray(history) && history.length) {
-        var latest = history[history.length - 1] || {};
+        // WitherNaught writes newest session first.
+        var latest = history[0] || {};
         var sessionWords = parseInt(latest.words || 0, 10) || 0;
         out.push({
           id: 'recent-withernaught',

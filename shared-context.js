@@ -108,16 +108,57 @@
   function buildImportHeader(source, stampIso) {
     var safeSource = String(source || 'tool').trim() || 'tool';
     var safeStamp = String(stampIso || nowIso());
+    var sourceText = safeSource.replace(/[&<>"]/g, function (ch) {
+      if (ch === '&') return '&amp;';
+      if (ch === '<') return '&lt;';
+      if (ch === '>') return '&gt;';
+      return '&quot;';
+    });
     return '<div class="action courius-import-marker" data-import-source="' +
       safeSource.replace(/"/g, '&quot;') + '" data-import-time="' +
       safeStamp.replace(/"/g, '&quot;') + '">' +
-      '<span class="context-source-badge">' + safeSource.toUpperCase() + '</span>' +
+      '<span class="context-source-badge">' + sourceText.toUpperCase() + '</span>' +
       '<span class="context-source-meta">imported ' + new Date(safeStamp).toLocaleString() + '</span>' +
       '</div>';
   }
 
+  function sanitizeCouriusPayload(html) {
+    var raw = String(html || '');
+    if (!raw.trim()) return '';
+
+    if (typeof document === 'undefined' || !document.createElement) {
+      return raw
+        .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
+        .replace(/\son\w+\s*=\s*(['"]).*?\1/gi, '')
+        .replace(/\son\w+\s*=\s*[^\s>]+/gi, '')
+        .replace(/\s(href|src)\s*=\s*(['"])\s*javascript:[\s\S]*?\2/gi, '');
+    }
+
+    var container = document.createElement('div');
+    container.innerHTML = raw;
+    container.querySelectorAll('script,iframe,object,embed,link,meta').forEach(function (node) {
+      node.remove();
+    });
+    container.querySelectorAll('*').forEach(function (el) {
+      var attrs = Array.prototype.slice.call(el.attributes || []);
+      attrs.forEach(function (attr) {
+        var name = String(attr && attr.name || '').toLowerCase();
+        var value = String(attr && attr.value || '');
+        if (!name) return;
+        if (name.indexOf('on') === 0) {
+          el.removeAttribute(attr.name);
+          return;
+        }
+        if ((name === 'href' || name === 'src') && /^\s*javascript:/i.test(value)) {
+          el.removeAttribute(attr.name);
+        }
+      });
+    });
+    return container.innerHTML;
+  }
+
   function transferToCourius(htmlPayload, sourceLabel, modeLabel) {
-    var payload = String(htmlPayload || '').trim();
+    var payload = sanitizeCouriusPayload(htmlPayload).trim();
     if (!payload) return false;
 
     var source = String(sourceLabel || 'tool').trim() || 'tool';

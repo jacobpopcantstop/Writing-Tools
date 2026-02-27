@@ -1122,13 +1122,15 @@ const THEMES = {
           dom.textarea.setSelectionRange(len, len);
         }
       }
+      document.removeEventListener('click', handleGlobalClick);
+      document.addEventListener('click', handleGlobalClick);
+    }
 
-      document.addEventListener('click', (e) => {
-        if (state.showMobileMenu && !e.target.closest('.relative.md\\:hidden')) {
-          state.showMobileMenu = false;
-          render();
-        }
-      });
+    function handleGlobalClick(e) {
+      if (state.showMobileMenu && !e.target.closest('.relative.md\\:hidden')) {
+        state.showMobileMenu = false;
+        render();
+      }
     }
 
     // ===== EVENT HANDLERS =====
@@ -1314,6 +1316,7 @@ const THEMES = {
       if (animationId) cancelAnimationFrame(animationId);
       if (comboTimeout) clearTimeout(comboTimeout);
       sparkTimeouts.forEach(t => clearTimeout(t));
+      document.removeEventListener('click', handleGlobalClick);
     }
 
     window.addEventListener('beforeunload', cleanup);
