@@ -758,6 +758,10 @@
         /**
          * Wribbon - Production Ready v1.0
          */
+        const WRIBBON_TEXT_KEY = 'writingtools_wribbon_text';
+        const WRIBBON_REV_KEY = 'writingtools_wribbon_revision_v1';
+        const WRIBBON_SNAPSHOTS_KEY = 'writingtools_wribbon_snapshots_v1';
+
         const app = {
             state: {
                 goal: 500,
@@ -773,7 +777,10 @@
                 focusMode: false,
                 ambientPlaying: false,
                 ambientAudio: null,
-                sharedContext: { topic: '', updatedAt: '', lastTool: '', constraints: '' }
+                sharedContext: { topic: '', updatedAt: '', lastTool: '', constraints: '' },
+                localKnownRevision: 0,
+                lastPersistedText: '',
+                tabId: 'wribbon-' + Math.random().toString(36).slice(2, 10)
             },
             
             dom: {
@@ -831,10 +838,12 @@
             loadState() {
                 const s = localStorage;
                 if(s.getItem('writingtools_wribbon_goal')) this.state.goal = parseInt(s.getItem('writingtools_wribbon_goal'));
-                if(s.getItem('writingtools_wribbon_text')) {
-                    this.state.text = s.getItem('writingtools_wribbon_text');
+                if(s.getItem(WRIBBON_TEXT_KEY)) {
+                    this.state.text = s.getItem(WRIBBON_TEXT_KEY);
                     this.dom.editor.innerText = this.state.text;
                 }
+                this.state.localKnownRevision = parseInt(s.getItem(WRIBBON_REV_KEY) || '0', 10) || 0;
+                this.state.lastPersistedText = this.state.text;
 
                 // Theme Persistence (Suite-wide sync)
                 if(s.getItem('writingtools_theme')) {
@@ -848,17 +857,76 @@
                 document.documentElement.setAttribute('data-theme', this.state.theme);
             },
 
-            saveState() {
+            getDraftSnapshots() {
+                try {
+                    const raw = localStorage.getItem(WRIBBON_SNAPSHOTS_KEY);
+                    const parsed = raw ? JSON.parse(raw) : [];
+                    return Array.isArray(parsed) ? parsed : [];
+                } catch (_) {
+                    return [];
+                }
+            },
+
+            saveDraftSnapshot(reason, payload, meta = {}) {
+                const text = String(payload || '').trim();
+                if (!text) return;
+                try {
+                    const snapshots = this.getDraftSnapshots();
+                    snapshots.unshift({
+                        id: 'wrsnap_' + Date.now() + '_' + Math.floor(Math.random() * 100000),
+                        at: new Date().toISOString(),
+                        reason: String(reason || 'conflict'),
+                        sourceTab: this.state.tabId,
+                        payload: text,
+                        meta
+                    });
+                    localStorage.setItem(WRIBBON_SNAPSHOTS_KEY, JSON.stringify(snapshots.slice(0, 20)));
+                } catch (_) {}
+            },
+
+            notifyReliability(message, level = 'info') {
+                const bus = window.WTContextBus;
+                if (bus && typeof bus.notify === 'function') {
+                    bus.notify(message, level);
+                }
+            },
+
+            persistDraftText(reason = 'autosave') {
+                const candidate = String(this.state.text || '');
+                const currentRev = parseInt(localStorage.getItem(WRIBBON_REV_KEY) || '0', 10) || 0;
+                const stored = String(localStorage.getItem(WRIBBON_TEXT_KEY) || '');
+
+                if (currentRev > this.state.localKnownRevision && stored !== candidate) {
+                    this.saveDraftSnapshot('save-conflict', candidate, {
+                        reason,
+                        baseRevision: this.state.localKnownRevision,
+                        remoteRevision: currentRev
+                    });
+                    this.notifyReliability('Wribbon conflict detected; local snapshot saved', 'error');
+                    return false;
+                }
+
+                const nextRev = Math.max(currentRev, this.state.localKnownRevision) + 1;
+                localStorage.setItem(WRIBBON_TEXT_KEY, candidate);
+                localStorage.setItem(WRIBBON_REV_KEY, String(nextRev));
+                this.state.localKnownRevision = nextRev;
+                this.state.lastPersistedText = candidate;
+                return true;
+            },
+
+            saveState(options = {}) {
                 localStorage.setItem('writingtools_wribbon_goal', this.state.goal);
-                localStorage.setItem('writingtools_wribbon_text', this.state.text);
                 localStorage.setItem('writingtools_theme', this.state.theme); // Suite-wide sync
                 localStorage.setItem('writingtools_wribbon_courius_mode', this.state.couriusMode);
                 localStorage.setItem('writingtools_wribbon_updated_at', String(Date.now()));
+                if (options.persistText !== false) {
+                    this.persistDraftText(String(options.reason || 'save-state'));
+                }
             },
 
             setCouriusMode(mode) {
                 this.state.couriusMode = (mode === 'overwrite') ? 'overwrite' : 'append';
-                this.saveState();
+                this.saveState({ persistText: false, reason: 'courius-mode' });
                 this.updateCouriusModeUI();
             },
 
@@ -982,7 +1050,7 @@
             handleInput(e) {
                 this.state.text = this.dom.editor.innerText;
                 this.updateUI();
-                this.saveState();
+                this.saveState({ persistText: true, reason: 'typing' });
                 this.setTypingStatus(true);
                 this.smartScroll();
             },
@@ -1023,7 +1091,7 @@
             toggleTheme() {
                 this.state.theme = this.state.theme === 'light' ? 'dark' : 'light';
                 document.documentElement.setAttribute('data-theme', this.state.theme);
-                this.saveState();
+                this.saveState({ persistText: false, reason: 'theme-toggle' });
             },
 
             toggleExportMenu() {
@@ -1179,7 +1247,7 @@
                     this.stopTimer();
                 }
 
-                this.saveState();
+                this.saveState({ persistText: false, reason: 'settings' });
                 this.updateUI();
                 this.dom.modal.classList.remove('open');
                 this.dom.editor.focus();
@@ -1299,6 +1367,25 @@
                 // Click outside help modal to close
                 document.getElementById('help-modal').addEventListener('click', (e) => {
                     if (e.target.id === 'help-modal') this.closeHelp();
+                });
+
+                window.addEventListener('storage', (e) => {
+                    if (!e || e.key !== WRIBBON_REV_KEY) return;
+                    const incomingRev = parseInt(e.newValue || '0', 10) || 0;
+                    if (incomingRev <= this.state.localKnownRevision) return;
+                    const remoteText = String(localStorage.getItem(WRIBBON_TEXT_KEY) || '');
+                    if (remoteText !== this.state.text) {
+                        this.saveDraftSnapshot('remote-sync', this.state.text, {
+                            previousRevision: this.state.localKnownRevision,
+                            incomingRevision: incomingRev
+                        });
+                        this.state.text = remoteText;
+                        this.state.lastPersistedText = remoteText;
+                        this.dom.editor.innerText = remoteText;
+                        this.updateUI();
+                        this.notifyReliability('Wribbon synced from another tab; local snapshot saved', 'info');
+                    }
+                    this.state.localKnownRevision = incomingRev;
                 });
             }
         };

@@ -137,3 +137,7 @@ Delivered so far in this phase:
   - New "Export Reliability" panel on `index.html` reads `writingtools_export_events_v1`.
   - Surfaces 30-day event volume, fallback rate, top transport, and trimmed-Gmail count.
   - Includes recent transport timeline and local metric reset action.
+- Extended conflict-safe persistence beyond Courius:
+  - Wribbon draft writes now use revision tracking (`writingtools_wribbon_revision_v1`).
+  - Automatic Wribbon local snapshots (`writingtools_wribbon_snapshots_v1`) captured on save conflicts and remote sync.
+  - Cross-tab Wribbon sync now preserves recoverable local text before applying remote draft updates.
