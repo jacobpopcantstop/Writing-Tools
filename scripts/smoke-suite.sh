@@ -374,6 +374,37 @@ run_eval_check wt-beathive "BeatHive revisioned local persistence updates on ren
 JS
 )"
 
+run_eval_check wt-beathive "BeatHive latest snapshot restore applies local state" "$(cat <<'JS'
+(() => {
+  if (!window.BeatHiveDebug || typeof window.BeatHiveDebug.restoreLatestSnapshot !== 'function') {
+    throw new Error('BeatHive snapshot controls unavailable');
+  }
+  const originalConfirm = window.confirm;
+  window.confirm = () => true;
+  try {
+    localStorage.setItem('writingtools_beathive_snapshots_v1', JSON.stringify([{
+      id: 'bhsmoke',
+      at: new Date().toISOString(),
+      reason: 'smoke-test',
+      payload: {
+        sketches: [{ id: 'local-1', name: 'Recovered Hive', cells: [], updatedAt: Date.now() }],
+        couriusMode: 'append',
+        immersiveSeen: true
+      }
+    }]));
+    window.BeatHiveDebug.restoreLatestSnapshot();
+  } finally {
+    window.confirm = originalConfirm;
+  }
+  const payload = JSON.parse(localStorage.getItem('writingtools_beathive_state_v1') || '{}');
+  if (!payload || !Array.isArray(payload.sketches) || payload.sketches[0]?.name !== 'Recovered Hive') {
+    throw new Error('BeatHive restored payload mismatch');
+  }
+  return true;
+})()
+JS
+)"
+
 run_eval_check wt-papercut "PaperCut revisioned recent-session persistence updates" "$(cat <<'JS'
 (() => {
   localStorage.removeItem('writingtools_papercut_state_v1');

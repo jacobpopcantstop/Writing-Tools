@@ -558,6 +558,15 @@
                     localStorage.setItem(BEATHIVE_SNAPSHOTS_KEY, JSON.stringify(snapshots.slice(0, 20)));
                 } catch (_) {}
             }, [getLocalPersistedState]);
+            const getLocalSnapshots = useCallback(() => {
+                try {
+                    const raw = localStorage.getItem(BEATHIVE_SNAPSHOTS_KEY);
+                    const parsed = raw ? JSON.parse(raw) : [];
+                    return Array.isArray(parsed) ? parsed : [];
+                } catch (_) {
+                    return [];
+                }
+            }, []);
             const persistLocalState = useCallback((override, reason = 'autosave') => {
                 const candidate = getLocalPersistedState(override || {});
                 const remoteRev = parseInt(localStorage.getItem(BEATHIVE_REV_KEY) || '0', 10) || 0;
@@ -608,6 +617,21 @@
                 if (user?.uid !== 'local-user') return;
                 persistLocalState({ immersiveSeen: !showImmersionTips }, 'immersion-tip');
             }, [showImmersionTips, persistLocalState, user]);
+
+            const restoreLatestBeatHiveSnapshot = useCallback(() => {
+                const latest = getLocalSnapshots()[0];
+                if (!latest || !latest.payload) return;
+                if (!window.confirm('Restore the latest BeatHive snapshot and replace local map state?')) return;
+                saveLocalSnapshot(getLocalPersistedState(), 'manual-restore-backup', { snapshotId: latest.id });
+                applyRemoteLocalState(latest.payload);
+                persistLocalState(latest.payload, 'snapshot-restore');
+            }, [applyRemoteLocalState, getLocalPersistedState, getLocalSnapshots, persistLocalState, saveLocalSnapshot]);
+
+            const clearBeatHiveSnapshots = useCallback(() => {
+                if (!window.confirm('Clear all BeatHive recovery snapshots?')) return;
+                try { localStorage.removeItem(BEATHIVE_SNAPSHOTS_KEY); } catch (_) {}
+                setSketches((current) => [...current]);
+            }, []);
 
             const loadLocalSketches = () => readBeatHiveStateFromStorage().sketches;
             const saveLocalSketches = (list) => {
@@ -1225,10 +1249,15 @@
                     exportPrimary: () => sendMapToCourius(),
                     handoffPrimary: () => sendMapToCourius()
                 };
+                window.BeatHiveDebug = {
+                    restoreLatestSnapshot: restoreLatestBeatHiveSnapshot,
+                    clearSnapshots: clearBeatHiveSnapshots
+                };
                 return () => {
                     try { delete window.WTToolActions; } catch (_) {}
+                    try { delete window.BeatHiveDebug; } catch (_) {}
                 };
-            }, [sendMapToCourius]);
+            }, [clearBeatHiveSnapshots, restoreLatestBeatHiveSnapshot, sendMapToCourius]);
 
             const seedStarterArc = useCallback(() => {
                 const base = [
@@ -1324,6 +1353,18 @@
                                 <button onClick={handleNewMap} disabled={isCreating} aria-label="New Map" className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs tracking-widest uppercase flex items-center justify-center gap-3 shadow-xl transition-all active:scale-95 disabled:opacity-50">
                                     <Icon name="plus" size={14}/> New Universe
                                 </button>
+                                <div className={`rounded-2xl p-4 border ${theme === 'dark' ? 'border-white/10 bg-white/5' : 'border-[#432818]/15 bg-white/50'}`}>
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div>
+                                            <div className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-1">Recovery</div>
+                                            <div className="text-xs font-semibold">{getLocalSnapshots().length} snapshot{getLocalSnapshots().length === 1 ? '' : 's'}</div>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button id="beathive-restore-snapshot-btn" onClick={restoreLatestBeatHiveSnapshot} className="px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-current/10 hover:bg-current/15 transition-colors" disabled={getLocalSnapshots().length < 1}>Restore</button>
+                                            <button id="beathive-clear-snapshots-btn" onClick={clearBeatHiveSnapshots} className="px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-current/10 hover:bg-current/15 transition-colors" disabled={getLocalSnapshots().length < 1}>Clear</button>
+                                        </div>
+                                    </div>
+                                </div>
                                 <div className={`rounded-2xl p-4 border ${theme === 'dark' ? 'border-white/10 bg-white/5' : 'border-[#432818]/15 bg-white/50'}`}>
                                     <div className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-2">Context Bus</div>
                                     <div className="text-xs font-semibold truncate">{sharedContext.topic || 'No topic set'}</div>

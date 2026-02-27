@@ -75,6 +75,7 @@ Delivered:
   - WitherNaught revisioned prefs persistence path verification
   - WitherNaught snapshot restore path verification
   - BeatHive revisioned local persistence path verification
+  - BeatHive latest snapshot restore path verification
   - PaperCut revisioned recent-session persistence path verification
   - PaperCut latest snapshot restore path verification
   - Courius transfer append/overwrite storage path verification
@@ -175,6 +176,7 @@ Delivered so far in this phase:
   - BeatHive local state now uses revision tracking (`writingtools_beathive_revision_v1`) across sketches, Courius mode, and immersion-tip state.
   - Automatic BeatHive snapshots (`writingtools_beathive_snapshots_v1`) are captured on save conflict and remote sync.
   - Cross-tab BeatHive local sync now preserves local recoverability before applying remote updates.
+  - BeatHive library now includes recovery actions to restore the latest snapshot or clear snapshots.
   - PaperCut local state now uses revision tracking (`writingtools_papercut_revision_v1`) across recent-session metadata and theme state.
   - Automatic PaperCut snapshots (`writingtools_papercut_snapshots_v1`) are captured on save conflict and remote sync.
   - Cross-tab PaperCut sync now preserves local recoverability before applying remote updates.
