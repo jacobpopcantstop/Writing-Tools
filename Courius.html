@@ -196,6 +196,9 @@
             border: 1px solid transparent;
             border-radius: 999px;
             padding: 2px 7px;
+            font-family: var(--courier);
+            font-size: 11px;
+            letter-spacing: 0.04em;
             transition: background 0.2s ease, border-color 0.2s ease, opacity 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
             display: inline-flex;
             align-items: center;
@@ -740,6 +743,7 @@
     <button class="side-btn" data-label="Help (?)" onclick="toggleHelp()">❓</button>
     <button class="side-btn" data-label="Import History" onclick="toggleImportsPanel()">↺</button>
     <button class="side-btn" data-label="Export FDX" onclick="downloadFDX()">FDX</button>
+    <button class="side-btn" data-label="Export RTF" onclick="downloadRTF()">RTF</button>
     <button class="side-btn" data-label="Print/PDF" onclick="window.print()">PDF</button>
     <button class="side-btn" style="color: #fca5a5;" data-label="Clear All" onclick="resetScript()">🗑️</button>
 </div>
@@ -2042,6 +2046,77 @@
                 case '"': return '&quot;';
             }
         });
+    }
+
+    function escapeRtf(text) {
+        return String(text || '')
+            .replace(/\\/g, '\\\\')
+            .replace(/\{/g, '\\{')
+            .replace(/\}/g, '\\}')
+            .replace(/\r\n|\r|\n/g, '\\line ');
+    }
+
+    function paragraphPrefixForType(type) {
+        switch (type) {
+            case 'scene-heading':
+                return '\\pard\\sa120\\sb120\\li0\\ri0\\qj\\b ';
+            case 'character':
+                return '\\pard\\sa60\\sb0\\li2160\\ri1440\\qj\\b ';
+            case 'parenthetical':
+                return '\\pard\\sa0\\sb0\\li1800\\ri1800\\qj\\i ';
+            case 'dialogue':
+                return '\\pard\\sa60\\sb60\\li1440\\ri1080\\qj ';
+            case 'transition':
+                return '\\pard\\sa120\\sb120\\li2880\\ri0\\qr\\b ';
+            case 'action':
+            default:
+                return '\\pard\\sa120\\sb120\\li0\\ri0\\qj ';
+        }
+    }
+
+    function buildRtfDocument() {
+        const sections = [];
+        const tpContainer = EDITOR.querySelector('.title-page-container');
+        if (tpContainer) {
+            const title = tpContainer.querySelector('.tp-title')?.innerText || 'TITLE';
+            const author = tpContainer.querySelector('.tp-author')?.innerText || '';
+            const contact = tpContainer.querySelector('.tp-contact')?.innerText || '';
+            sections.push('\\pard\\qc\\sa240\\sb120\\fs32\\b ' + escapeRtf(title) + '\\b0\\par');
+            if (author) sections.push('\\pard\\qc\\sa120\\sb120\\fs24 ' + escapeRtf(author) + '\\par');
+            if (contact) sections.push('\\pard\\qc\\sa120\\sb240\\fs20 ' + escapeRtf(contact) + '\\par');
+            sections.push('\\pard\\par');
+        }
+
+        Array.from(EDITOR.children).forEach((div) => {
+            if (!div || div.classList.contains('title-page-container')) return;
+            const type = div.className || 'action';
+            const text = getPureText(div).trim();
+            if (!text) {
+                sections.push('\\pard\\par');
+                return;
+            }
+            const prefix = paragraphPrefixForType(type);
+            const suffix = (type === 'scene-heading' || type === 'character' || type === 'transition')
+                ? '\\b0\\par'
+                : (type === 'parenthetical' ? '\\i0\\par' : '\\par');
+            sections.push(prefix + escapeRtf(text) + suffix);
+        });
+
+        return '{\\rtf1\\ansi\\deff0' +
+            '{\\fonttbl{\\f0 Courier New;}}' +
+            '\\viewkind4\\uc1\\pard\\f0\\fs24 ' +
+            sections.join('') +
+            '}';
+    }
+
+    function downloadRTF() {
+        const rtf = buildRtfDocument();
+        const blob = new Blob([rtf], { type: 'application/rtf' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'script.rtf';
+        a.click();
+        URL.revokeObjectURL(a.href);
     }
 
     // --- Scene Navigator ---
