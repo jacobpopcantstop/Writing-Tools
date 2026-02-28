@@ -1957,17 +1957,23 @@
 
             // Handle Title Page FIRST (must be prepended before content)
             const titlePage = xmlDoc.getElementsByTagName('TitlePage')[0];
+            const allParagraphs = Array.from(xmlDoc.getElementsByTagName('Paragraph'));
             const skipParagraphs = new Set();
+            let titleText = '';
+            let authorText = '';
+            let contactText = '';
+            let creditText = '';
+
             if (titlePage) {
                 const titleEl = titlePage.getElementsByTagName('Title')[0];
                 const authorEl = titlePage.getElementsByTagName('Author')[0];
                 const contactEl = titlePage.getElementsByTagName('Contact')[0];
                 const creditEl = titlePage.getElementsByTagName('Credit')[0];
 
-                let titleText = titleEl ? titleEl.textContent : '';
-                let authorText = authorEl ? authorEl.textContent : '';
-                let contactText = contactEl ? contactEl.textContent : '';
-                let creditText = creditEl ? creditEl.textContent : '';
+                titleText = titleEl ? titleEl.textContent : '';
+                authorText = authorEl ? authorEl.textContent : '';
+                contactText = contactEl ? contactEl.textContent : '';
+                creditText = creditEl ? creditEl.textContent : '';
 
                 Array.from(titlePage.getElementsByTagName('Paragraph')).forEach((paragraph) => {
                     skipParagraphs.add(paragraph);
@@ -1980,11 +1986,25 @@
                     else if (paraType === 'Credit' && !creditText) creditText = paraText;
                 });
 
-                ensureTitlePage(titleText, authorText, contactText, creditText);
             }
 
+            // Some FDX files store title-page fields as normal content paragraphs.
+            allParagraphs.forEach((paragraph) => {
+                const paraType = String(paragraph.getAttribute('Type') || '').trim();
+                if (!titlePageTypes.has(paraType)) return;
+                const paraText = Array.from(paragraph.getElementsByTagName('Text')).map((node) => node.textContent || '').join('').trim();
+                skipParagraphs.add(paragraph);
+                if (!paraText) return;
+                if (paraType === 'Title' && !titleText) titleText = paraText;
+                else if (paraType === 'Author' && !authorText) authorText = paraText;
+                else if (paraType === 'Contact' && !contactText) contactText = paraText;
+                else if (paraType === 'Credit' && !creditText) creditText = paraText;
+            });
+
+            ensureTitlePage(titleText, authorText, contactText, creditText);
+
             // Handle Content paragraphs
-            const paragraphs = xmlDoc.getElementsByTagName('Paragraph');
+            const paragraphs = allParagraphs;
             for (let i = 0; i < paragraphs.length; i++) {
                 if (skipParagraphs.has(paragraphs[i])) continue;
                 const fdxType = (paragraphs[i].getAttribute('Type') || '').trim();
