@@ -1935,35 +1935,60 @@
 
             EDITOR.innerHTML = ''; // Clear existing
 
-            // Handle Title Page FIRST (must be prepended before content)
-            const titlePage = xmlDoc.getElementsByTagName('TitlePage')[0];
-            if (titlePage) {
+            const titlePageTypes = new Set(['Title', 'Credit', 'Author', 'Contact']);
+            const ensureTitlePage = (titleText, authorText, contactText, creditText) => {
+                const hasMeaningfulTitle = !!String(titleText || '').trim();
+                const hasMeaningfulAuthor = !!String(authorText || '').trim();
+                const hasMeaningfulContact = !!String(contactText || '').trim();
+                const hasMeaningfulCredit = !!String(creditText || '').trim();
+                if (!hasMeaningfulTitle && !hasMeaningfulAuthor && !hasMeaningfulContact && !hasMeaningfulCredit) return;
+
                 const tp = document.createElement('div');
                 tp.className = 'title-page-container';
                 tp.contentEditable = "false";
+                tp.innerHTML = `
+                    <div class="tp-title" contenteditable="true" data-placeholder="TITLE">${escapeHtml(hasMeaningfulTitle ? titleText : 'TITLE')}</div>
+                    <div class="tp-by">${escapeHtml(hasMeaningfulCredit ? creditText : 'by')}</div>
+                    <div class="tp-author" contenteditable="true" data-placeholder="Author Name">${escapeHtml(hasMeaningfulAuthor ? authorText : 'Author Name')}</div>
+                    <div class="tp-contact" contenteditable="true" data-placeholder="Contact Info">${escapeHtml(hasMeaningfulContact ? contactText : 'Contact Info')}</div>
+                `;
+                EDITOR.prepend(tp);
+            };
 
-                // Extract title page fields
+            // Handle Title Page FIRST (must be prepended before content)
+            const titlePage = xmlDoc.getElementsByTagName('TitlePage')[0];
+            const skipParagraphs = new Set();
+            if (titlePage) {
                 const titleEl = titlePage.getElementsByTagName('Title')[0];
                 const authorEl = titlePage.getElementsByTagName('Author')[0];
                 const contactEl = titlePage.getElementsByTagName('Contact')[0];
+                const creditEl = titlePage.getElementsByTagName('Credit')[0];
 
-                const titleText = titleEl ? titleEl.textContent : 'TITLE';
-                const authorText = authorEl ? authorEl.textContent : 'Author Name';
-                const contactText = contactEl ? contactEl.textContent : 'Contact Info';
+                let titleText = titleEl ? titleEl.textContent : '';
+                let authorText = authorEl ? authorEl.textContent : '';
+                let contactText = contactEl ? contactEl.textContent : '';
+                let creditText = creditEl ? creditEl.textContent : '';
 
-                tp.innerHTML = `
-                    <div class="tp-title" contenteditable="true" data-placeholder="TITLE">${escapeHtml(titleText)}</div>
-                    <div class="tp-by">by</div>
-                    <div class="tp-author" contenteditable="true" data-placeholder="Author Name">${escapeHtml(authorText)}</div>
-                    <div class="tp-contact" contenteditable="true" data-placeholder="Contact Info">${escapeHtml(contactText)}</div>
-                `;
-                EDITOR.prepend(tp);
+                Array.from(titlePage.getElementsByTagName('Paragraph')).forEach((paragraph) => {
+                    skipParagraphs.add(paragraph);
+                    const paraType = String(paragraph.getAttribute('Type') || '').trim();
+                    const paraText = Array.from(paragraph.getElementsByTagName('Text')).map((node) => node.textContent || '').join('').trim();
+                    if (!paraText) return;
+                    if (paraType === 'Title' && !titleText) titleText = paraText;
+                    else if (paraType === 'Author' && !authorText) authorText = paraText;
+                    else if (paraType === 'Contact' && !contactText) contactText = paraText;
+                    else if (paraType === 'Credit' && !creditText) creditText = paraText;
+                });
+
+                ensureTitlePage(titleText, authorText, contactText, creditText);
             }
 
             // Handle Content paragraphs
             const paragraphs = xmlDoc.getElementsByTagName('Paragraph');
             for (let i = 0; i < paragraphs.length; i++) {
+                if (skipParagraphs.has(paragraphs[i])) continue;
                 const fdxType = (paragraphs[i].getAttribute('Type') || '').trim();
+                if (titlePageTypes.has(fdxType)) continue;
                 let type = 'action';
 
                 // Map FDX types to Courius types
