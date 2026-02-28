@@ -14,3 +14,6 @@ Recent follow-up:
 - BeatHive now consumes that staged handoff once on load, merges it safely into local context, and only adopts the incoming topic as the map name when the current map is still a default shell.
 - WitherNaught now hides the standard top header when the end screen is visible so the completion panel no longer overlaps persistent chrome.
 - Courius writing alarm button now explicitly uses the same Courier stack as the script UI, and Courius now supports direct `.rtf` export alongside `.fdx`.
+- ThisButThat now avoids insta-repeating topics by excluding very recent topics/history/cache entries before choosing fresh Wikipedia prompts.
+- BeatHive no longer shows the Momentum / Story Audit / Next Moves layer; the UI now sticks to simple beat counts and lighter start guidance.
+- WitherNaught now smooths both the flow bar and ring meter instead of snapping, and its footer no longer shows a version tag.

@@ -1247,7 +1247,7 @@ const THEMES = {
           <footer class="mt-auto pt-10 flex flex-col items-center gap-3 z-10 animate-fade-in" style="animation-delay: 0.4s; opacity: 0;">
             <div class="w-12 h-px rounded-full" style="background: ${t.border};"></div>
             <p class="font-sans text-[9px] tracking-[0.4em] uppercase opacity-20">
-              WitherNaught v13
+              WitherNaught
             </p>
           </footer>
         </div>
@@ -1274,7 +1274,10 @@ const THEMES = {
 
     function updateRingDisplay() {
       if (!dom.ringCount || !dom.ringMeta || !dom.ringActive || !dom.ringTrack) return;
-      const { totalRings, activeProgress } = getRingStats();
+      const scorePerRing = getScorePerRing();
+      const displayScore = Math.max(0, state.displayScore || 0);
+      const totalRings = Math.floor(displayScore / scorePerRing);
+      const activeProgress = (displayScore % scorePerRing) / scorePerRing;
       const activeRadius = 52;
       const circumference = 2 * Math.PI * activeRadius;
       const offset = circumference * (1 - activeProgress);
@@ -1428,13 +1431,20 @@ const THEMES = {
         const drain = DIFFICULTIES[state.difficulty].drainRate * deltaTime * 10;
         state.targetFlow = Math.max(0, state.targetFlow - drain);
 
-        // When draining: snap directly to target (no lag)
-        // When filling: smooth lerp for nice visual feedback
-        if (state.targetFlow < state.flow) {
+        const flowDiff = state.targetFlow - state.flow;
+        if (Math.abs(flowDiff) < 0.12) {
           state.flow = state.targetFlow;
         } else {
-          const diff = state.targetFlow - state.flow;
-          state.flow = Math.min(100, state.flow + diff * (deltaTime * 10));
+          const flowLerp = Math.min(1, deltaTime * (flowDiff < 0 ? 14 : 10));
+          state.flow = Math.max(0, Math.min(100, state.flow + (flowDiff * flowLerp)));
+        }
+
+        const scoreDiff = state.score - state.displayScore;
+        if (Math.abs(scoreDiff) < 0.2) {
+          state.displayScore = state.score;
+        } else {
+          const scoreLerp = Math.min(1, deltaTime * 12);
+          state.displayScore += scoreDiff * scoreLerp;
         }
 
         // Game over when flow hits zero

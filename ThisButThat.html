@@ -559,6 +559,40 @@
             applyThemeState();
         }
 
+        function getRecentTopicExclusions() {
+            const excluded = new Set();
+            state.topics.forEach((topic) => {
+                const text = String(topic && topic.text || '').trim().toLowerCase();
+                if (text) excluded.add(text);
+            });
+            state.history.slice(0, 8).forEach((entry) => {
+                const text = String(entry && entry.prompt && entry.prompt.text || '').trim().toLowerCase();
+                if (text) excluded.add(text);
+            });
+            getCachedTwistBatches().slice(-8).forEach((entry) => {
+                const text = String(entry && entry.topic && entry.topic.text || '').trim().toLowerCase();
+                if (text) excluded.add(text);
+            });
+            return excluded;
+        }
+
+        function pickFreshTitles(candidates, count, excluded) {
+            const normalized = Array.isArray(candidates)
+                ? candidates.map((item) => String(item || '').trim()).filter(Boolean)
+                : [];
+            const unique = Array.from(new Set(normalized));
+            const blocked = excluded instanceof Set ? excluded : new Set();
+            const fresh = unique.filter((title) => !blocked.has(title.toLowerCase()));
+            const pool = (fresh.length >= count ? fresh : unique).slice();
+            const picked = [];
+            while (picked.length < count && pool.length > 0) {
+                const idx = Math.floor(Math.random() * pool.length);
+                picked.push(pool[idx]);
+                pool.splice(idx, 1);
+            }
+            return picked;
+        }
+
         // --- API ---
         async function fetchTopics(specificTitle = null) {
             setLoading(true);
@@ -576,6 +610,7 @@
 
             try {
                 let titlesToFetch = [];
+                const recentExclusions = getRecentTopicExclusions();
 
                 if (specificTitle) {
                     titlesToFetch = [specificTitle];
@@ -596,24 +631,18 @@
                                 a.article !== "Main_Page" && a.article !== "Search" && 
                                 !a.article.startsWith("Special:") && !a.article.startsWith("User:")
                             );
-                            
-                            // Pick 3 random
-                            const pool = valid.slice(0, 50);
-                            const selected = [];
-                            while(selected.length < 3 && pool.length > 0) {
-                                const idx = Math.floor(Math.random() * pool.length);
-                                selected.push(pool[idx].article.replace(/_/g, ' '));
-                                pool.splice(idx, 1);
-                            }
-                            titlesToFetch = selected;
+
+                            const pool = valid.slice(0, 50).map((item) => item.article.replace(/_/g, ' '));
+                            titlesToFetch = pickFreshTitles(pool, 3, recentExclusions);
                         } else {
                             throw new Error("Pageviews API failed");
                         }
                     } catch (e) {
                         console.warn("Fallback to random", e);
-                        const randResp = await fetch('https://en.wikipedia.org/w/api.php?origin=*&action=query&format=json&list=random&rnnamespace=0&rnlimit=3');
+                        const randResp = await fetch('https://en.wikipedia.org/w/api.php?origin=*&action=query&format=json&list=random&rnnamespace=0&rnlimit=12');
                         const randData = await randResp.json();
-                        titlesToFetch = randData.query.random.map(p => p.title);
+                        const randomTitles = (randData.query.random || []).map((p) => p.title);
+                        titlesToFetch = pickFreshTitles(randomTitles, 3, recentExclusions);
                     }
                 }
 
