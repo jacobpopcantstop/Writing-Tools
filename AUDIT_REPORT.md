@@ -1,4 +1,4 @@
-# Writing Tools Suite - Comprehensive Audit Report v2
+# Writing Tools Suite - Comprehensive Audit Report (Refresh 2)
 
 **Date:** February 2026
 **Auditor:** Claude (Opus 4.6)
@@ -13,7 +13,7 @@ This audit evaluates the entire Writing Tools suite — 8 standalone writing too
 **Total Issues Found:** 45 (Critical: 6, High: 14, Medium: 16, Low: 9)
 
 **Key Actions Taken:**
-- Modernized `index.html` with pinned CDN versions, semantic HTML, accessibility, category groupings, staggered animations, cross-tab theme sync, robust error handling, and print/reduced-motion support
+- Modernized `index.html` with pinned CDN releases, semantic HTML, accessibility, category groupings, staggered animations, cross-tab theme sync, robust error handling, and print/reduced-motion support
 - Documented all findings across all 8 tools below
 
 ---
@@ -22,24 +22,24 @@ This audit evaluates the entire Writing Tools suite — 8 standalone writing too
 
 ### 1.1 Unpinned CDN Dependencies (CRITICAL)
 
-Every tool that uses external CDN libraries has at least one unpinned dependency, creating version drift risk and potential breakage.
+Every tool that uses external CDN libraries has at least one unpinned dependency, creating release drift risk and potential breakage.
 
 | File | Dependency | Status |
 |------|-----------|--------|
 | **index.html** | `lucide@latest` | **FIXED** → `lucide@0.263.1` |
-| BeatHive.html | `cdn.tailwindcss.com` (no version) | Unpinned |
+| BeatHive.html | `cdn.tailwindcss.com` (no release pin) | Unpinned |
 | BeatHive.html | `react@18` (no minor/patch) | Partially pinned |
-| BeatHive.html | `@babel/standalone` (no version) | Unpinned |
+| BeatHive.html | `@babel/standalone` (no release pin) | Unpinned |
 | Joterie.html | `lucide@latest` | Unpinned |
-| Joterie.html | `cdn.tailwindcss.com` (no version) | Unpinned |
-| Synax.html | `cdn.tailwindcss.com` (no version) | Unpinned |
-| Synax.html | `@babel/standalone` (no version) | Unpinned |
-| WitherNaught.html | `cdn.tailwindcss.com` (no version) | Unpinned |
+| Joterie.html | `cdn.tailwindcss.com` (no release pin) | Unpinned |
+| Synax.html | `cdn.tailwindcss.com` (no release pin) | Unpinned |
+| Synax.html | `@babel/standalone` (no release pin) | Unpinned |
+| WitherNaught.html | `cdn.tailwindcss.com` (no release pin) | Unpinned |
 | PaperCut.html | `lucide@latest` | Unpinned |
 | ThisButThat.html | `lucide@latest` | Unpinned |
-| ThisButThat.html | `cdn.tailwindcss.com` (no version) | Unpinned |
+| ThisButThat.html | `cdn.tailwindcss.com` (no release pin) | Unpinned |
 
-**Recommendation:** Pin all CDN dependencies to specific semver versions.
+**Recommendation:** Pin all CDN dependencies to specific semver releases.
 
 ### 1.2 Viewport Meta Blocks Zoom (HIGH)
 
@@ -286,7 +286,7 @@ All tools now read/write `writingtools_theme` in localStorage. The index hub add
 | **Print Styles** | None | Print-friendly stylesheet |
 | **Mobile** | Basic responsive | Improved with flex-wrap stats, better category spacing |
 | **Security** | `target="_blank"` without rel | `rel="noopener"` on all external links |
-| **Version** | v1.0 | v2.0 |
+| **Release** | 1.0 | 2.0 |
 
 ---
 
@@ -294,7 +294,7 @@ All tools now read/write `writingtools_theme` in localStorage. The index hub add
 
 ### P0 - Critical (Do Now)
 
-1. Pin ALL CDN versions across all tools (Tailwind, Lucide, React, Babel)
+1. Pin ALL CDN releases across all tools (Tailwind, Lucide, React, Babel)
 2. Remove `user-scalable=no` from viewport meta on Joterie, Wribbon, Courius, PaperCut
 3. Add try-catch to ALL `JSON.parse()` and `localStorage.setItem()` calls
 4. Sanitize innerHTML assignments in Joterie and Wribbon
