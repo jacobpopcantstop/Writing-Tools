@@ -272,6 +272,7 @@
       align-items: center;
       gap: 10px;
       margin-bottom: 12px;
+      cursor: pointer;
     }
     .context-head h3 {
       font-family: "IBM Plex Mono", monospace;
@@ -347,6 +348,27 @@
       transition: background .2s ease, transform .2s ease;
     }
     .quick-link:hover { background: var(--card-hover); transform: translateY(-1px); }
+    .panel-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .panel-caret {
+      font: 700 11px/1 "IBM Plex Mono", monospace;
+      color: var(--accent-2);
+      opacity: .8;
+      transition: transform .2s ease;
+    }
+    .is-collapsed .panel-caret {
+      transform: rotate(-90deg);
+    }
+    .panel-body {
+      display: grid;
+      gap: 12px;
+    }
+    .is-collapsed .panel-body {
+      display: none;
+    }
     .recent-browser {
       border: 1px solid var(--line);
       border-radius: 16px;
@@ -751,21 +773,10 @@
 
     <section class="hero">
       <div>
-        <h1>Write faster. Edit smarter. Ship cleaner drafts.</h1>
-        <p>A purpose-built toolchain for ideation, structural mapping, drafting, and screenplay output, all in one local-first suite.</p>
+        <h1>Dad Skeleton's Writing Tools</h1>
+        <p>generate ideas, structure your scenes, and deliver scripts in a free, end to end writing suite!</p>
       </div>
     </section>
-
-    <div class="featured">
-      <h3>Best Flow Right Now</h3>
-      <p>Start in <strong>Synax</strong>, pressure-test ideas in <strong>ThisButThat</strong>, map in <strong>BeatHive</strong>, draft in <strong>WitherNaught</strong>, and finish in <strong>Courius</strong>.</p>
-      <div class="quick-links">
-        <a class="quick-link" href="Synax.html" target="_blank" rel="noopener">Idea Sprint</a>
-        <a class="quick-link" href="BeatHive.html" target="_blank" rel="noopener">Build Structure</a>
-        <a class="quick-link" href="WitherNaught.html" target="_blank" rel="noopener">Draft Fast</a>
-        <a class="quick-link" href="Courius.html" target="_blank" rel="noopener">Screenplay Output</a>
-      </div>
-    </div>
 
     <main class="sections">
       <section class="section">
@@ -866,87 +877,118 @@
     </main>
 
     <div class="suite-ops">
-      <section class="context-workspace" aria-label="Shared Project Context">
-        <div class="context-head">
-          <h3>Project Context Bus</h3>
+      <section class="context-workspace is-collapsed" aria-label="Shared Project Context" data-collapsible-panel>
+        <div class="context-head" data-panel-toggle tabindex="0" role="button" aria-expanded="false">
+          <div class="panel-toggle">
+            <span class="panel-caret" aria-hidden="true">▾</span>
+            <h3>Project Context Bus</h3>
+          </div>
           <span id="ctx-meta" class="card-cta">Not Saved</span>
         </div>
-        <div class="context-grid">
-          <div class="context-field">
-            <label for="ctx-topic">Topic</label>
-            <input id="ctx-topic" type="text" placeholder="Bruce Lee, climate comedy, startup satire..." />
+        <div class="panel-body">
+          <div class="context-grid">
+            <div class="context-field">
+              <label for="ctx-topic">Topic</label>
+              <input id="ctx-topic" type="text" placeholder="Bruce Lee, climate comedy, startup satire..." />
+            </div>
+            <div class="context-field">
+              <label for="ctx-tone">Tone</label>
+              <input id="ctx-tone" type="text" placeholder="Sharp, absurdist, dry, cinematic..." />
+            </div>
+            <div class="context-field">
+              <label for="ctx-audience">Audience</label>
+              <input id="ctx-audience" type="text" placeholder="Late-night, Gen Z, broad streaming..." />
+            </div>
+            <div class="context-field">
+              <label for="ctx-constraints">Constraints</label>
+              <textarea id="ctx-constraints" placeholder="No politics, PG-13, 2 locations max, 5-minute set..."></textarea>
+            </div>
           </div>
-          <div class="context-field">
-            <label for="ctx-tone">Tone</label>
-            <input id="ctx-tone" type="text" placeholder="Sharp, absurdist, dry, cinematic..." />
+          <div class="context-actions">
+            <button class="ctx-btn primary" id="ctx-save" type="button">Save Context</button>
+            <button class="ctx-btn" id="ctx-clear" type="button">Clear</button>
+            <button class="ctx-btn" id="ctx-open-synax" type="button">Open Synax</button>
+            <button class="ctx-btn" id="ctx-open-thisbutthat" type="button">Open ThisButThat</button>
+            <button class="ctx-btn" id="ctx-open-joterie" type="button">Open Joterie</button>
           </div>
-          <div class="context-field">
-            <label for="ctx-audience">Audience</label>
-            <input id="ctx-audience" type="text" placeholder="Late-night, Gen Z, broad streaming..." />
-          </div>
-          <div class="context-field">
-            <label for="ctx-constraints">Constraints</label>
-            <textarea id="ctx-constraints" placeholder="No politics, PG-13, 2 locations max, 5-minute set..."></textarea>
-          </div>
-        </div>
-        <div class="context-actions">
-          <button class="ctx-btn primary" id="ctx-save" type="button">Save Context</button>
-          <button class="ctx-btn" id="ctx-clear" type="button">Clear</button>
-          <button class="ctx-btn" id="ctx-open-synax" type="button">Open Synax</button>
-          <button class="ctx-btn" id="ctx-open-thisbutthat" type="button">Open ThisButThat</button>
-          <button class="ctx-btn" id="ctx-open-joterie" type="button">Open Joterie</button>
         </div>
       </section>
 
-      <section id="recent-sessions" class="recent-browser" aria-label="Recent Sessions">
-        <div class="context-head">
-          <h3>Recent Sessions</h3>
+      <section id="recent-sessions" class="recent-browser is-collapsed" aria-label="Recent Sessions" data-collapsible-panel>
+        <div class="context-head" data-panel-toggle tabindex="0" role="button" aria-expanded="false">
+          <div class="panel-toggle">
+            <span class="panel-caret" aria-hidden="true">▾</span>
+            <h3>Recent Sessions</h3>
+          </div>
           <span class="card-cta">Resume without searching</span>
         </div>
-        <div class="recent-toolbar">
-          <input id="recent-search" class="recent-search" type="text" placeholder="Search recent sessions..." />
-          <button type="button" class="recent-filter active" data-recent-filter="all">All</button>
-          <button type="button" class="recent-filter" data-recent-filter="Ideation">Ideation</button>
-          <button type="button" class="recent-filter" data-recent-filter="Drafting">Drafting</button>
-          <button type="button" class="recent-filter" data-recent-filter="Output">Output</button>
+        <div class="panel-body">
+          <div class="recent-toolbar">
+            <input id="recent-search" class="recent-search" type="text" placeholder="Search recent sessions..." />
+            <button type="button" class="recent-filter active" data-recent-filter="all">All</button>
+            <button type="button" class="recent-filter" data-recent-filter="Ideation">Ideation</button>
+            <button type="button" class="recent-filter" data-recent-filter="Drafting">Drafting</button>
+            <button type="button" class="recent-filter" data-recent-filter="Output">Output</button>
+          </div>
+          <div id="recent-sessions-grid" class="recent-grid"></div>
+          <div id="recent-sessions-empty" class="recent-empty" hidden>No recent local sessions yet.</div>
         </div>
-        <div id="recent-sessions-grid" class="recent-grid"></div>
-        <div id="recent-sessions-empty" class="recent-empty" hidden>No recent local sessions yet.</div>
       </section>
 
-      <section class="export-health" aria-label="Export Reliability">
-        <div class="context-head">
-          <h3>Export Reliability</h3>
+      <section class="export-health is-collapsed" aria-label="Export Reliability" data-collapsible-panel>
+        <div class="context-head" data-panel-toggle tabindex="0" role="button" aria-expanded="false">
+          <div class="panel-toggle">
+            <span class="panel-caret" aria-hidden="true">▾</span>
+            <h3>Export Reliability</h3>
+          </div>
           <button class="ctx-btn" id="export-health-clear" type="button">Clear Metrics</button>
         </div>
-        <div class="export-health-grid">
-          <div class="export-health-card">
-            <div class="export-health-label">Events (30d)</div>
-            <div class="export-health-value" id="export-health-events">0</div>
+        <div class="panel-body">
+          <div class="export-health-grid">
+            <div class="export-health-card">
+              <div class="export-health-label">Events (30d)</div>
+              <div class="export-health-value" id="export-health-events">0</div>
+            </div>
+            <div class="export-health-card">
+              <div class="export-health-label">Fallback Rate</div>
+              <div class="export-health-value" id="export-health-fallback">0%</div>
+            </div>
+            <div class="export-health-card">
+              <div class="export-health-label">Top Transport</div>
+              <div class="export-health-value" id="export-health-top">-</div>
+            </div>
+            <div class="export-health-card">
+              <div class="export-health-label">Trimmed Gmail</div>
+              <div class="export-health-value" id="export-health-trimmed">0</div>
+            </div>
           </div>
-          <div class="export-health-card">
-            <div class="export-health-label">Fallback Rate</div>
-            <div class="export-health-value" id="export-health-fallback">0%</div>
-          </div>
-          <div class="export-health-card">
-            <div class="export-health-label">Top Transport</div>
-            <div class="export-health-value" id="export-health-top">-</div>
-          </div>
-          <div class="export-health-card">
-            <div class="export-health-label">Trimmed Gmail</div>
-            <div class="export-health-value" id="export-health-trimmed">0</div>
-          </div>
+          <div id="export-health-list" class="export-health-list"></div>
         </div>
-        <div id="export-health-list" class="export-health-list"></div>
       </section>
 
-      <section class="recovery-health" aria-label="Recovery Snapshots">
-        <div class="context-head">
-          <h3>Recovery Snapshots</h3>
+      <section class="recovery-health is-collapsed" aria-label="Recovery Snapshots" data-collapsible-panel>
+        <div class="context-head" data-panel-toggle tabindex="0" role="button" aria-expanded="false">
+          <div class="panel-toggle">
+            <span class="panel-caret" aria-hidden="true">▾</span>
+            <h3>Recovery Snapshots</h3>
+          </div>
           <button class="ctx-btn" id="recovery-clear-all" type="button">Clear All</button>
         </div>
-        <div id="recovery-grid" class="recovery-grid"></div>
+        <div class="panel-body">
+          <div id="recovery-grid" class="recovery-grid"></div>
+        </div>
       </section>
+    </div>
+
+    <div class="featured">
+      <h3>Best Flow Right Now</h3>
+      <p>Start in <strong>Synax</strong>, pressure-test ideas in <strong>ThisButThat</strong>, map in <strong>BeatHive</strong>, draft in <strong>WitherNaught</strong>, and finish in <strong>Courius</strong>.</p>
+      <div class="quick-links">
+        <a class="quick-link" href="Synax.html" target="_blank" rel="noopener">Idea Sprint</a>
+        <a class="quick-link" href="BeatHive.html" target="_blank" rel="noopener">Build Structure</a>
+        <a class="quick-link" href="WitherNaught.html" target="_blank" rel="noopener">Draft Fast</a>
+        <a class="quick-link" href="Courius.html" target="_blank" rel="noopener">Screenplay Output</a>
+      </div>
     </div>
 
     <footer>Writing Tools Suite · Local Storage Powered</footer>
@@ -1184,7 +1226,35 @@
     function focusSectionById(id) {
       const node = document.getElementById(id);
       if (!node) return;
+      const panel = node.closest('[data-collapsible-panel]');
+      if (panel) setPanelCollapsed(panel, false);
       node.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function setPanelCollapsed(panel, collapsed) {
+      if (!panel) return;
+      panel.classList.toggle('is-collapsed', !!collapsed);
+      const toggle = panel.querySelector('[data-panel-toggle]');
+      if (toggle) {
+        toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+      }
+    }
+
+    function initCollapsiblePanels() {
+      document.querySelectorAll('[data-collapsible-panel]').forEach((panel) => {
+        const toggle = panel.querySelector('[data-panel-toggle]');
+        if (!toggle) return;
+        setPanelCollapsed(panel, panel.classList.contains('is-collapsed'));
+        const handleToggle = (event) => {
+          if (event.type === 'keydown' && event.key !== 'Enter' && event.key !== ' ') return;
+          const actionTarget = event.target.closest('button, a, input, textarea, select');
+          if (actionTarget && actionTarget !== toggle) return;
+          if (event.type === 'keydown') event.preventDefault();
+          setPanelCollapsed(panel, !panel.classList.contains('is-collapsed'));
+        };
+        toggle.addEventListener('click', handleToggle);
+        toggle.addEventListener('keydown', handleToggle);
+      });
     }
 
     function getExportEvents() {
@@ -1444,6 +1514,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       applyTheme(getTheme());
+      initCollapsiblePanels();
       initContextWorkspace();
       initRecentBrowser();
       renderRecentSessions();
