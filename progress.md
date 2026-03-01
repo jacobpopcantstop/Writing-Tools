@@ -17,3 +17,4 @@ Recent follow-up:
 - ThisButThat now avoids insta-repeating topics by excluding very recent topics/history/cache entries before choosing fresh Wikipedia prompts.
 - BeatHive no longer shows the Momentum / Story Audit / Next Moves layer; the UI now sticks to simple beat counts and lighter start guidance.
 - WitherNaught now smooths both the flow bar and ring meter instead of snapping, and its footer no longer shows a version tag.
+- BeatHive load path hardened against malformed local state / injected config: persisted cells are now sanitized and capped before render, and empty or invalid `__firebase_config` values no longer crash startup.
