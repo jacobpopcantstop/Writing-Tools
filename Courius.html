@@ -1255,9 +1255,17 @@
             document.execCommand('insertText', false, e.data.toUpperCase());
         }
 
-        if (type === 'action' || type === 'dialogue') {
+        if (type === 'action') {
             const text = getPureText(block);
             if ((text.length === 0 || text.match(/[.!?]\s*$/)) && e.data && e.data.match(/[a-z]/)) {
+                e.preventDefault();
+                document.execCommand('insertText', false, e.data.toUpperCase());
+            }
+        }
+
+        if (type === 'dialogue') {
+            const text = getPureText(block);
+            if (text.length === 0 && e.data && e.data.match(/[a-z]/)) {
                 e.preventDefault();
                 document.execCommand('insertText', false, e.data.toUpperCase());
             }
