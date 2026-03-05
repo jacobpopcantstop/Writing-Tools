@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sketch Comedy Feedback Form</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                background-color: white !important;
+                padding: 0 !important;
+            }
+            .print-container {
+                box-shadow: none !important;
+                border: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                max-width: 100% !important;
+            }
+            input, textarea {
+                border: 1px solid #d1d5db !important;
+                background-color: transparent !important;
+                color: black !important;
+            }
+            textarea {
+                resize: none !important;
+                overflow: hidden !important;
+                /* Ensure no scrollbars print */
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+            textarea::-webkit-scrollbar {
+                display: none;
+            }
+            /* Adjust page breaks so sections don't cut awkwardly */
+            .section-break {
+                page-break-inside: avoid;
+            }
+        }
+        
+        /* Custom scrollbar for textareas to keep it clean on screen */
+        textarea::-webkit-scrollbar {
+            width: 8px;
+        }
+        textarea::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        textarea::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        textarea::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans p-4 sm:p-8">
+
+    <!-- Action Bar -->
+    <div class="max-w-4xl mx-auto mb-6 no-print flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-4 rounded-lg shadow-sm border border-gray-200 gap-4">
+        <div>
+            <h2 class="text-lg font-semibold text-gray-700">Instructor Tools</h2>
+            <p class="text-sm text-gray-500">Fill out the form below, then click to save or print.</p>
+        </div>
+        <div class="flex gap-3 w-full sm:w-auto">
+            <button type="button" onclick="clearForm()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-4 rounded-md transition duration-150 ease-in-out shadow-sm flex-1 sm:flex-none text-center">
+                Clear Form
+            </button>
+            <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md transition duration-150 ease-in-out shadow-sm flex items-center justify-center gap-2 flex-1 sm:flex-none">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+                Save as PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Form Container -->
+    <div class="max-w-4xl mx-auto bg-white p-8 sm:p-12 rounded-lg shadow-md border border-gray-200 print-container">
+        
+        <!-- Header -->
+        <div class="border-b-2 border-gray-800 pb-6 mb-8 text-center">
+            <h1 class="text-3xl font-bold uppercase tracking-wider text-gray-900">Sketch Comedy Draft Feedback</h1>
+            <p class="text-gray-500 mt-2 italic">Instructor Evaluation & Notes</p>
+        </div>
+
+        <form id="feedbackForm" onsubmit="event.preventDefault();">
+            <!-- Meta Information -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-10 section-break">
+                <div>
+                    <label for="studentName" class="block text-sm font-bold text-gray-700 uppercase mb-1">Student Name</label>
+                    <input type="text" id="studentName" class="w-full border-b-2 border-gray-300 bg-gray-50 px-3 py-2 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors" placeholder="Enter name...">
+                </div>
+                <div>
+                    <label for="sketchTitle" class="block text-sm font-bold text-gray-700 uppercase mb-1">Sketch Title</label>
+                    <input type="text" id="sketchTitle" class="w-full border-b-2 border-gray-300 bg-gray-50 px-3 py-2 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors" placeholder="Enter title...">
+                </div>
+                <div>
+                    <label for="draftNumber" class="block text-sm font-bold text-gray-700 uppercase mb-1">Draft Number</label>
+                    <input type="text" id="draftNumber" class="w-full border-b-2 border-gray-300 bg-gray-50 px-3 py-2 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors" placeholder="e.g., Draft 1, Final">
+                </div>
+                <div>
+                    <label for="feedbackDate" class="block text-sm font-bold text-gray-700 uppercase mb-1">Date</label>
+                    <input type="date" id="feedbackDate" class="w-full border-b-2 border-gray-300 bg-gray-50 px-3 py-2 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors text-gray-600">
+                </div>
+            </div>
+
+            <!-- 1. The Core -->
+            <div class="mb-8 section-break">
+                <div class="bg-gray-800 text-white px-4 py-2 mb-4">
+                    <h2 class="text-lg font-bold uppercase tracking-wide">1. The Core</h2>
+                </div>
+                <div class="space-y-4 pl-2 border-l-4 border-gray-200 ml-2">
+                    <div>
+                        <label for="thePremise" class="block text-sm font-semibold text-gray-800 mb-1">The Premise</label>
+                        <p class="text-xs text-gray-500 mb-2">Is the base reality established quickly and clearly within the first few pages?</p>
+                        <textarea id="thePremise" rows="3" class="w-full border border-gray-300 rounded bg-gray-50 p-3 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors" placeholder="Notes on the premise..."></textarea>
+                    </div>
+                    <div>
+                        <label for="theGame" class="block text-sm font-semibold text-gray-800 mb-1">The Game</label>
+                        <p class="text-xs text-gray-500 mb-2">What is the central unusual thing? Is the comedic pattern clear, focused, and easy to follow?</p>
+                        <textarea id="theGame" rows="3" class="w-full border border-gray-300 rounded bg-gray-50 p-3 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors" placeholder="Notes on the game..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Structure & Escalation -->
+            <div class="mb-8 section-break">
+                <div class="bg-gray-800 text-white px-4 py-2 mb-4">
+                    <h2 class="text-lg font-bold uppercase tracking-wide">2. Structure & Escalation</h2>
+                </div>
+                <div class="space-y-4 pl-2 border-l-4 border-gray-200 ml-2">
+                    <div>
+                        <label for="beatsPacing" class="block text-sm font-semibold text-gray-800 mb-1">Beats & Pacing</label>
+                        <p class="text-xs text-gray-500 mb-2">Are the comedic beats distinct? Do they hit at the right times without dragging?</p>
+                        <textarea id="beatsPacing" rows="2" class="w-full border border-gray-300 rounded bg-gray-50 p-3 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors" placeholder="Notes on beats..."></textarea>
+                    </div>
+                    <div>
+                        <label for="heightening" class="block text-sm font-semibold text-gray-800 mb-1">Heightening</label>
+                        <p class="text-xs text-gray-500 mb-2">Does the sketch escalate properly? Does the game get bigger or raise the stakes with each beat?</p>
+                        <textarea id="heightening" rows="2" class="w-full border border-gray-300 rounded bg-gray-50 p-3 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors" placeholder="Notes on heightening..."></textarea>
+                    </div>
+                    <div>
+                        <label for="theButton" class="block text-sm font-semibold text-gray-800 mb-1">The Button (Ending)</label>
+                        <p class="text-xs text-gray-500 mb-2">Does the sketch end on a strong, definitive laugh or a sharp conceptual out?</p>
+                        <textarea id="theButton" rows="2" class="w-full border border-gray-300 rounded bg-gray-50 p-3 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors" placeholder="Notes on the button..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Characters & Dialogue -->
+            <div class="mb-8 section-break">
+                <div class="bg-gray-800 text-white px-4 py-2 mb-4">
+                    <h2 class="text-lg font-bold uppercase tracking-wide">3. Characters & Dialogue</h2>
+                </div>
+                <div class="space-y-4 pl-2 border-l-4 border-gray-200 ml-2">
+                    <div>
+                        <label for="povDynamic" class="block text-sm font-semibold text-gray-800 mb-1">Point of View & Dynamic</label>
+                        <p class="text-xs text-gray-500 mb-2">Do characters have clear perspectives? Is the straight man/absurd character dynamic working effectively?</p>
+                        <textarea id="povDynamic" rows="3" class="w-full border border-gray-300 rounded bg-gray-50 p-3 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors" placeholder="Notes on characters..."></textarea>
+                    </div>
+                    <div>
+                        <label for="dialogueEfficiency" class="block text-sm font-semibold text-gray-800 mb-1">Dialogue Efficiency</label>
+                        <p class="text-xs text-gray-500 mb-2">Is the dialogue tight? Are there unnecessary lines getting in the way of jokes?</p>
+                        <textarea id="dialogueEfficiency" rows="2" class="w-full border border-gray-300 rounded bg-gray-50 p-3 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors" placeholder="Notes on dialogue..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Mechanics & Formatting -->
+            <div class="mb-8 section-break">
+                <div class="bg-gray-800 text-white px-4 py-2 mb-4">
+                    <h2 class="text-lg font-bold uppercase tracking-wide">4. Mechanics & Formatting</h2>
+                </div>
+                <div class="pl-2 border-l-4 border-gray-200 ml-2">
+                    <label for="mechanicsFormatting" class="block text-sm font-semibold text-gray-800 mb-1">Formatting & Action Lines</label>
+                    <p class="text-xs text-gray-500 mb-2">Does it follow standard formatting rules? Are stage directions clear and easy to shoot/stage?</p>
+                    <textarea id="mechanicsFormatting" rows="2" class="w-full border border-gray-300 rounded bg-gray-50 p-3 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors" placeholder="Notes on formatting..."></textarea>
+                </div>
+            </div>
+
+            <!-- 5. Overall Impressions -->
+            <div class="mb-8 section-break">
+                <div class="bg-blue-600 text-white px-4 py-2 mb-4">
+                    <h2 class="text-lg font-bold uppercase tracking-wide">5. Overall Impressions</h2>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pl-2 border-l-4 border-blue-200 ml-2">
+                    <div>
+                        <label for="workingBest" class="block text-sm font-bold text-gray-800 mb-1 text-green-700">What's Working Best</label>
+                        <p class="text-xs text-gray-500 mb-2">Highlight the strongest joke, character, or concept.</p>
+                        <textarea id="workingBest" rows="4" class="w-full border border-green-300 rounded bg-green-50 p-3 focus:outline-none focus:border-green-500 focus:bg-white transition-colors" placeholder="Praise and strengths..."></textarea>
+                    </div>
+                    <div>
+                        <label for="needsFocus" class="block text-sm font-bold text-gray-800 mb-1 text-red-700">What Needs Most Focus</label>
+                        <p class="text-xs text-gray-500 mb-2">Identify the main roadblock preventing the sketch's full potential.</p>
+                        <textarea id="needsFocus" rows="4" class="w-full border border-red-300 rounded bg-red-50 p-3 focus:outline-none focus:border-red-500 focus:bg-white transition-colors" placeholder="Constructive criticism..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. Action Items -->
+            <div class="mb-4 section-break">
+                <div class="bg-gray-800 text-white px-4 py-2 mb-4">
+                    <h2 class="text-lg font-bold uppercase tracking-wide">6. Action Items for Next Draft</h2>
+                </div>
+                <div class="space-y-3 pl-2 border-l-4 border-gray-200 ml-2">
+                    <div class="flex items-center gap-3">
+                        <label for="actionItem1" class="font-bold text-lg text-gray-400">1.</label>
+                        <input type="text" id="actionItem1" class="flex-1 border-b border-gray-300 bg-gray-50 px-3 py-2 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors" placeholder="First goal...">
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <label for="actionItem2" class="font-bold text-lg text-gray-400">2.</label>
+                        <input type="text" id="actionItem2" class="flex-1 border-b border-gray-300 bg-gray-50 px-3 py-2 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors" placeholder="Second goal...">
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <label for="actionItem3" class="font-bold text-lg text-gray-400">3.</label>
+                        <input type="text" id="actionItem3" class="flex-1 border-b border-gray-300 bg-gray-50 px-3 py-2 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors" placeholder="Third goal...">
+                    </div>
+                </div>
+            </div>
+
+        </form>
+    </div>
+
+    <script>
+        // Auto-resize textareas
+        const textareas = document.querySelectorAll('textarea');
+        
+        function resizeTextarea(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = (textarea.scrollHeight) + 'px';
+        }
+
+        textareas.forEach(textarea => {
+            textarea.addEventListener('input', function() {
+                resizeTextarea(this);
+            });
+        });
+
+        // Clear form and reset textarea heights
+        function clearForm() {
+            if(confirm("Are you sure you want to clear all feedback?")) {
+                document.getElementById('feedbackForm').reset();
+                textareas.forEach(textarea => {
+                    textarea.style.height = 'auto'; // Reset to default rows attribute height
+                });
+                
+                // Set date to today automatically when cleared
+                document.getElementById('feedbackDate').valueAsDate = new Date();
+            }
+        }
+
+        // Set initial date on load
+        window.onload = function() {
+            document.getElementById('feedbackDate').valueAsDate = new Date();
+        };
+    </script>
+</body>
+</html>
