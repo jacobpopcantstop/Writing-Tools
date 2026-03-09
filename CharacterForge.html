@@ -57,10 +57,7 @@
     body {
       font-family: "Space Grotesk", sans-serif;
       color: var(--text);
-      background:
-        radial-gradient(80vw 50vh at 100% 0%, color-mix(in srgb, var(--accent) 22%, transparent), transparent),
-        radial-gradient(70vw 45vh at 0% 100%, color-mix(in srgb, var(--accent-2) 18%, transparent), transparent),
-        linear-gradient(180deg, color-mix(in srgb, var(--bg) 82%, #000 18%), var(--bg));
+      background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 88%, #000 12%), var(--bg));
     }
 
     a { color: inherit; }
@@ -143,12 +140,7 @@
       border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
     }
 
-    .hero {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
-      gap: 16px;
-      margin-bottom: 18px;
-    }
+    .hero { margin-bottom: 18px; }
 
     .hero-card,
     .panel,
@@ -156,13 +148,13 @@
     .saved-card {
       border: 1px solid var(--line);
       background: var(--panel);
-      border-radius: 18px;
-      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+      border-radius: 16px;
+      box-shadow: none;
       backdrop-filter: blur(14px);
     }
 
     .hero-card {
-      padding: 24px;
+      padding: 18px 20px;
     }
 
     .eyebrow,
@@ -182,23 +174,23 @@
     }
 
     h1 {
-      margin: 0 0 12px;
+      margin: 0 0 8px;
       font-family: "Fraunces", serif;
-      font-size: clamp(2.7rem, 5vw, 4.7rem);
-      line-height: 0.96;
+      font-size: clamp(2.1rem, 4vw, 3.1rem);
+      line-height: 1;
       letter-spacing: -0.04em;
-      max-width: 9ch;
+      max-width: 12ch;
     }
 
     .hero-copy {
-      max-width: 54ch;
+      max-width: 60ch;
       color: var(--muted);
-      font-size: 16px;
-      line-height: 1.55;
-      margin-bottom: 20px;
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 14px;
     }
 
-    .guide-list,
+    .hero-pills,
     .chip-row,
     .suggestions,
     .flavor-row,
@@ -224,37 +216,6 @@
       background: color-mix(in srgb, var(--bg-soft) 72%, transparent);
     }
 
-    .hero-guide {
-      display: grid;
-      gap: 12px;
-      align-content: start;
-    }
-
-    .guide-card {
-      padding: 16px;
-      border-radius: 16px;
-      border: 1px solid var(--line);
-      background: color-mix(in srgb, var(--panel-strong) 92%, transparent);
-    }
-
-    .guide-title {
-      color: var(--muted);
-      margin-bottom: 8px;
-    }
-
-    .guide-card strong {
-      display: block;
-      font-size: 15px;
-      margin-bottom: 6px;
-    }
-
-    .guide-card p {
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.45;
-      margin: 0;
-    }
-
     .workspace {
       display: grid;
       grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
@@ -263,9 +224,8 @@
     }
 
     .panel {
-      padding: 22px;
-      position: sticky;
-      top: 18px;
+      padding: 18px;
+      position: static;
     }
 
     .section-label {
@@ -292,22 +252,11 @@
       gap: 14px;
     }
 
-    .builder-guide {
-      margin: 0 0 16px;
-      padding: 12px 14px;
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      background: color-mix(in srgb, var(--bg-soft) 76%, transparent);
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.5;
-    }
-
     .field {
       border: 1px solid var(--line);
-      background: color-mix(in srgb, var(--bg-soft) 72%, transparent);
-      border-radius: 18px;
-      padding: 14px;
+      background: color-mix(in srgb, var(--bg-soft) 58%, transparent);
+      border-radius: 14px;
+      padding: 12px;
     }
 
     .field-head {
@@ -427,8 +376,8 @@
     .results-grid,
     .saved-grid {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 14px;
+      grid-template-columns: 1fr;
+      gap: 12px;
     }
 
     .card,
@@ -533,8 +482,8 @@
     }
 
     .recovery-panel {
-      padding: 20px;
-      border-radius: 24px;
+      padding: 18px;
+      border-radius: 16px;
       border: 1px solid var(--line);
       background: color-mix(in srgb, var(--panel-strong) 88%, transparent);
     }
@@ -560,10 +509,6 @@
       .workspace {
         grid-template-columns: 1fr;
       }
-
-      .panel {
-        position: static;
-      }
     }
 
     @media (max-width: 720px) {
@@ -577,11 +522,9 @@
       .card,
       .saved-card,
       .recovery-panel {
-        border-radius: 20px;
+        border-radius: 14px;
       }
 
-      .hero-metrics,
-      .hero-guide,
       .results-grid,
       .saved-grid,
       .btn-row {
@@ -639,28 +582,11 @@
       <div class="hero-card">
         <div class="eyebrow">Writing Tools Character Studio</div>
         <h1>Build characters with a spine.</h1>
-        <p class="hero-copy">Start with four simple inputs. Generate a batch, pick the strongest option, then save or hand it forward. The page is meant to keep you moving, not overload you.</p>
-        <div class="guide-list">
-          <span class="hero-pill">1. Set ingredients</span>
-          <span class="hero-pill">2. Generate</span>
-          <span class="hero-pill">3. Keep one</span>
-        </div>
-      </div>
-      <div class="hero-guide">
-        <div class="guide-card">
-          <div class="guide-title">Current Batch</div>
-          <strong id="metric-batch">0 variants</strong>
-          <p>Generate a fresh set whenever the current direction feels flat.</p>
-        </div>
-        <div class="guide-card">
-          <div class="guide-title">Saved Picks</div>
-          <strong id="metric-favorites">0 favorites</strong>
-          <p>Keep only the characters you would actually write.</p>
-        </div>
-        <div class="guide-card">
-          <div class="guide-title">Recovery</div>
-          <strong id="metric-snapshots">0 snapshots</strong>
-          <p>Destructive actions create restore points automatically.</p>
+        <p class="hero-copy">Set a few core ingredients, generate a batch, then keep the one worth writing. Everything else should stay out of your way.</p>
+        <div class="hero-pills">
+          <span class="hero-pill" id="metric-batch">0 variants</span>
+          <span class="hero-pill" id="metric-favorites">0 favorites</span>
+          <span class="hero-pill" id="metric-snapshots">0 snapshots</span>
         </div>
       </div>
     </section>
@@ -670,7 +596,6 @@
         <div class="section-label">Input Builder</div>
         <h2 class="section-title">Set the core ingredients</h2>
         <p class="section-copy">Use all four fields for a tight brief, or leave any of them blank and let the tool fill the gap from curated prompts.</p>
-        <div class="builder-guide">Start with name and role if you want the fastest path. Add adjective and goal only when you want tighter control.</div>
 
         <div class="field-grid">
           <section class="field">
