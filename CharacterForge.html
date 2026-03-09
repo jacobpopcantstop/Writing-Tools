@@ -140,7 +140,7 @@
       border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
     }
 
-    .hero { margin-bottom: 18px; }
+    .hero { margin-bottom: 12px; }
 
     .hero-card,
     .panel,
@@ -154,7 +154,10 @@
     }
 
     .hero-card {
-      padding: 18px 20px;
+      padding: 4px 0 2px;
+      border: none;
+      background: transparent;
+      backdrop-filter: none;
     }
 
     .eyebrow,
@@ -169,25 +172,25 @@
     }
 
     .eyebrow {
-      color: var(--accent-2);
-      margin-bottom: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
     }
 
     h1 {
-      margin: 0 0 8px;
+      margin: 0 0 6px;
       font-family: "Fraunces", serif;
-      font-size: clamp(2.1rem, 4vw, 3.1rem);
+      font-size: clamp(1.7rem, 3vw, 2.2rem);
       line-height: 1;
-      letter-spacing: -0.04em;
-      max-width: 12ch;
+      letter-spacing: -0.03em;
+      max-width: none;
     }
 
     .hero-copy {
-      max-width: 60ch;
+      max-width: 56ch;
       color: var(--muted);
-      font-size: 14px;
-      line-height: 1.5;
-      margin-bottom: 14px;
+      font-size: 13px;
+      line-height: 1.45;
+      margin-bottom: 0;
     }
 
     .hero-pills,
@@ -213,7 +216,7 @@
       padding: 8px 12px;
       font-size: 12px;
       color: var(--muted);
-      background: color-mix(in srgb, var(--bg-soft) 72%, transparent);
+      background: color-mix(in srgb, var(--bg-soft) 54%, transparent);
     }
 
     .workspace {
@@ -580,14 +583,9 @@
 
     <section class="hero">
       <div class="hero-card">
-        <div class="eyebrow">Writing Tools Character Studio</div>
+        <div class="eyebrow">Character Forge</div>
         <h1>Build characters with a spine.</h1>
-        <p class="hero-copy">Set a few core ingredients, generate a batch, then keep the one worth writing. Everything else should stay out of your way.</p>
-        <div class="hero-pills">
-          <span class="hero-pill" id="metric-batch">0 variants</span>
-          <span class="hero-pill" id="metric-favorites">0 favorites</span>
-          <span class="hero-pill" id="metric-snapshots">0 snapshots</span>
-        </div>
+        <p class="hero-copy">Set a few inputs, generate a batch, and keep the one worth writing.</p>
       </div>
     </section>
 
@@ -650,6 +648,9 @@
         <div class="status-row">
           <span class="status-pill">Selected: <strong id="selected-name">None</strong></span>
           <span class="status-pill">Flavor: <strong id="selected-flavor">General</strong></span>
+          <span class="status-pill"><strong id="metric-batch">0 variants</strong></span>
+          <span class="status-pill"><strong id="metric-favorites">0 favorites</strong></span>
+          <span class="status-pill"><strong id="metric-snapshots">0 snapshots</strong></span>
         </div>
         <p id="status-copy" class="footer-note">Generate a batch, pick the strongest card, then save or hand it off into the rest of the suite.</p>
       </aside>
@@ -719,25 +720,209 @@
       var FIELD_ORDER = ['name', 'role', 'adjective', 'goal'];
       var FLAVOR_TAGS = ['General', 'Noir', 'Romance', 'Fantasy', 'Thriller', 'Comedy', 'Sci-Fi', 'Literary'];
 
-      var SUGGESTIONS = {
+      function flattenBatches(batches) {
+        return (Array.isArray(batches) ? batches : []).reduce(function (out, batch) {
+          return out.concat(Array.isArray(batch) ? batch : []);
+        }, []);
+      }
+
+      var SUGGESTION_BATCHES = {
         name: [
-          'Iris Vale', 'Mateo Flint', 'June Holloway', 'Cass Mercer', 'Nadia Bloom', 'Elias Wren',
-          'Mira Sol', 'Tobin Graves', 'Anika Cross', 'Levi March', 'Sana Voss', 'Dorian Pike'
+          [
+            'Iris Vale', 'Mateo Flint', 'June Holloway', 'Cass Mercer', 'Nadia Bloom', 'Elias Wren',
+            'Mira Sol', 'Tobin Graves', 'Anika Cross', 'Levi March', 'Sana Voss', 'Dorian Pike'
+          ],
+          [
+            'Opal Reyes', 'Julian Thorne', 'Keira Moss', 'Noah Sloane', 'Avery Quinn', 'Bianca Vale',
+            'Roman Mercer', 'Esme Calder', 'Theo Harlan', 'Lena Pike', 'Arlo Wynne', 'Selah Frost'
+          ],
+          [
+            'Willa Hart', 'Gideon Shaw', 'Freya Bell', 'Nico Rowan', 'Talia Vane', 'Miles Carver',
+            'Elara North', 'Jonah Vale', 'Maeve Carden', 'Lucian West', 'Nina Bloom', 'Rowan Pike'
+          ],
+          [
+            'Ada Mercer', 'Finn Holloway', 'Sloane Wilder', 'Rhea Quinn', 'Silas Voss', 'Isla Wren',
+            'Callum Frost', 'Piper Vale', 'Daphne Cross', 'Micah Haze', 'Eva Thorn', 'Jasper Cade'
+          ],
+          [
+            'Marin Locke', 'Owen Hart', 'Celeste Wynn', 'Declan Ash', 'Sabine Moore', 'Hugo Vale',
+            'Liora Pike', 'Maren Wilde', 'Bennett Snow', 'Cleo March', 'Damon Keene', 'Ayla North'
+          ],
+          [
+            'Imogen Reed', 'Rafael Knox', 'Nora Blythe', 'Kieran Vale', 'Zara Hollow', 'August Crane',
+            'Phoebe Drift', 'Xavier Thorn', 'Lila Mercer', 'Graham West', 'Veda Pike', 'Orion Lake'
+          ],
+          [
+            'Ember Sloane', 'Caleb Frost', 'Naomi Voss', 'Everett Quinn', 'Zadie Hart', 'Malcolm Wren',
+            'Tessa Rowan', 'Adrian Pike', 'Ivy North', 'Felix Calder', 'Mina Vale', 'Sebastian Haze'
+          ],
+          [
+            'Carmen Vale', 'Ronan Bell', 'Josie Mercer', 'Eamon Wilde', 'Skye Holloway', 'Victor Snow',
+            'Laine Cross', 'Bridget Pike', 'Darius West', 'Gia Lockwood', 'Nolan Frost', 'Helena March'
+          ],
+          [
+            'Poppy Wren', 'Damian Graves', 'Sage Carver', 'Cora Ash', 'Zane Hollow', 'Elise Thorne',
+            'Milo Carden', 'Delia Quinn', 'Cassian Reed', 'Louisa Vane', 'Remy North', 'Harper Vale'
+          ],
+          [
+            'Alma Pike', 'Ezekiel Moss', 'Vivian Hart', 'Beau Mercer', 'Indira Bloom', 'Tristan Wren',
+            'Greer Holloway', 'Leon Vale', 'Nessa Wilde', 'Corbin Frost', 'Ruby Calder', 'Atticus Shaw'
+          ]
         ],
         role: [
-          'disgraced archivist', 'small-town mayor', 'runaway prince', 'debt collector', 'private chef',
-          'retired getaway driver', 'museum conservator', 'ghostwriter', 'cult escapee', 'crisis negotiator',
-          'wedding planner', 'salvage diver', 'paramedic', 'conspiracy podcaster', 'night janitor'
+          [
+            'disgraced archivist', 'small-town mayor', 'runaway prince', 'debt collector', 'private chef',
+            'retired getaway driver', 'museum conservator', 'ghostwriter', 'cult escapee', 'crisis negotiator',
+            'wedding planner', 'salvage diver', 'paramedic', 'conspiracy podcaster', 'night janitor'
+          ],
+          [
+            'undercover labor organizer', 'failed child prodigy', 'celebrity fixer', 'bank security auditor',
+            'storm chaser', 'community college professor', 'funeral director', 'auction-house appraiser',
+            'submarine mechanic', 'disaster relief coordinator', 'bounty hunter', 'houseboat bookseller',
+            'night-shift radio host', 'trial consultant', 'former teen idol'
+          ],
+          [
+            'whistleblower accountant', 'rogue botanist', 'burned-out therapist', 'hotel heir', 'divorce mediator',
+            'pawn shop owner', 'freelance translator', 'stolen art broker', 'public defender', 'travel nurse',
+            'ballroom instructor', 'urban beekeeper', 'election strategist', 'cemetery groundskeeper', 'marine biologist'
+          ],
+          [
+            'field producer', 'back-alley surgeon', 'mountain rescue ranger', 'copyright lawyer', 'luxury train steward',
+            'demolition foreman', 'church organist', 'crime scene cleaner', 'high school principal', 'offshore welder',
+            'suspended detective', 'vintage toy restorer', 'professional mourner', 'weather anchor', 'board game designer'
+          ],
+          [
+            'reality show editor', 'horse trainer', 'cat burglar', 'aquarium curator', 'forensic linguist',
+            'state senator\'s aide', 'ruined socialite', 'court stenographer', 'elite dog handler', 'ship captain',
+            'mall magician', 'family therapist', 'bridge inspector', 'prison librarian', 'tabloid reporter'
+          ],
+          [
+            'satellite engineer', 'theme park designer', 'widowed florist', 'estate sale scout', 'private investigator',
+            'ghost tour guide', 'rehab counselor', 'chess hustler', 'military historian', 'casino pit boss',
+            'fire lookout', 'stunt coordinator', 'political speechwriter', 'perfumer', 'documentary editor'
+          ],
+          [
+            'yacht broker', 'glassblower', 'escape room owner', 'opera understudy', 'seafloor cartographer',
+            'startup founder on the brink', 'park ranger', 'cybercrime analyst', 'reformed cult recruiter',
+            'taxidermist', 'rare book thief', 'language coach', 'exorcist-for-hire', 'district attorney', 'tattoo artist'
+          ],
+          [
+            'cold case blogger', 'royal bodyguard', 'antique dealer', 'court-appointed guardian', 'competitive fencer',
+            'black market medic', 'ice road trucker', 'relationship columnist', 'sports agent', 'wine importer',
+            'disbarred lawyer', 'war photographer', 'funeral singer', 'mayoral candidate', 'museum thief'
+          ],
+          [
+            'harbor pilot', 'fixer for a pop star', 'retired spy', 'disaster insurance adjuster', 'puppet maker',
+            'deep-sea miner', 'arson investigator', 'small-town pastor', 'architectural drafter', 'runaway bride turned planner',
+            'theme hotel concierge', 'air traffic controller', 'language preservation activist', 'grift instructor', 'bike courier'
+          ],
+          [
+            'union organizer', 'survival instructor', 'court magician', 'family office accountant', 'luxury matchmaker',
+            'screenwriting teacher', 'artifact smuggler', 'street muralist', 'hostage negotiator', 'palace librarian',
+            'ethical hacker', 'boatyard owner', 'travel vlogger in hiding', 'secretary to a dangerous family', 'seasonal lighthouse keeper'
+          ]
         ],
         adjective: [
-          'ruthless', 'grieving', 'magnetic', 'evasive', 'tender', 'paranoid',
-          'restless', 'charismatic', 'reckless', 'methodical', 'secretive', 'burned-out'
+          [
+            'ruthless', 'grieving', 'magnetic', 'evasive', 'tender', 'paranoid',
+            'restless', 'charismatic', 'reckless', 'methodical', 'secretive', 'burned-out'
+          ],
+          [
+            'superstitious', 'obsessive', 'wry', 'brilliant', 'unforgiving', 'hopeful',
+            'guarded', 'volatile', 'merciful', 'elegant', 'blunt', 'haunted'
+          ],
+          [
+            'impatient', 'calculating', 'joyless', 'ferocious', 'wistful', 'abrasive',
+            'disciplined', 'vain', 'awkward', 'soft-spoken', 'devout', 'bitter'
+          ],
+          [
+            'cynical', 'playful', 'hypervigilant', 'generous', 'isolated', 'suspicious',
+            'radiant', 'fatalistic', 'driven', 'fragile', 'acid-tongued', 'stoic'
+          ],
+          [
+            'showy', 'withholding', 'forgiving', 'pious', 'self-destructive', 'delicate',
+            'resourceful', 'resentful', 'careful', 'hungry', 'aloof', 'possessive'
+          ],
+          [
+            'overprepared', 'defiant', 'tactical', 'lonely', 'wounded', 'flirtatious',
+            'sharp-witted', 'fatalistic', 'idealistic', 'mercenary', 'luminous', 'grim'
+          ],
+          [
+            'guilty', 'mischievous', 'severe', 'euphoric', 'repressed', 'vengeful',
+            'fervent', 'practical', 'dreamy', 'caustic', 'evasive', 'dogged'
+          ],
+          [
+            'romantic', 'shameless', 'discouraged', 'incisive', 'unstable', 'fierce',
+            'measured', 'terrified', 'earnest', 'coiled', 'ornery', 'numb'
+          ],
+          [
+            'volatile', 'dutiful', 'mournful', 'improvisational', 'vain', 'humble',
+            'disillusioned', 'predatory', 'watchful', 'self-mocking', 'protective', 'unruly'
+          ],
+          [
+            'serene', 'combative', 'grandiose', 'hesitant', 'relentless', 'bewitched',
+            'streetwise', 'neurotic', 'seductive', 'hollow', 'daring', 'brittle'
+          ]
         ],
         goal: [
-          'clear their name', 'win back an estranged sibling', 'pull off one last clean job', 'protect a dangerous secret',
-          'earn a place they were denied', 'save a failing family business', 'undo a public humiliation',
-          'expose the person pulling the strings', 'escape the role everyone assigned them', 'steal one impossible victory'
+          [
+            'clear their name', 'win back an estranged sibling', 'pull off one last clean job', 'protect a dangerous secret',
+            'earn a place they were denied', 'save a failing family business', 'undo a public humiliation',
+            'expose the person pulling the strings', 'escape the role everyone assigned them', 'steal one impossible victory'
+          ],
+          [
+            'bury a scandal before sunrise', 'reclaim custody of a child', 'find the missing witness', 'inherit a house without selling their soul',
+            'survive a political betrayal', 'make one honest confession', 'break a family curse', 'solve a decades-old disappearance',
+            'stop a wedding', 'rescue the person they once abandoned'
+          ],
+          [
+            'destroy the ledger that can ruin them', 'keep a promise to a dead friend', 'win an election they should lose',
+            'smuggle someone to safety', 'expose a counterfeit saint', 'find proof of sabotage', 'pay back an impossible debt',
+            'avoid becoming exactly like a parent', 'undo the theft that made them rich', 'outlast a blackmailer'
+          ],
+          [
+            'survive one final season in public view', 'build a life under a false name', 'save their town from a quiet collapse',
+            'convince the wrong person to trust them', 'bring down a protected predator', 'get home before their lie catches up',
+            'prevent a murder they can already see coming', 'earn forgiveness they do not deserve', 'keep their crew from splintering', 'steal evidence from an ally'
+          ],
+          [
+            'take back the company they built', 'prove a miracle was staged', 'save a sibling from prison', 'break into a private archive',
+            'survive an inheritance war', 'stop their own wedding', 'outmaneuver a former mentor', 'free a hostage without bloodshed',
+            'recover the recording that can destroy a dynasty', 'make it through one night without being recognized'
+          ],
+          [
+            'win custody of a family secret', 'pull a confession out of a coward', 'keep a witness alive long enough to speak',
+            'get out of town with one clean conscience', 'return a stolen heirloom', 'discredit a beloved fraud', 'save a doomed neighborhood',
+            'uncover who is selling them out', 'stop an empire from swallowing their home', 'protect the person who hates them'
+          ],
+          [
+            'find the body before the press does', 'destroy the tape everyone wants', 'earn enough money to disappear',
+            'force the truth into daylight', 'reverse a terrible bargain', 'leave the church they built their life around',
+            'beat a rival to a hidden vault', 'rescue a child marked for someone else\'s war', 'survive a week under surveillance', 'make one impossible rescue'
+          ],
+          [
+            'get the last word against a dead enemy', 'stop a citywide panic', 'keep their lover from making the same mistake',
+            'protect a fragile peace', 'drag a protected name into court', 'become irreplaceable before dawn', 'find who forged the evidence',
+            'get elected without becoming hollow', 'save their ship from mutiny', 'prove the haunting is real'
+          ],
+          [
+            'break someone out of protective custody', 'turn a public failure into leverage', 'keep a family member off the front page',
+            'rescue their reputation from a lie', 'find the hidden room no one talks about', 'win back control of their own story',
+            'make amends before the funeral', 'stop a land grab in time', 'preserve the one witness they can trust', 'reach the border before the rumor does'
+          ],
+          [
+            'rebuild a shattered alliance', 'cross a city without being caught', 'pull off a perfect substitution', 'unmask the person imitating them',
+            'save their protégé from becoming dangerous', 'walk away from the family business alive', 'inherit power without being owned by it',
+            'smuggle the truth into the room', 'find the missing map before an execution', 'be the first to forgive and the last to bend'
+          ]
         ]
+      };
+
+      var SUGGESTIONS = {
+        name: flattenBatches(SUGGESTION_BATCHES.name),
+        role: flattenBatches(SUGGESTION_BATCHES.role),
+        adjective: flattenBatches(SUGGESTION_BATCHES.adjective),
+        goal: flattenBatches(SUGGESTION_BATCHES.goal)
       };
 
       var GOAL_COSTS = [
