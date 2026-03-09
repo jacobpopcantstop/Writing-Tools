@@ -5,6 +5,7 @@ A browser-based suite of writing apps that now operates as one connected local s
 ## Apps
 
 - `index.html`: suite hub, recent sessions, export reliability, recovery snapshots
+- `CharacterForge.html`: character creation from core traits, goal remixing, and story-ready variants
 - `Synax.html`: serendipity + concept generation
 - `ThisButThat.html`: twist-premise generation
 - `Joterie.html`: short-burst ideation and harvests

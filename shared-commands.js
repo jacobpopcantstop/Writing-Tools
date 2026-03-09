@@ -16,6 +16,7 @@
       { id: 'open-recovery-hub', title: 'Open Recovery Snapshots Hub', desc: 'Jump to the index snapshot recovery panel', keys: 'recovery snapshots backups restore hub', run: function () { openTool('index.html#recovery-grid'); } },
       { id: 'open-export-reliability', title: 'Open Export Reliability Hub', desc: 'Jump to the index export telemetry panel', keys: 'export reliability gmail email telemetry hub', run: function () { openTool('index.html#export-health-list'); } },
       { id: 'open-synax', title: 'Open Synax', desc: 'Concept and serendipity ideation', keys: 'idea concept synax', run: function () { openTool('Synax.html'); } },
+      { id: 'open-characterforge', title: 'Open Character Forge', desc: 'Character creation and remixing', keys: 'character forge people role goal', run: function () { openTool('CharacterForge.html'); } },
       { id: 'open-thisbutthat', title: 'Open ThisButThat', desc: 'Twist-based premise generation', keys: 'twist premise thisbutthat', run: function () { openTool('ThisButThat.html'); } },
       { id: 'open-beathive', title: 'Open BeatHive', desc: 'Structure and beat mapping', keys: 'structure map beathive', run: function () { openTool('BeatHive.html'); } },
       { id: 'open-withernaught', title: 'Open WitherNaught', desc: 'Fast drafting under pressure', keys: 'draft withernaught', run: function () { openTool('WitherNaught.html'); } },

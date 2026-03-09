@@ -1,0 +1,1647 @@
+<!DOCTYPE html>
+<html lang="en" data-wt-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Character Forge | Writing Tools</title>
+  <meta name="description" content="Create distinctive, story-ready characters for your writing projects.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230e1016'/><path d='M20 74 L50 18 L80 74' stroke='%23ff7a59' stroke-width='7' fill='none'/><circle cx='50' cy='52' r='10' fill='%23ffd166'/><path d='M36 76h28' stroke='%23ffd166' stroke-width='6' stroke-linecap='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Fraunces:opsz,wght@9..144,500;9..144,700&family=IBM+Plex+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@0.263.1"></script>
+  <script src="shared-context.js"></script>
+  <script src="shared-pwa.js"></script>
+  <script src="shared-recent-sessions.js"></script>
+  <script src="shared-commands.js"></script>
+  <script src="shared-command-palette.js"></script>
+  <style>
+    :root {
+      --bg: #0d1017;
+      --bg-soft: #161a24;
+      --panel: rgba(17, 21, 31, 0.9);
+      --panel-strong: rgba(12, 16, 24, 0.96);
+      --text: #f5f7fb;
+      --muted: #9da8ba;
+      --line: rgba(255, 255, 255, 0.12);
+      --accent: #ff7a59;
+      --accent-2: #ffd166;
+      --accent-3: #7ae3c3;
+      --danger: #ff8d8d;
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
+    }
+
+    [data-wt-theme="light"] {
+      --bg: #f8f2e8;
+      --bg-soft: #efe5d5;
+      --panel: rgba(255, 251, 245, 0.92);
+      --panel-strong: rgba(255, 255, 255, 0.96);
+      --text: #181513;
+      --muted: #635d55;
+      --line: rgba(72, 50, 32, 0.14);
+      --accent: #cf5f42;
+      --accent-2: #d7a116;
+      --accent-3: #207c66;
+      --danger: #bb5656;
+      --shadow: 0 24px 80px rgba(83, 60, 35, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      min-height: 100dvh;
+      margin: 0;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      font-family: "Space Grotesk", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(80vw 50vh at 100% 0%, color-mix(in srgb, var(--accent) 22%, transparent), transparent),
+        radial-gradient(70vw 45vh at 0% 100%, color-mix(in srgb, var(--accent-2) 18%, transparent), transparent),
+        linear-gradient(180deg, color-mix(in srgb, var(--bg) 82%, #000 18%), var(--bg));
+    }
+
+    a { color: inherit; }
+    button, input {
+      font: inherit;
+    }
+
+    .shell {
+      width: min(1240px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 24px 0 72px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+
+    .brandline {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-size: 12px;
+      font-family: "IBM Plex Mono", monospace;
+    }
+
+    .brand-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 55%, transparent);
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .ghost-link,
+    .theme-btn,
+    .btn,
+    .mini-btn {
+      border: 1px solid var(--line);
+      color: var(--text);
+      background: color-mix(in srgb, var(--panel-strong) 88%, transparent);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
+    }
+
+    .ghost-link,
+    .theme-btn {
+      min-height: 42px;
+      padding: 0 14px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .theme-btn { width: 42px; padding: 0; }
+
+    .ghost-link:hover,
+    .theme-btn:hover,
+    .btn:hover,
+    .mini-btn:hover {
+      transform: translateY(-1px);
+      background: color-mix(in srgb, var(--bg-soft) 84%, transparent);
+      border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.7fr);
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .hero-card,
+    .panel,
+    .card,
+    .saved-card {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    .hero-card {
+      padding: 26px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-card::after {
+      content: "";
+      position: absolute;
+      inset: auto -40px -60px auto;
+      width: 220px;
+      height: 220px;
+      border-radius: 999px;
+      background: radial-gradient(circle, color-mix(in srgb, var(--accent-2) 32%, transparent), transparent 70%);
+      pointer-events: none;
+    }
+
+    .eyebrow,
+    .section-label,
+    .metric-label,
+    .card-tag,
+    .mini-label {
+      font-family: "IBM Plex Mono", monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-size: 11px;
+    }
+
+    .eyebrow {
+      color: var(--accent-2);
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-family: "Fraunces", serif;
+      font-size: clamp(2.7rem, 5vw, 4.7rem);
+      line-height: 0.96;
+      letter-spacing: -0.04em;
+      max-width: 9ch;
+    }
+
+    .hero-copy {
+      max-width: 54ch;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.55;
+      margin-bottom: 20px;
+    }
+
+    .hero-pills,
+    .chip-row,
+    .suggestions,
+    .flavor-row,
+    .status-row,
+    .card-meta,
+    .card-actions,
+    .saved-actions,
+    .recovery-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .hero-pill,
+    .chip,
+    .status-pill,
+    .flavor-chip {
+      border-radius: 999px;
+      border: 1px solid color-mix(in srgb, var(--line) 88%, transparent);
+      padding: 8px 12px;
+      font-size: 12px;
+      color: var(--muted);
+      background: color-mix(in srgb, var(--bg-soft) 72%, transparent);
+    }
+
+    .hero-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .metric {
+      padding: 18px;
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      background: linear-gradient(145deg, color-mix(in srgb, var(--panel-strong) 92%, transparent), color-mix(in srgb, var(--bg-soft) 88%, transparent));
+    }
+
+    .metric-label {
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .metric-value {
+      font-family: "Fraunces", serif;
+      font-size: 2rem;
+      line-height: 1;
+      letter-spacing: -0.04em;
+      margin-bottom: 8px;
+    }
+
+    .metric-note {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      padding: 22px;
+      position: sticky;
+      top: 18px;
+    }
+
+    .section-label {
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      margin: 0 0 6px;
+      font-size: 1.6rem;
+      font-family: "Fraunces", serif;
+      letter-spacing: -0.03em;
+    }
+
+    .section-copy {
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .field-grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .field {
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--bg-soft) 72%, transparent);
+      border-radius: 18px;
+      padding: 14px;
+    }
+
+    .field-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .field label {
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .mini-btn {
+      min-height: 34px;
+      padding: 0 10px;
+      font-size: 11px;
+      font-family: "IBM Plex Mono", monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .field input {
+      width: 100%;
+      min-height: 48px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel-strong) 92%, transparent);
+      color: var(--text);
+      padding: 0 14px;
+      outline: none;
+    }
+
+    .field input::placeholder {
+      color: color-mix(in srgb, var(--muted) 84%, transparent);
+    }
+
+    .suggestions {
+      margin-top: 10px;
+    }
+
+    .chip,
+    .flavor-chip {
+      cursor: pointer;
+      border: 1px solid var(--line);
+      color: var(--text);
+      background: color-mix(in srgb, var(--panel-strong) 88%, transparent);
+      transition: transform 160ms ease, border-color 160ms ease, color 160ms ease;
+    }
+
+    .chip:hover,
+    .flavor-chip:hover {
+      transform: translateY(-1px);
+      border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+    }
+
+    .flavor-chip.active {
+      border-color: color-mix(in srgb, var(--accent-3) 50%, var(--line));
+      color: var(--accent-3);
+    }
+
+    .btn-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .btn {
+      min-height: 48px;
+      padding: 0 16px;
+      font-weight: 700;
+    }
+
+    .btn.primary {
+      background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 88%, #fff 12%), color-mix(in srgb, var(--accent-2) 70%, #000 30%));
+      color: #140f0d;
+      border-color: transparent;
+    }
+
+    .btn.secondary {
+      background: color-mix(in srgb, var(--panel-strong) 92%, transparent);
+    }
+
+    .status-row {
+      margin-top: 16px;
+    }
+
+    .status-pill strong {
+      color: var(--text);
+    }
+
+    .results-stack {
+      display: grid;
+      gap: 18px;
+    }
+
+    .results-header,
+    .saved-header,
+    .recovery-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .results-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .results-grid,
+    .saved-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .card,
+    .saved-card {
+      padding: 18px;
+      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+    }
+
+    .card.selected,
+    .saved-card.selected {
+      border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+      background: color-mix(in srgb, var(--panel) 86%, var(--accent) 14%);
+      transform: translateY(-2px);
+    }
+
+    .card-topline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .card-tag {
+      color: var(--accent-2);
+    }
+
+    .card-title {
+      margin: 0;
+      font-size: 1.7rem;
+      line-height: 1;
+      letter-spacing: -0.04em;
+      font-family: "Fraunces", serif;
+    }
+
+    .card-role {
+      margin-top: 6px;
+      color: var(--accent-3);
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .card-meta {
+      margin: 14px 0;
+    }
+
+    .mini-label {
+      color: var(--muted);
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .card-block {
+      margin-bottom: 14px;
+    }
+
+    .card-block p,
+    .saved-card p,
+    .recovery-copy {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .card-block strong,
+    .saved-card strong {
+      color: var(--text);
+    }
+
+    .card-actions .mini-btn,
+    .saved-actions .mini-btn {
+      flex: 1 1 140px;
+    }
+
+    .empty {
+      padding: 28px;
+      border-radius: 22px;
+      border: 1px dashed color-mix(in srgb, var(--line) 92%, transparent);
+      color: var(--muted);
+      text-align: center;
+      background: color-mix(in srgb, var(--bg-soft) 64%, transparent);
+    }
+
+    .saved-card {
+      background: color-mix(in srgb, var(--panel) 88%, var(--accent-2) 12%);
+    }
+
+    .recovery-panel {
+      padding: 20px;
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel-strong) 88%, transparent);
+    }
+
+    .recovery-actions {
+      margin-top: 16px;
+    }
+
+    .mini-btn.danger {
+      color: var(--danger);
+      border-color: color-mix(in srgb, var(--danger) 32%, var(--line));
+    }
+
+    .footer-note {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    @media (max-width: 1080px) {
+      .hero,
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .panel {
+        position: static;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .shell {
+        width: min(100% - 20px, 100%);
+        padding-top: 18px;
+      }
+
+      .hero-card,
+      .panel,
+      .card,
+      .saved-card,
+      .recovery-panel {
+        border-radius: 20px;
+      }
+
+      .hero-metrics,
+      .results-grid,
+      .saved-grid,
+      .btn-row {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar,
+      .results-header,
+      .saved-header,
+      .recovery-head {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .top-actions,
+      .results-toolbar {
+        justify-content: flex-start;
+      }
+
+      .ghost-link,
+      .theme-btn,
+      .btn,
+      .mini-btn,
+      .chip,
+      .flavor-chip {
+        min-height: 44px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brandline">
+        <span class="brand-dot"></span>
+        Character Forge
+      </div>
+      <div class="top-actions">
+        <a class="ghost-link" href="index.html" target="_blank" rel="noopener">Suite Home</a>
+        <button id="theme-toggle" class="theme-btn" type="button" aria-label="Toggle theme">
+          <i data-lucide="sun-medium" style="width:18px;height:18px"></i>
+        </button>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="hero-card">
+        <div class="eyebrow">Writing Tools Character Studio</div>
+        <h1>Build characters with a spine.</h1>
+        <p class="hero-copy">Pick a name, a job or type of person, an adjective, and a goal. Character Forge remixes those anchors into several story-ready variants with a hook, a likely tension, and a contradiction you can actually write from.</p>
+        <div class="hero-pills">
+          <span class="hero-pill">Type or pick</span>
+          <span class="hero-pill">Batch variants</span>
+          <span class="hero-pill">Local-first favorites</span>
+          <span class="hero-pill">Courius handoff</span>
+        </div>
+      </div>
+      <div class="hero-metrics">
+        <div class="metric">
+          <div class="metric-label">Variants</div>
+          <div id="metric-batch" class="metric-value">0</div>
+          <div class="metric-note">Current candidates in the active batch.</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Favorites</div>
+          <div id="metric-favorites" class="metric-value">0</div>
+          <div class="metric-note">Saved characters kept in local storage.</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Snapshots</div>
+          <div id="metric-snapshots" class="metric-value">0</div>
+          <div class="metric-note">Recovery points before destructive changes.</div>
+        </div>
+      </div>
+    </section>
+
+    <main class="workspace">
+      <aside class="panel" aria-label="Character inputs">
+        <div class="section-label">Input Builder</div>
+        <h2 class="section-title">Set the core ingredients</h2>
+        <p class="section-copy">Use all four fields for a tight brief, or leave any of them blank and let the tool fill the gap from curated prompts.</p>
+
+        <div class="field-grid">
+          <section class="field">
+            <div class="field-head">
+              <label for="field-name">Name</label>
+              <button class="mini-btn" type="button" data-randomize-field="name">Shuffle</button>
+            </div>
+            <input id="field-name" data-field="name" type="text" placeholder="Iris Vale, Mateo, June Holloway..." autocomplete="off">
+            <div id="suggestions-name" class="suggestions"></div>
+          </section>
+
+          <section class="field">
+            <div class="field-head">
+              <label for="field-role">Job or type of person</label>
+              <button class="mini-btn" type="button" data-randomize-field="role">Shuffle</button>
+            </div>
+            <input id="field-role" data-field="role" type="text" placeholder="disgraced archivist, stunt lawyer, runaway prince..." autocomplete="off">
+            <div id="suggestions-role" class="suggestions"></div>
+          </section>
+
+          <section class="field">
+            <div class="field-head">
+              <label for="field-adjective">Descriptive adjective</label>
+              <button class="mini-btn" type="button" data-randomize-field="adjective">Shuffle</button>
+            </div>
+            <input id="field-adjective" data-field="adjective" type="text" placeholder="ruthless, grieving, magnetic, evasive..." autocomplete="off">
+            <div id="suggestions-adjective" class="suggestions"></div>
+          </section>
+
+          <section class="field">
+            <div class="field-head">
+              <label for="field-goal">Goal</label>
+              <button class="mini-btn" type="button" data-randomize-field="goal">Shuffle</button>
+            </div>
+            <input id="field-goal" data-field="goal" type="text" placeholder="win back her sister, clear his name, steal one perfect night..." autocomplete="off">
+            <div id="suggestions-goal" class="suggestions"></div>
+          </section>
+        </div>
+
+        <div style="margin-top:16px;">
+          <span class="mini-label">Flavor Tags</span>
+          <div id="flavor-row" class="flavor-row"></div>
+        </div>
+
+        <div class="btn-row">
+          <button id="generate-btn" class="btn primary" type="button">Generate 5 Variants</button>
+          <button id="randomize-all-btn" class="btn secondary" type="button">Randomize All Inputs</button>
+          <button id="copy-batch-btn" class="btn secondary" type="button">Copy Current Batch</button>
+          <button id="clear-draft-btn" class="btn secondary" type="button">Clear Draft</button>
+        </div>
+
+        <div class="status-row">
+          <span class="status-pill">Selected: <strong id="selected-name">None</strong></span>
+          <span class="status-pill">Flavor: <strong id="selected-flavor">General</strong></span>
+        </div>
+        <p id="status-copy" class="footer-note">Generate a batch, pick the strongest card, then save or hand it off into the rest of the suite.</p>
+      </aside>
+
+      <section class="results-stack" aria-label="Character results">
+        <section class="panel" style="position:static;">
+          <div class="results-header">
+            <div>
+              <div class="section-label">Candidate Batch</div>
+              <h2 class="section-title">Story-ready character variants</h2>
+              <p class="section-copy">Each card keeps your core ingredients intact while changing the narrative pressure around them.</p>
+            </div>
+            <div class="results-toolbar">
+              <button id="download-batch-btn" class="mini-btn" type="button">Download Batch</button>
+              <button id="reroll-selected-btn" class="mini-btn" type="button">Reroll Selected</button>
+              <button id="send-selected-btn" class="mini-btn" type="button">Send to Courius</button>
+            </div>
+          </div>
+          <div id="results-grid" class="results-grid"></div>
+        </section>
+
+        <section class="panel" style="position:static;">
+          <div class="saved-header">
+            <div>
+              <div class="section-label">Favorites</div>
+              <h2 class="section-title">Keep the ones worth writing</h2>
+              <p class="section-copy">Favorites persist locally and show up in the suite’s recent-session hub.</p>
+            </div>
+            <div class="results-toolbar">
+              <button id="copy-favorites-btn" class="mini-btn" type="button">Copy Favorites</button>
+              <button id="clear-favorites-btn" class="mini-btn danger" type="button">Clear Favorites</button>
+            </div>
+          </div>
+          <div id="favorites-grid" class="saved-grid"></div>
+        </section>
+
+        <section class="recovery-panel" aria-label="Recovery snapshots">
+          <div class="recovery-head">
+            <div>
+              <div class="section-label">Recovery</div>
+              <h2 class="section-title">Snapshots before resets</h2>
+              <p class="recovery-copy">The tool keeps a short snapshot history before destructive changes so you can restore a batch you actually liked.</p>
+            </div>
+            <div class="recovery-actions">
+              <button id="restore-snapshot-btn" class="mini-btn" type="button">Restore Latest</button>
+              <button id="clear-snapshots-btn" class="mini-btn danger" type="button">Clear Snapshots</button>
+            </div>
+          </div>
+          <div id="snapshot-summary" class="footer-note"></div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      var STORAGE_KEY = 'writingtools_characterforge_state_v1';
+      var REVISION_KEY = 'writingtools_characterforge_revision_v1';
+      var SNAPSHOTS_KEY = 'writingtools_characterforge_snapshots_v1';
+      var UPDATED_AT_KEY = 'writingtools_characterforge_updated_at';
+      var THEME_KEY = 'writingtools_theme';
+      var MAX_SNAPSHOTS = 12;
+      var BATCH_SIZE = 5;
+
+      var FIELD_ORDER = ['name', 'role', 'adjective', 'goal'];
+      var FLAVOR_TAGS = ['General', 'Noir', 'Romance', 'Fantasy', 'Thriller', 'Comedy', 'Sci-Fi', 'Literary'];
+
+      var SUGGESTIONS = {
+        name: [
+          'Iris Vale', 'Mateo Flint', 'June Holloway', 'Cass Mercer', 'Nadia Bloom', 'Elias Wren',
+          'Mira Sol', 'Tobin Graves', 'Anika Cross', 'Levi March', 'Sana Voss', 'Dorian Pike'
+        ],
+        role: [
+          'disgraced archivist', 'small-town mayor', 'runaway prince', 'debt collector', 'private chef',
+          'retired getaway driver', 'museum conservator', 'ghostwriter', 'cult escapee', 'crisis negotiator',
+          'wedding planner', 'salvage diver', 'paramedic', 'conspiracy podcaster', 'night janitor'
+        ],
+        adjective: [
+          'ruthless', 'grieving', 'magnetic', 'evasive', 'tender', 'paranoid',
+          'restless', 'charismatic', 'reckless', 'methodical', 'secretive', 'burned-out'
+        ],
+        goal: [
+          'clear their name', 'win back an estranged sibling', 'pull off one last clean job', 'protect a dangerous secret',
+          'earn a place they were denied', 'save a failing family business', 'undo a public humiliation',
+          'expose the person pulling the strings', 'escape the role everyone assigned them', 'steal one impossible victory'
+        ]
+      };
+
+      var GOAL_COSTS = [
+        'the proof they need is in the hands of someone they once betrayed',
+        'succeeding would destroy the one relationship they still trust',
+        'the version of the truth they need is also the one they fear most',
+        'their plan only works if they become the kind of person they hate',
+        'every step forward puts an innocent bystander under more pressure',
+        'the easiest route would confirm the rumor that ruined them before'
+      ];
+
+      var CONTRADICTIONS = [
+        'projects total control but privately improvises in panic',
+        'is known for mercy yet keeps a vindictive ledger',
+        'talks like a cynic but still arranges impossible acts of care',
+        'craves invisibility while choosing the loudest possible tactics',
+        'reads everyone else cleanly but misreads their own motives',
+        'wants intimacy but turns every confession into a performance',
+        'sells certainty while quietly living on borrowed faith',
+        'acts invincible but organizes life around one old wound'
+      ];
+
+      var INTERNAL_TENSIONS = [
+        'Their best instinct and their stated goal keep pulling in opposite directions.',
+        'They can get what they want only by betraying the image they built to survive.',
+        'The quality that makes them effective is also the quality most likely to isolate them.',
+        'They keep mistaking motion for progress because stopping would force a real confession.',
+        'They know exactly what the right choice is and still resent having to become that person.'
+      ];
+
+      var VOICE_NOTES = [
+        'speaks in crisp verdicts until emotion slips through',
+        'uses humor as misdirection whenever the stakes turn personal',
+        'makes every sentence sound like a negotiated ceasefire',
+        'cuts to the truth too quickly for polite rooms',
+        'narrates chaos with eerie calm'
+      ];
+
+      var HOOK_TEMPLATES = [
+        function (seed, flavor, cost) {
+          return seed.name + ', a ' + seed.adjective + ' ' + seed.role + ', wants to ' + seed.goal + ', but ' + cost + '.';
+        },
+        function (seed, flavor, cost) {
+          return 'To ' + seed.goal + ', ' + seed.name + ' has to weaponize life as a ' + seed.role + ', and that means ' + cost + '.';
+        },
+        function (seed, flavor, cost) {
+          return 'Everyone thinks ' + seed.name + ' is just a ' + seed.role + ', until their ' + seed.adjective + ' streak turns the pursuit to ' + seed.goal + ' into a public problem.';
+        },
+        function (seed, flavor, cost) {
+          return 'In a ' + flavor.toLowerCase() + '-leaning story, ' + seed.name + ' chases a chance to ' + seed.goal + ' while their life as a ' + seed.role + ' keeps reopening the same wound.';
+        }
+      ];
+
+      var state = loadState();
+
+      function nowIso() {
+        return new Date().toISOString();
+      }
+
+      function safeId() {
+        if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+          return window.crypto.randomUUID();
+        }
+        return 'cfg_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+      }
+
+      function sample(list, used) {
+        var pool = Array.isArray(list) ? list.slice() : [];
+        if (!pool.length) return '';
+        var denied = used && typeof used === 'object' ? used : null;
+        if (denied) {
+          var filtered = pool.filter(function (item) { return !denied[item]; });
+          if (filtered.length) pool = filtered;
+        }
+        return pool[Math.floor(Math.random() * pool.length)];
+      }
+
+      function clean(value) {
+        return String(value || '').replace(/\s+/g, ' ').trim();
+      }
+
+      function titleCase(value) {
+        return clean(value).replace(/\b([a-z])/g, function (_, ch) {
+          return ch.toUpperCase();
+        });
+      }
+
+      function toSentence(value) {
+        var text = clean(value);
+        if (!text) return '';
+        return text.charAt(0).toUpperCase() + text.slice(1);
+      }
+
+      function normalizeDraft(input) {
+        var base = input && typeof input === 'object' ? input : {};
+        return {
+          name: clean(base.name),
+          role: clean(base.role),
+          adjective: clean(base.adjective),
+          goal: clean(base.goal),
+          flavor: FLAVOR_TAGS.indexOf(String(base.flavor || '')) >= 0 ? String(base.flavor) : 'General'
+        };
+      }
+
+      function normalizeCard(input) {
+        var base = input && typeof input === 'object' ? input : {};
+        return {
+          id: clean(base.id) || safeId(),
+          name: titleCase(base.name),
+          role: clean(base.role),
+          adjective: clean(base.adjective),
+          goal: clean(base.goal),
+          hook: clean(base.hook),
+          conflict: clean(base.conflict),
+          contradiction: clean(base.contradiction),
+          voice: clean(base.voice),
+          flavor: FLAVOR_TAGS.indexOf(String(base.flavor || '')) >= 0 ? String(base.flavor) : 'General',
+          sourceInputs: normalizeDraft(base.sourceInputs),
+          createdAt: clean(base.createdAt) || nowIso(),
+          isFavorite: !!base.isFavorite
+        };
+      }
+
+      function normalizeSnapshot(input) {
+        var base = input && typeof input === 'object' ? input : {};
+        return {
+          id: clean(base.id) || safeId(),
+          label: clean(base.label) || 'snapshot',
+          createdAt: clean(base.createdAt) || nowIso(),
+          state: normalizeState(base.state)
+        };
+      }
+
+      function normalizeState(input) {
+        var base = input && typeof input === 'object' ? input : {};
+        var batch = Array.isArray(base.batch) ? base.batch.map(normalizeCard) : [];
+        var favorites = Array.isArray(base.favorites) ? base.favorites.map(function (item) {
+          var card = normalizeCard(item);
+          card.isFavorite = true;
+          return card;
+        }) : [];
+        var snapshots = Array.isArray(base.snapshots) ? base.snapshots.map(normalizeSnapshot).slice(0, MAX_SNAPSHOTS) : [];
+        var selectedId = clean(base.selectedId);
+        if (selectedId && !batch.some(function (card) { return card.id === selectedId; }) && !favorites.some(function (card) { return card.id === selectedId; })) {
+          selectedId = batch[0] ? batch[0].id : '';
+        }
+        return {
+          draft: normalizeDraft(base.draft),
+          batch: batch,
+          favorites: favorites,
+          selectedId: selectedId || (batch[0] ? batch[0].id : ''),
+          snapshots: snapshots,
+          updatedAt: clean(base.updatedAt) || '',
+          lastAction: clean(base.lastAction) || ''
+        };
+      }
+
+      function defaultState() {
+        return normalizeState({
+          draft: {
+            name: '',
+            role: '',
+            adjective: '',
+            goal: '',
+            flavor: 'General'
+          },
+          batch: [],
+          favorites: [],
+          selectedId: '',
+          snapshots: [],
+          updatedAt: '',
+          lastAction: ''
+        });
+      }
+
+      function loadState() {
+        try {
+          var raw = localStorage.getItem(STORAGE_KEY);
+          return raw ? normalizeState(JSON.parse(raw)) : defaultState();
+        } catch (_) {
+          return defaultState();
+        }
+      }
+
+      function loadSnapshots() {
+        try {
+          var raw = localStorage.getItem(SNAPSHOTS_KEY);
+          var parsed = raw ? JSON.parse(raw) : [];
+          return Array.isArray(parsed) ? parsed.map(normalizeSnapshot).slice(0, MAX_SNAPSHOTS) : [];
+        } catch (_) {
+          return [];
+        }
+      }
+
+      function syncSnapshotsFromStorage() {
+        state.snapshots = loadSnapshots();
+      }
+
+      function persistState(nextState, actionLabel) {
+        state = normalizeState(nextState);
+        state.updatedAt = nowIso();
+        state.lastAction = clean(actionLabel) || state.lastAction;
+        var nextRevision = 1;
+        try {
+          var currentRevision = parseInt(localStorage.getItem(REVISION_KEY) || '0', 10) || 0;
+          nextRevision = currentRevision + 1;
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          localStorage.setItem(REVISION_KEY, String(nextRevision));
+          localStorage.setItem(UPDATED_AT_KEY, String(Date.now()));
+        } catch (_) {}
+        return state;
+      }
+
+      function saveSnapshot(label) {
+        syncSnapshotsFromStorage();
+        if (!state.batch.length && !state.favorites.length && !FIELD_ORDER.some(function (field) { return state.draft[field]; })) {
+          return;
+        }
+        var snapshot = normalizeSnapshot({
+          label: label,
+          createdAt: nowIso(),
+          state: state
+        });
+        var nextSnapshots = [snapshot].concat(state.snapshots).slice(0, MAX_SNAPSHOTS);
+        state.snapshots = nextSnapshots;
+        try {
+          localStorage.setItem(SNAPSHOTS_KEY, JSON.stringify(nextSnapshots));
+        } catch (_) {}
+      }
+
+      function setTheme(theme) {
+        var next = theme === 'light' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-wt-theme', next);
+        try { localStorage.setItem(THEME_KEY, next); } catch (_) {}
+      }
+
+      function toggleTheme() {
+        var current = document.documentElement.getAttribute('data-wt-theme') || 'dark';
+        setTheme(current === 'dark' ? 'light' : 'dark');
+      }
+
+      function hydrateTheme() {
+        try {
+          setTheme(localStorage.getItem(THEME_KEY) || 'dark');
+        } catch (_) {
+          setTheme('dark');
+        }
+      }
+
+      function inferContext(card) {
+        return {
+          topic: card.name + ' | ' + card.role,
+          tone: card.adjective,
+          audience: card.flavor === 'General' ? '' : card.flavor + ' fiction',
+          constraints: 'Goal: ' + card.goal + ' | Conflict: ' + card.conflict,
+          lastTool: 'CharacterForge'
+        };
+      }
+
+      function escapeHtml(value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function buildCardHtml(card) {
+        return '<div class="action"><h2>' + escapeHtml(card.name) + '</h2>' +
+          '<p><strong>' + escapeHtml(card.adjective) + ' ' + escapeHtml(card.role) + '</strong></p>' +
+          '<p><strong>Goal:</strong> ' + escapeHtml(toSentence(card.goal)) + '</p>' +
+          '<p><strong>Hook:</strong> ' + escapeHtml(card.hook) + '</p>' +
+          '<p><strong>Conflict:</strong> ' + escapeHtml(card.conflict) + '</p>' +
+          '<p><strong>Contradiction:</strong> ' + escapeHtml(card.contradiction) + '</p></div>';
+      }
+
+      function cardToText(card) {
+        return [
+          card.name,
+          card.adjective + ' ' + card.role,
+          'Goal: ' + toSentence(card.goal),
+          'Hook: ' + card.hook,
+          'Conflict: ' + card.conflict,
+          'Contradiction: ' + card.contradiction,
+          'Voice cue: ' + card.voice,
+          'Flavor: ' + card.flavor
+        ].join('\n');
+      }
+
+      function batchToText(cards) {
+        return (cards || []).map(function (card, index) {
+          return 'Variant ' + (index + 1) + '\n' + cardToText(card);
+        }).join('\n\n---\n\n');
+      }
+
+      function copyText(text, successMessage) {
+        var value = String(text || '').trim();
+        if (!value) {
+          notify('Nothing to copy yet.', 'error');
+          return;
+        }
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+          navigator.clipboard.writeText(value).then(function () {
+            notify(successMessage || 'Copied.');
+          }).catch(function () {
+            fallbackCopy(value, successMessage);
+          });
+          return;
+        }
+        fallbackCopy(value, successMessage);
+      }
+
+      function fallbackCopy(text, successMessage) {
+        var area = document.createElement('textarea');
+        area.value = text;
+        area.setAttribute('readonly', '');
+        area.style.position = 'fixed';
+        area.style.opacity = '0';
+        document.body.appendChild(area);
+        area.select();
+        try {
+          document.execCommand('copy');
+          notify(successMessage || 'Copied.');
+        } catch (_) {
+          notify('Copy failed.', 'error');
+        }
+        document.body.removeChild(area);
+      }
+
+      function downloadText(filename, text) {
+        var blob = new Blob([String(text || '')], { type: 'text/plain;charset=utf-8' });
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+      }
+
+      function currentSelection() {
+        var allCards = state.batch.concat(state.favorites);
+        return allCards.find(function (card) { return card.id === state.selectedId; }) || state.batch[0] || state.favorites[0] || null;
+      }
+
+      function nextSeedDraft() {
+        var draft = normalizeDraft(state.draft);
+        return {
+          name: draft.name || titleCase(sample(SUGGESTIONS.name)),
+          role: draft.role || sample(SUGGESTIONS.role),
+          adjective: draft.adjective || sample(SUGGESTIONS.adjective),
+          goal: draft.goal || sample(SUGGESTIONS.goal),
+          flavor: draft.flavor || 'General'
+        };
+      }
+
+      function signatureFor(card) {
+        return [card.name, card.role, card.adjective, card.goal, card.hook, card.conflict, card.contradiction].join('|').toLowerCase();
+      }
+
+      function generateVariant(seed, usedSignatures) {
+        var flavor = seed.flavor || 'General';
+        var cost = sample(GOAL_COSTS);
+        var contradiction = sample(CONTRADICTIONS);
+        var internal = sample(INTERNAL_TENSIONS);
+        var voice = sample(VOICE_NOTES);
+        var hook = sample(HOOK_TEMPLATES)(seed, flavor, cost);
+        var card = normalizeCard({
+          name: seed.name,
+          role: seed.role,
+          adjective: seed.adjective,
+          goal: seed.goal,
+          hook: hook,
+          conflict: internal + ' Also, ' + toSentence(cost) + '.',
+          contradiction: seed.name + ' ' + contradiction + '.',
+          voice: seed.name + ' ' + voice + '.',
+          flavor: flavor,
+          sourceInputs: seed,
+          createdAt: nowIso(),
+          isFavorite: false
+        });
+        var signature = signatureFor(card);
+        if (usedSignatures[signature]) return null;
+        usedSignatures[signature] = true;
+        return card;
+      }
+
+      function generateBatch() {
+        var seed = nextSeedDraft();
+        var used = {};
+        var results = [];
+        var guard = 0;
+        while (results.length < BATCH_SIZE && guard < 60) {
+          guard += 1;
+          var card = generateVariant(seed, used);
+          if (card) results.push(card);
+        }
+        state.draft = normalizeDraft(seed);
+        state.batch = results;
+        state.selectedId = results[0] ? results[0].id : '';
+        persistState(state, 'generated');
+        render();
+      }
+
+      function rerollSelected() {
+        var selected = currentSelection();
+        if (!selected || !state.batch.length) {
+          notify('Generate a batch first.', 'error');
+          return;
+        }
+        var index = state.batch.findIndex(function (card) { return card.id === selected.id; });
+        if (index < 0) {
+          notify('Select a batch card to reroll.', 'error');
+          return;
+        }
+        saveSnapshot('before-reroll');
+        var used = {};
+        state.batch.forEach(function (card, cardIndex) {
+          if (cardIndex !== index) used[signatureFor(card)] = true;
+        });
+        var replacement = null;
+        var attempts = 0;
+        while (!replacement && attempts < 40) {
+          attempts += 1;
+          replacement = generateVariant(nextSeedDraft(), used);
+        }
+        if (!replacement) {
+          notify('Could not find a fresh variant.', 'error');
+          return;
+        }
+        state.batch[index] = replacement;
+        state.selectedId = replacement.id;
+        persistState(state, 'rerolled');
+        render();
+      }
+
+      function toggleFavorite(cardId) {
+        var batchCard = state.batch.find(function (card) { return card.id === cardId; });
+        var favoriteIndex = state.favorites.findIndex(function (card) { return card.id === cardId; });
+        if (favoriteIndex >= 0) {
+          saveSnapshot('before-unfavorite');
+          state.favorites.splice(favoriteIndex, 1);
+          persistState(state, 'unfavorited');
+          render();
+          return;
+        }
+        if (!batchCard) {
+          notify('Select a batch card to save.', 'error');
+          return;
+        }
+        var favorite = normalizeCard(batchCard);
+        favorite.isFavorite = true;
+        state.favorites.unshift(favorite);
+        persistState(state, 'favorited');
+        render();
+      }
+
+      function clearDraft() {
+        saveSnapshot('before-clear-draft');
+        state.draft = normalizeDraft({ flavor: state.draft.flavor || 'General' });
+        FIELD_ORDER.forEach(function (field) {
+          state.draft[field] = '';
+        });
+        persistState(state, 'cleared-draft');
+        render();
+      }
+
+      function randomizeAllInputs() {
+        state.draft = normalizeDraft({
+          name: titleCase(sample(SUGGESTIONS.name)),
+          role: sample(SUGGESTIONS.role),
+          adjective: sample(SUGGESTIONS.adjective),
+          goal: sample(SUGGESTIONS.goal),
+          flavor: state.draft.flavor || 'General'
+        });
+        persistState(state, 'randomized-draft');
+        render();
+      }
+
+      function randomizeField(field) {
+        if (FIELD_ORDER.indexOf(field) < 0) return;
+        var value = field === 'name' ? titleCase(sample(SUGGESTIONS[field])) : sample(SUGGESTIONS[field]);
+        state.draft[field] = value;
+        persistState(state, 'randomized-' + field);
+        render();
+      }
+
+      function applySuggestion(field, value) {
+        if (FIELD_ORDER.indexOf(field) < 0) return;
+        state.draft[field] = field === 'name' ? titleCase(value) : value;
+        persistState(state, 'suggestion-' + field);
+        render();
+      }
+
+      function setFlavor(flavor) {
+        state.draft.flavor = FLAVOR_TAGS.indexOf(flavor) >= 0 ? flavor : 'General';
+        persistState(state, 'flavor');
+        render();
+      }
+
+      function selectCard(cardId) {
+        state.selectedId = clean(cardId);
+        persistState(state, 'selected');
+        render();
+      }
+
+      function useCardInContext(card) {
+        var bus = window.WTContextBus;
+        if (!bus || typeof bus.mergeContext !== 'function') {
+          notify('Context bus unavailable.', 'error');
+          return;
+        }
+        try {
+          bus.mergeContext(inferContext(card));
+          notify('Context bus updated.');
+        } catch (_) {
+          notify('Could not update context.', 'error');
+        }
+      }
+
+      function sendCardToCourius(card) {
+        var bus = window.WTContextBus;
+        if (!bus || typeof bus.appendToCourius !== 'function') {
+          notify('Courius handoff unavailable.', 'error');
+          return;
+        }
+        var ok = false;
+        try {
+          useCardInContext(card);
+          ok = !!bus.appendToCourius(buildCardHtml(card), 'CharacterForge');
+        } catch (_) {
+          ok = false;
+        }
+        notify(ok ? 'Sent to Courius.' : 'Courius handoff failed.', ok ? 'info' : 'error');
+      }
+
+      function clearFavorites() {
+        if (!state.favorites.length) {
+          notify('No favorites to clear.', 'error');
+          return;
+        }
+        saveSnapshot('before-clear-favorites');
+        state.favorites = [];
+        persistState(state, 'cleared-favorites');
+        render();
+      }
+
+      function restoreLatestSnapshot() {
+        syncSnapshotsFromStorage();
+        var snapshot = state.snapshots[0];
+        if (!snapshot) {
+          notify('No snapshot available.', 'error');
+          return;
+        }
+        state = normalizeState(snapshot.state);
+        state.snapshots = loadSnapshots();
+        persistState(state, 'restored');
+        render();
+        notify('Latest snapshot restored.');
+      }
+
+      function clearSnapshots() {
+        state.snapshots = [];
+        try { localStorage.removeItem(SNAPSHOTS_KEY); } catch (_) {}
+        persistState(state, 'cleared-snapshots');
+        render();
+      }
+
+      function renderSuggestions() {
+        FIELD_ORDER.forEach(function (field) {
+          var holder = document.getElementById('suggestions-' + field);
+          if (!holder) return;
+          holder.innerHTML = SUGGESTIONS[field].slice(0, 6).map(function (item) {
+            return '<button class="chip" type="button" data-suggestion-field="' + field + '" data-suggestion-value="' + escapeHtml(item) + '">' + escapeHtml(item) + '</button>';
+          }).join('');
+        });
+      }
+
+      function renderFlavorChips() {
+        var row = document.getElementById('flavor-row');
+        if (!row) return;
+        row.innerHTML = FLAVOR_TAGS.map(function (tag) {
+          var active = tag === (state.draft.flavor || 'General') ? ' active' : '';
+          return '<button type="button" class="flavor-chip' + active + '" data-flavor="' + escapeHtml(tag) + '">' + escapeHtml(tag) + '</button>';
+        }).join('');
+      }
+
+      function renderDraft() {
+        FIELD_ORDER.forEach(function (field) {
+          var input = document.querySelector('[data-field="' + field + '"]');
+          if (input && input.value !== state.draft[field]) input.value = state.draft[field];
+        });
+        var selected = currentSelection();
+        document.getElementById('selected-name').textContent = selected ? selected.name : 'None';
+        document.getElementById('selected-flavor').textContent = state.draft.flavor || 'General';
+      }
+
+      function renderBatch() {
+        var grid = document.getElementById('results-grid');
+        if (!grid) return;
+        if (!state.batch.length) {
+          grid.innerHTML = '<div class="empty" style="grid-column:1 / -1;">No characters yet. Set a few ingredients and generate a batch.</div>';
+          return;
+        }
+        grid.innerHTML = state.batch.map(function (card, index) {
+          var isSelected = card.id === state.selectedId ? ' selected' : '';
+          var isFavorite = state.favorites.some(function (saved) { return saved.id === card.id; });
+          return '<article class="card' + isSelected + '" data-card-id="' + escapeHtml(card.id) + '">' +
+            '<div class="card-topline"><span class="card-tag">Variant ' + (index + 1) + '</span><span class="hero-pill">' + escapeHtml(card.flavor) + '</span></div>' +
+            '<h3 class="card-title">' + escapeHtml(card.name) + '</h3>' +
+            '<div class="card-role">' + escapeHtml(card.adjective) + ' ' + escapeHtml(card.role) + '</div>' +
+            '<div class="card-meta"><span class="hero-pill">Goal: ' + escapeHtml(toSentence(card.goal)) + '</span></div>' +
+            '<div class="card-block"><span class="mini-label">Hook</span><p>' + escapeHtml(card.hook) + '</p></div>' +
+            '<div class="card-block"><span class="mini-label">Conflict</span><p>' + escapeHtml(card.conflict) + '</p></div>' +
+            '<div class="card-block"><span class="mini-label">Contradiction</span><p>' + escapeHtml(card.contradiction) + '</p></div>' +
+            '<div class="card-block"><span class="mini-label">Voice Cue</span><p>' + escapeHtml(card.voice) + '</p></div>' +
+            '<div class="card-actions">' +
+              '<button class="mini-btn" type="button" data-card-action="select" data-card-id="' + escapeHtml(card.id) + '">Select</button>' +
+              '<button class="mini-btn" type="button" data-card-action="copy" data-card-id="' + escapeHtml(card.id) + '">Copy</button>' +
+              '<button class="mini-btn" type="button" data-card-action="favorite" data-card-id="' + escapeHtml(card.id) + '">' + (isFavorite ? 'Unsave' : 'Save') + '</button>' +
+              '<button class="mini-btn" type="button" data-card-action="context" data-card-id="' + escapeHtml(card.id) + '">Use in Context</button>' +
+            '</div>' +
+          '</article>';
+        }).join('');
+      }
+
+      function renderFavorites() {
+        var grid = document.getElementById('favorites-grid');
+        if (!grid) return;
+        if (!state.favorites.length) {
+          grid.innerHTML = '<div class="empty" style="grid-column:1 / -1;">Favorites stay here between sessions. Save any card you want to revisit.</div>';
+          return;
+        }
+        grid.innerHTML = state.favorites.map(function (card) {
+          var isSelected = card.id === state.selectedId ? ' selected' : '';
+          return '<article class="saved-card' + isSelected + '" data-card-id="' + escapeHtml(card.id) + '">' +
+            '<div class="card-topline"><span class="card-tag">Favorite</span><span class="hero-pill">' + escapeHtml(card.flavor) + '</span></div>' +
+            '<h3 class="card-title">' + escapeHtml(card.name) + '</h3>' +
+            '<p><strong>' + escapeHtml(card.adjective) + ' ' + escapeHtml(card.role) + '</strong></p>' +
+            '<p style="margin-top:10px;"><strong>Goal:</strong> ' + escapeHtml(toSentence(card.goal)) + '</p>' +
+            '<p style="margin-top:10px;">' + escapeHtml(card.hook) + '</p>' +
+            '<div class="saved-actions" style="margin-top:14px;">' +
+              '<button class="mini-btn" type="button" data-card-action="select" data-card-id="' + escapeHtml(card.id) + '">Select</button>' +
+              '<button class="mini-btn" type="button" data-card-action="copy" data-card-id="' + escapeHtml(card.id) + '">Copy</button>' +
+              '<button class="mini-btn" type="button" data-card-action="favorite" data-card-id="' + escapeHtml(card.id) + '">Remove</button>' +
+              '<button class="mini-btn" type="button" data-card-action="send" data-card-id="' + escapeHtml(card.id) + '">Send</button>' +
+            '</div>' +
+          '</article>';
+        }).join('');
+      }
+
+      function renderRecovery() {
+        syncSnapshotsFromStorage();
+        document.getElementById('snapshot-summary').textContent = state.snapshots.length
+          ? state.snapshots.length + ' snapshot' + (state.snapshots.length === 1 ? '' : 's') + ' available. Latest: ' + new Date(state.snapshots[0].createdAt).toLocaleString() + '.'
+          : 'No recovery snapshots yet. The first destructive change will create one.';
+      }
+
+      function renderMetrics() {
+        document.getElementById('metric-batch').textContent = String(state.batch.length);
+        document.getElementById('metric-favorites').textContent = String(state.favorites.length);
+        document.getElementById('metric-snapshots').textContent = String(state.snapshots.length);
+      }
+
+      function renderStatus() {
+        var selected = currentSelection();
+        var copy = selected
+          ? selected.name + ' is ready. Save it, copy it, or send it forward.'
+          : 'Generate a batch, pick the strongest card, then save or hand it off into the rest of the suite.';
+        document.getElementById('status-copy').textContent = copy;
+      }
+
+      function render() {
+        renderSuggestions();
+        renderFlavorChips();
+        renderDraft();
+        renderBatch();
+        renderFavorites();
+        renderRecovery();
+        renderMetrics();
+        renderStatus();
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+          window.lucide.createIcons();
+        }
+      }
+
+      function findCard(cardId) {
+        return state.batch.concat(state.favorites).find(function (card) { return card.id === cardId; }) || null;
+      }
+
+      function notify(message, type) {
+        var bus = window.WTContextBus;
+        if (bus && typeof bus.notify === 'function') {
+          bus.notify(message, type || 'info');
+          return;
+        }
+        window.alert(message);
+      }
+
+      function handleCardAction(action, cardId) {
+        var card = findCard(cardId);
+        if (!card) return;
+        if (action === 'select') selectCard(cardId);
+        if (action === 'copy') copyText(cardToText(card), 'Character copied.');
+        if (action === 'favorite') toggleFavorite(cardId);
+        if (action === 'context') useCardInContext(card);
+        if (action === 'send') sendCardToCourius(card);
+      }
+
+      function wireEvents() {
+        document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+
+        FIELD_ORDER.forEach(function (field) {
+          var input = document.querySelector('[data-field="' + field + '"]');
+          if (!input) return;
+          input.addEventListener('input', function () {
+            state.draft[field] = clean(input.value);
+            persistState(state, 'typing-' + field);
+          });
+        });
+
+        document.querySelectorAll('[data-randomize-field]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            randomizeField(btn.getAttribute('data-randomize-field'));
+          });
+        });
+
+        document.addEventListener('click', function (event) {
+          var suggestion = event.target.closest('[data-suggestion-field]');
+          if (suggestion) {
+            applySuggestion(
+              suggestion.getAttribute('data-suggestion-field'),
+              suggestion.getAttribute('data-suggestion-value') || ''
+            );
+            return;
+          }
+          var flavor = event.target.closest('[data-flavor]');
+          if (flavor) {
+            setFlavor(flavor.getAttribute('data-flavor') || 'General');
+            return;
+          }
+          var actionBtn = event.target.closest('[data-card-action]');
+          if (actionBtn) {
+            handleCardAction(actionBtn.getAttribute('data-card-action'), actionBtn.getAttribute('data-card-id'));
+            return;
+          }
+          var article = event.target.closest('[data-card-id]');
+          if (article && article.getAttribute('data-card-id')) {
+            selectCard(article.getAttribute('data-card-id'));
+          }
+        });
+
+        document.getElementById('generate-btn').addEventListener('click', function () {
+          if (state.batch.length || state.favorites.length) saveSnapshot('before-generate');
+          generateBatch();
+          notify('Generated ' + BATCH_SIZE + ' variants.');
+        });
+        document.getElementById('randomize-all-btn').addEventListener('click', randomizeAllInputs);
+        document.getElementById('copy-batch-btn').addEventListener('click', function () {
+          copyText(batchToText(state.batch), 'Batch copied.');
+        });
+        document.getElementById('clear-draft-btn').addEventListener('click', clearDraft);
+        document.getElementById('download-batch-btn').addEventListener('click', function () {
+          if (!state.batch.length) {
+            notify('No batch to download.', 'error');
+            return;
+          }
+          downloadText('character-forge-batch.txt', batchToText(state.batch));
+        });
+        document.getElementById('reroll-selected-btn').addEventListener('click', rerollSelected);
+        document.getElementById('send-selected-btn').addEventListener('click', function () {
+          var selected = currentSelection();
+          if (!selected) {
+            notify('Nothing selected yet.', 'error');
+            return;
+          }
+          sendCardToCourius(selected);
+        });
+        document.getElementById('copy-favorites-btn').addEventListener('click', function () {
+          copyText(batchToText(state.favorites), 'Favorites copied.');
+        });
+        document.getElementById('clear-favorites-btn').addEventListener('click', clearFavorites);
+        document.getElementById('restore-snapshot-btn').addEventListener('click', restoreLatestSnapshot);
+        document.getElementById('clear-snapshots-btn').addEventListener('click', clearSnapshots);
+
+        window.addEventListener('storage', function (event) {
+          if (!event) return;
+          if (event.key === STORAGE_KEY) {
+            state = loadState();
+            syncSnapshotsFromStorage();
+            render();
+          }
+          if (event.key === SNAPSHOTS_KEY) {
+            syncSnapshotsFromStorage();
+            render();
+          }
+        });
+      }
+
+      function initToolActions() {
+        window.WTToolActions = {
+          exportPrimary: function () {
+            var selected = currentSelection();
+            if (selected) {
+              downloadText('character-' + selected.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.txt', cardToText(selected));
+              return;
+            }
+            if (state.batch.length) {
+              downloadText('character-forge-batch.txt', batchToText(state.batch));
+              return;
+            }
+            notify('Nothing to export.', 'error');
+          },
+          handoffPrimary: function () {
+            var selected = currentSelection();
+            if (!selected) {
+              notify('Nothing selected yet.', 'error');
+              return;
+            }
+            sendCardToCourius(selected);
+          }
+        };
+      }
+
+      hydrateTheme();
+      state.snapshots = loadSnapshots();
+      if (!state.batch.length && !state.favorites.length && !FIELD_ORDER.some(function (field) { return state.draft[field]; })) {
+        state.draft = normalizeDraft({
+          name: 'Iris Vale',
+          role: 'disgraced archivist',
+          adjective: 'restless',
+          goal: 'clear her name',
+          flavor: 'General'
+        });
+        persistState(state, 'seeded');
+      }
+      initToolActions();
+      wireEvents();
+      render();
+    })();
+  </script>
+</body>
+</html>

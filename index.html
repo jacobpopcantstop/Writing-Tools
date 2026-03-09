@@ -782,6 +782,15 @@
       <section class="section">
         <div class="section-head"><div class="section-title">Ideation</div></div>
         <div class="cards" id="tools">
+          <a class="card" href="CharacterForge.html" target="_blank" rel="noopener">
+            <div>
+              <div class="card-top"><div class="icon-shell"><img src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230e1016'/><path d='M20 74 L50 18 L80 74' stroke='%23ff7a59' stroke-width='7' fill='none'/><circle cx='50' cy='52' r='10' fill='%23ffd166'/><path d='M36 76h28' stroke='%23ffd166' stroke-width='6' stroke-linecap='round'/></svg>" width="22" height="22" alt="Character Forge"></div></div>
+              <h2>Character Forge</h2>
+              <p>Build distinctive character variants from a name, role, adjective, and goal.</p>
+            </div>
+            <span class="card-cta">Open Tool <i data-lucide="arrow-right" style="width:14px;height:14px"></i></span>
+          </a>
+
           <a class="card" href="Synax.html" target="_blank" rel="noopener">
             <div>
               <div class="card-top"><div class="icon-shell"><img src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fd19c8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='3'/><path d='M12 12 L6 6'/><path d='M12 12 L18 6'/><path d='M12 12 L12 20'/><circle cx='6' cy='6' r='1.5' fill='%23fd19c8' stroke='none'/><circle cx='18' cy='6' r='1.5' fill='%23fd19c8' stroke='none'/><circle cx='12' cy='20' r='1.5' fill='%23fd19c8' stroke='none'/></svg>" width="22" height="22" alt="Synax"></div></div>
@@ -907,6 +916,7 @@
           <div class="context-actions">
             <button class="ctx-btn primary" id="ctx-save" type="button">Save Context</button>
             <button class="ctx-btn" id="ctx-clear" type="button">Clear</button>
+            <button class="ctx-btn" id="ctx-open-characterforge" type="button">Open Character Forge</button>
             <button class="ctx-btn" id="ctx-open-synax" type="button">Open Synax</button>
             <button class="ctx-btn" id="ctx-open-thisbutthat" type="button">Open ThisButThat</button>
             <button class="ctx-btn" id="ctx-open-joterie" type="button">Open Joterie</button>
@@ -982,8 +992,9 @@
 
     <div class="featured">
       <h3>Best Flow Right Now</h3>
-      <p>Start in <strong>Synax</strong>, pressure-test ideas in <strong>ThisButThat</strong>, map in <strong>BeatHive</strong>, draft in <strong>WitherNaught</strong>, and finish in <strong>Courius</strong>.</p>
+      <p>Start in <strong>Character Forge</strong> or <strong>Synax</strong>, pressure-test ideas in <strong>ThisButThat</strong>, map in <strong>BeatHive</strong>, draft in <strong>WitherNaught</strong>, and finish in <strong>Courius</strong>.</p>
       <div class="quick-links">
+        <a class="quick-link" href="CharacterForge.html" target="_blank" rel="noopener">Build Character</a>
         <a class="quick-link" href="Synax.html" target="_blank" rel="noopener">Idea Sprint</a>
         <a class="quick-link" href="BeatHive.html" target="_blank" rel="noopener">Build Structure</a>
         <a class="quick-link" href="WitherNaught.html" target="_blank" rel="noopener">Draft Fast</a>
@@ -1124,6 +1135,7 @@
       paint(bus.getContext());
       els.save.addEventListener('click', save);
       els.clear.addEventListener('click', window.__wtClearContext);
+      document.getElementById('ctx-open-characterforge').addEventListener('click', () => openTool('CharacterForge.html'));
       document.getElementById('ctx-open-synax').addEventListener('click', () => openTool('Synax.html'));
       document.getElementById('ctx-open-thisbutthat').addEventListener('click', () => openTool('ThisButThat.html'));
       document.getElementById('ctx-open-joterie').addEventListener('click', () => openTool('Joterie.html'));
@@ -1136,6 +1148,7 @@
     };
     const EXPORT_EVENTS_KEY = 'writingtools_export_events_v1';
     const RECOVERY_SNAPSHOT_CONFIG = [
+      { tool: 'CharacterForge', key: 'writingtools_characterforge_snapshots_v1', path: 'CharacterForge.html' },
       { tool: 'Synax', key: 'writingtools_synax_snapshots_v1', path: 'Synax.html' },
       { tool: 'ThisButThat', key: 'writingtools_thisbutthat_snapshots_v1', path: 'ThisButThat.html' },
       { tool: 'Joterie', key: 'writingtools_joterie_snapshots_v1', path: 'Joterie.html' },

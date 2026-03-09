@@ -34,7 +34,7 @@
   }
 
   function categoryForTool(tool) {
-    if (tool === 'Synax' || tool === 'ThisButThat' || tool === 'Joterie') return 'Ideation';
+    if (tool === 'Synax' || tool === 'CharacterForge' || tool === 'ThisButThat' || tool === 'Joterie') return 'Ideation';
     if (tool === 'BeatHive' || tool === 'WitherNaught' || tool === 'Wribbon') return 'Drafting';
     if (tool === 'Courius' || tool === 'PaperCut') return 'Output';
     return 'Other';
@@ -120,6 +120,27 @@
           meta: sessionWords > 0 ? ('last session ' + sessionWords + ' words') : 'resume session flow',
           path: 'WitherNaught.html',
           updatedAt: new Date(latest.date || 0).getTime() || 0,
+          updatedLabel: ''
+        });
+      }
+    } catch (_) {}
+
+    try {
+      var characterRaw = localStorage.getItem('writingtools_characterforge_state_v1');
+      var characterState = characterRaw ? JSON.parse(characterRaw) : null;
+      var characterBatch = Array.isArray(characterState && characterState.batch) ? characterState.batch : [];
+      var characterFavorites = Array.isArray(characterState && characterState.favorites) ? characterState.favorites : [];
+      if (characterBatch.length || characterFavorites.length) {
+        var lead = characterFavorites[0] || characterBatch[0] || {};
+        var characterUpdatedAt = readMillis('writingtools_characterforge_updated_at');
+        out.push({
+          id: 'recent-characterforge',
+          tool: 'CharacterForge',
+          category: categoryForTool('CharacterForge'),
+          title: trimTitle((lead && lead.name) || 'Character Forge Session', 28),
+          meta: characterBatch.length + ' variants · ' + characterFavorites.length + ' favorites',
+          path: 'CharacterForge.html',
+          updatedAt: characterUpdatedAt,
           updatedLabel: ''
         });
       }

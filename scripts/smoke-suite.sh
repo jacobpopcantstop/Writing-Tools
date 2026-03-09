@@ -81,6 +81,7 @@ SERVER_PID=$!
 sleep 1
 
 open_and_check wt-index index.html
+open_and_check wt-characterforge CharacterForge.html
 open_and_check wt-synax Synax.html
 open_and_check wt-thisbutthat ThisButThat.html
 open_and_check wt-joterie Joterie.html
@@ -91,6 +92,34 @@ open_and_check wt-courius Courius.html
 open_and_check wt-papercut PaperCut.html
 
 echo "==> critical interactions"
+
+run_eval_check wt-characterforge "CharacterForge generates and persists a saved character batch" "$(cat <<'JS'
+(() => {
+  localStorage.removeItem('writingtools_characterforge_state_v1');
+  localStorage.removeItem('writingtools_characterforge_revision_v1');
+  localStorage.removeItem('writingtools_characterforge_snapshots_v1');
+  location.reload();
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const generate = document.getElementById('generate-btn');
+      if (!generate) throw new Error('CharacterForge generate button missing');
+      generate.click();
+      setTimeout(() => {
+        const cards = Array.from(document.querySelectorAll('[data-card-action="favorite"]'));
+        if (cards.length < 1) throw new Error('CharacterForge variants did not render');
+        cards[0].click();
+        const revision = parseInt(localStorage.getItem('writingtools_characterforge_revision_v1') || '0', 10) || 0;
+        const state = JSON.parse(localStorage.getItem('writingtools_characterforge_state_v1') || '{}');
+        if (!(revision > 0)) throw new Error('CharacterForge revision was not persisted');
+        if (!Array.isArray(state.batch) || state.batch.length < 1) throw new Error('CharacterForge batch missing');
+        if (!Array.isArray(state.favorites) || state.favorites.length < 1) throw new Error('CharacterForge favorite not saved');
+        resolve(true);
+      }, 200);
+    }, 200);
+  });
+})()
+JS
+)"
 
 run_eval_check wt-synax "Synax revisioned persistence stores state updates" "$(cat <<'JS'
 (() => {
