@@ -121,6 +121,60 @@ run_eval_check wt-characterforge "CharacterForge generates and persists a saved 
 JS
 )"
 
+run_eval_check wt-characterforge "CharacterForge snapshot restore advances history and preserves favorite selection" "$(cat <<'JS'
+(() => {
+  const stateA = {
+    draft: { name: 'Iris Vale', role: 'archivist', adjective: 'restless', goal: 'clear her name', flavor: 'Noir' },
+    batch: [],
+    favorites: [
+      { id: 'fav-a', name: 'Iris Vale', role: 'archivist', adjective: 'restless', goal: 'clear her name', hook: 'A', conflict: 'A', contradiction: 'A', voice: 'A', flavor: 'Noir', sourceInputs: {}, createdAt: new Date().toISOString(), isFavorite: true },
+      { id: 'fav-c', name: 'Nadia Bloom', role: 'ghostwriter', adjective: 'secretive', goal: 'expose the truth', hook: 'C', conflict: 'C', contradiction: 'C', voice: 'C', flavor: 'Fantasy', sourceInputs: {}, createdAt: new Date().toISOString(), isFavorite: true }
+    ],
+    selectedId: 'fav-a',
+    snapshots: [],
+    updatedAt: '',
+    lastAction: ''
+  };
+  const stateB = {
+    draft: { name: 'June Holloway', role: 'mayor', adjective: 'magnetic', goal: 'save town', flavor: 'Comedy' },
+    batch: [],
+    favorites: [{ id: 'fav-b', name: 'June Holloway', role: 'mayor', adjective: 'magnetic', goal: 'save town', hook: 'B', conflict: 'B', contradiction: 'B', voice: 'B', flavor: 'Comedy', sourceInputs: {}, createdAt: new Date().toISOString(), isFavorite: true }],
+    selectedId: 'fav-b',
+    snapshots: [],
+    updatedAt: '',
+    lastAction: ''
+  };
+  localStorage.setItem('writingtools_characterforge_snapshots_v1', JSON.stringify([
+    { id: 'snap-b', label: 'newer', createdAt: new Date().toISOString(), state: stateB },
+    { id: 'snap-a', label: 'older', createdAt: new Date(Date.now() - 60000).toISOString(), state: stateA }
+  ]));
+  localStorage.setItem('writingtools_characterforge_state_v1', JSON.stringify(stateB));
+  localStorage.setItem('writingtools_characterforge_revision_v1', '5');
+  const restore = document.getElementById('restore-snapshot-btn');
+  const remove = document.querySelector('#favorites-grid [data-card-action="favorite"]');
+  if (!restore) throw new Error('CharacterForge restore button missing');
+  restore.click();
+  let restored = JSON.parse(localStorage.getItem('writingtools_characterforge_state_v1') || '{}');
+  let snapshots = JSON.parse(localStorage.getItem('writingtools_characterforge_snapshots_v1') || '[]');
+  if (restored.selectedId !== 'fav-b') throw new Error('Newest snapshot did not restore first');
+  if (!Array.isArray(snapshots) || snapshots.length !== 1 || snapshots[0].id !== 'snap-a') throw new Error('Snapshot stack did not advance after first restore');
+  restore.click();
+  restored = JSON.parse(localStorage.getItem('writingtools_characterforge_state_v1') || '{}');
+  snapshots = JSON.parse(localStorage.getItem('writingtools_characterforge_snapshots_v1') || '[]');
+  if (restored.selectedId !== 'fav-a') throw new Error('Older snapshot was not restored second');
+  if (!Array.isArray(snapshots) || snapshots.length !== 0) throw new Error('Snapshot stack was not consumed');
+  if (!document.getElementById('selected-name') || !document.getElementById('selected-flavor')) throw new Error('CharacterForge status pills missing');
+  if ((document.getElementById('selected-flavor').textContent || '').trim() !== 'Noir') throw new Error('Selected flavor pill did not reflect restored favorite');
+  const removeBtn = document.querySelector('#favorites-grid [data-card-action="favorite"]');
+  if (!removeBtn) throw new Error('CharacterForge favorite remove button missing');
+  removeBtn.click();
+  const finalState = JSON.parse(localStorage.getItem('writingtools_characterforge_state_v1') || '{}');
+  if (finalState.selectedId !== 'fav-c') throw new Error('Selection did not fall back to a remaining favorite');
+  return true;
+})()
+JS
+)"
+
 run_eval_check wt-synax "Synax revisioned persistence stores state updates" "$(cat <<'JS'
 (() => {
   localStorage.removeItem('writingtools_synax_state_v1');

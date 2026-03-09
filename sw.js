@@ -1,7 +1,8 @@
-const WT_CACHE_NAME = 'writingtools-static-v1';
+const WT_CACHE_NAME = 'writingtools-static-v2';
 const WT_CORE_ASSETS = [
   './',
   './index.html',
+  './CharacterForge.html',
   './Synax.html',
   './ThisButThat.html',
   './Joterie.html',

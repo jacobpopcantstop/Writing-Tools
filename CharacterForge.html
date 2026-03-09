@@ -944,13 +944,13 @@
         var snapshots = Array.isArray(base.snapshots) ? base.snapshots.map(normalizeSnapshot).slice(0, MAX_SNAPSHOTS) : [];
         var selectedId = clean(base.selectedId);
         if (selectedId && !batch.some(function (card) { return card.id === selectedId; }) && !favorites.some(function (card) { return card.id === selectedId; })) {
-          selectedId = batch[0] ? batch[0].id : '';
+          selectedId = batch[0] ? batch[0].id : (favorites[0] ? favorites[0].id : '');
         }
         return {
           draft: normalizeDraft(base.draft),
           batch: batch,
           favorites: favorites,
-          selectedId: selectedId || (batch[0] ? batch[0].id : ''),
+          selectedId: selectedId || (batch[0] ? batch[0].id : (favorites[0] ? favorites[0].id : '')),
           snapshots: snapshots,
           updatedAt: clean(base.updatedAt) || '',
           lastAction: clean(base.lastAction) || ''
@@ -998,6 +998,14 @@
         state.snapshots = loadSnapshots();
       }
 
+      function writeSnapshots(snapshots) {
+        state.snapshots = Array.isArray(snapshots) ? snapshots.slice(0, MAX_SNAPSHOTS) : [];
+        try {
+          localStorage.setItem(SNAPSHOTS_KEY, JSON.stringify(state.snapshots));
+        } catch (_) {}
+        return state.snapshots;
+      }
+
       function persistState(nextState, actionLabel) {
         state = normalizeState(nextState);
         state.updatedAt = nowIso();
@@ -1024,10 +1032,7 @@
           state: state
         });
         var nextSnapshots = [snapshot].concat(state.snapshots).slice(0, MAX_SNAPSHOTS);
-        state.snapshots = nextSnapshots;
-        try {
-          localStorage.setItem(SNAPSHOTS_KEY, JSON.stringify(nextSnapshots));
-        } catch (_) {}
+        writeSnapshots(nextSnapshots);
       }
 
       function setTheme(theme) {
@@ -1328,14 +1333,22 @@
           notify('Courius handoff unavailable.', 'error');
           return;
         }
-        var ok = false;
+        var appended = false;
         try {
-          useCardInContext(card);
-          ok = !!bus.appendToCourius(buildCardHtml(card), 'CharacterForge');
+          appended = !!bus.appendToCourius(buildCardHtml(card), 'CharacterForge');
         } catch (_) {
-          ok = false;
+          appended = false;
         }
-        notify(ok ? 'Sent to Courius.' : 'Courius handoff failed.', ok ? 'info' : 'error');
+        if (!appended) {
+          notify('Courius handoff failed.', 'error');
+          return;
+        }
+        try {
+          if (typeof bus.mergeContext === 'function') bus.mergeContext(inferContext(card));
+          notify('Sent to Courius.');
+        } catch (_) {
+          notify('Sent to Courius, but context update failed.', 'error');
+        }
       }
 
       function clearFavorites() {
@@ -1356,16 +1369,17 @@
           notify('No snapshot available.', 'error');
           return;
         }
+        var remainingSnapshots = state.snapshots.slice(1);
         state = normalizeState(snapshot.state);
-        state.snapshots = loadSnapshots();
+        state.snapshots = remainingSnapshots;
+        writeSnapshots(remainingSnapshots);
         persistState(state, 'restored');
         render();
         notify('Latest snapshot restored.');
       }
 
       function clearSnapshots() {
-        state.snapshots = [];
-        try { localStorage.removeItem(SNAPSHOTS_KEY); } catch (_) {}
+        writeSnapshots([]);
         persistState(state, 'cleared-snapshots');
         render();
       }
@@ -1396,7 +1410,7 @@
         });
         var selected = currentSelection();
         document.getElementById('selected-name').textContent = selected ? selected.name : 'None';
-        document.getElementById('selected-flavor').textContent = state.draft.flavor || 'General';
+        document.getElementById('selected-flavor').textContent = (selected && selected.flavor) || state.draft.flavor || 'General';
       }
 
       function renderBatch() {
