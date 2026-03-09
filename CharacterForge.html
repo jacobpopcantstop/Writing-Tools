@@ -145,8 +145,8 @@
 
     .hero {
       display: grid;
-      grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.7fr);
-      gap: 18px;
+      grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+      gap: 16px;
       margin-bottom: 18px;
     }
 
@@ -156,26 +156,13 @@
     .saved-card {
       border: 1px solid var(--line);
       background: var(--panel);
-      border-radius: 24px;
-      box-shadow: var(--shadow);
+      border-radius: 18px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
       backdrop-filter: blur(14px);
     }
 
     .hero-card {
-      padding: 26px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .hero-card::after {
-      content: "";
-      position: absolute;
-      inset: auto -40px -60px auto;
-      width: 220px;
-      height: 220px;
-      border-radius: 999px;
-      background: radial-gradient(circle, color-mix(in srgb, var(--accent-2) 32%, transparent), transparent 70%);
-      pointer-events: none;
+      padding: 24px;
     }
 
     .eyebrow,
@@ -211,7 +198,7 @@
       margin-bottom: 20px;
     }
 
-    .hero-pills,
+    .guide-list,
     .chip-row,
     .suggestions,
     .flavor-row,
@@ -237,36 +224,35 @@
       background: color-mix(in srgb, var(--bg-soft) 72%, transparent);
     }
 
-    .hero-metrics {
+    .hero-guide {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 12px;
+      align-content: start;
     }
 
-    .metric {
-      padding: 18px;
-      border-radius: 22px;
+    .guide-card {
+      padding: 16px;
+      border-radius: 16px;
       border: 1px solid var(--line);
-      background: linear-gradient(145deg, color-mix(in srgb, var(--panel-strong) 92%, transparent), color-mix(in srgb, var(--bg-soft) 88%, transparent));
+      background: color-mix(in srgb, var(--panel-strong) 92%, transparent);
     }
 
-    .metric-label {
+    .guide-title {
       color: var(--muted);
-      margin-bottom: 10px;
-    }
-
-    .metric-value {
-      font-family: "Fraunces", serif;
-      font-size: 2rem;
-      line-height: 1;
-      letter-spacing: -0.04em;
       margin-bottom: 8px;
     }
 
-    .metric-note {
+    .guide-card strong {
+      display: block;
+      font-size: 15px;
+      margin-bottom: 6px;
+    }
+
+    .guide-card p {
       color: var(--muted);
       font-size: 13px;
       line-height: 1.45;
+      margin: 0;
     }
 
     .workspace {
@@ -304,6 +290,17 @@
     .field-grid {
       display: grid;
       gap: 14px;
+    }
+
+    .builder-guide {
+      margin: 0 0 16px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: color-mix(in srgb, var(--bg-soft) 76%, transparent);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
     }
 
     .field {
@@ -436,7 +433,7 @@
 
     .card,
     .saved-card {
-      padding: 18px;
+      padding: 16px;
       transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
     }
 
@@ -461,7 +458,7 @@
 
     .card-title {
       margin: 0;
-      font-size: 1.7rem;
+      font-size: 1.45rem;
       line-height: 1;
       letter-spacing: -0.04em;
       font-family: "Fraunces", serif;
@@ -469,13 +466,13 @@
 
     .card-role {
       margin-top: 6px;
-      color: var(--accent-3);
+      color: var(--text);
       font-weight: 600;
       font-size: 14px;
     }
 
     .card-meta {
-      margin: 14px 0;
+      margin: 12px 0;
     }
 
     .mini-label {
@@ -485,7 +482,7 @@
     }
 
     .card-block {
-      margin-bottom: 14px;
+      margin-bottom: 12px;
     }
 
     .card-block p,
@@ -505,6 +502,21 @@
     .card-actions .mini-btn,
     .saved-actions .mini-btn {
       flex: 1 1 140px;
+    }
+
+    .card-summary {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+
+    .card:not(.selected) .card-block.secondary {
+      display: none;
+    }
+
+    .saved-card .card-block.secondary {
+      display: none;
     }
 
     .empty {
@@ -569,6 +581,7 @@
       }
 
       .hero-metrics,
+      .hero-guide,
       .results-grid,
       .saved-grid,
       .btn-row {
@@ -626,29 +639,28 @@
       <div class="hero-card">
         <div class="eyebrow">Writing Tools Character Studio</div>
         <h1>Build characters with a spine.</h1>
-        <p class="hero-copy">Pick a name, a job or type of person, an adjective, and a goal. Character Forge remixes those anchors into several story-ready variants with a hook, a likely tension, and a contradiction you can actually write from.</p>
-        <div class="hero-pills">
-          <span class="hero-pill">Type or pick</span>
-          <span class="hero-pill">Batch variants</span>
-          <span class="hero-pill">Local-first favorites</span>
-          <span class="hero-pill">Courius handoff</span>
+        <p class="hero-copy">Start with four simple inputs. Generate a batch, pick the strongest option, then save or hand it forward. The page is meant to keep you moving, not overload you.</p>
+        <div class="guide-list">
+          <span class="hero-pill">1. Set ingredients</span>
+          <span class="hero-pill">2. Generate</span>
+          <span class="hero-pill">3. Keep one</span>
         </div>
       </div>
-      <div class="hero-metrics">
-        <div class="metric">
-          <div class="metric-label">Variants</div>
-          <div id="metric-batch" class="metric-value">0</div>
-          <div class="metric-note">Current candidates in the active batch.</div>
+      <div class="hero-guide">
+        <div class="guide-card">
+          <div class="guide-title">Current Batch</div>
+          <strong id="metric-batch">0 variants</strong>
+          <p>Generate a fresh set whenever the current direction feels flat.</p>
         </div>
-        <div class="metric">
-          <div class="metric-label">Favorites</div>
-          <div id="metric-favorites" class="metric-value">0</div>
-          <div class="metric-note">Saved characters kept in local storage.</div>
+        <div class="guide-card">
+          <div class="guide-title">Saved Picks</div>
+          <strong id="metric-favorites">0 favorites</strong>
+          <p>Keep only the characters you would actually write.</p>
         </div>
-        <div class="metric">
-          <div class="metric-label">Snapshots</div>
-          <div id="metric-snapshots" class="metric-value">0</div>
-          <div class="metric-note">Recovery points before destructive changes.</div>
+        <div class="guide-card">
+          <div class="guide-title">Recovery</div>
+          <strong id="metric-snapshots">0 snapshots</strong>
+          <p>Destructive actions create restore points automatically.</p>
         </div>
       </div>
     </section>
@@ -658,6 +670,7 @@
         <div class="section-label">Input Builder</div>
         <h2 class="section-title">Set the core ingredients</h2>
         <p class="section-copy">Use all four fields for a tight brief, or leave any of them blank and let the tool fill the gap from curated prompts.</p>
+        <div class="builder-guide">Start with name and role if you want the fastest path. Add adjective and goal only when you want tighter control.</div>
 
         <div class="field-grid">
           <section class="field">
@@ -722,7 +735,7 @@
             <div>
               <div class="section-label">Candidate Batch</div>
               <h2 class="section-title">Story-ready character variants</h2>
-              <p class="section-copy">Each card keeps your core ingredients intact while changing the narrative pressure around them.</p>
+              <p class="section-copy">Scan the batch quickly. Select one card to reveal the full writing detail.</p>
             </div>
             <div class="results-toolbar">
               <button id="download-batch-btn" class="mini-btn" type="button">Download Batch</button>
@@ -738,7 +751,7 @@
             <div>
               <div class="section-label">Favorites</div>
               <h2 class="section-title">Keep the ones worth writing</h2>
-              <p class="section-copy">Favorites persist locally and show up in the suite’s recent-session hub.</p>
+              <p class="section-copy">This is your short list. Keep it clean and use it as the handoff point to the rest of the suite.</p>
             </div>
             <div class="results-toolbar">
               <button id="copy-favorites-btn" class="mini-btn" type="button">Copy Favorites</button>
@@ -1428,15 +1441,15 @@
             '<h3 class="card-title">' + escapeHtml(card.name) + '</h3>' +
             '<div class="card-role">' + escapeHtml(card.adjective) + ' ' + escapeHtml(card.role) + '</div>' +
             '<div class="card-meta"><span class="hero-pill">Goal: ' + escapeHtml(toSentence(card.goal)) + '</span></div>' +
-            '<div class="card-block"><span class="mini-label">Hook</span><p>' + escapeHtml(card.hook) + '</p></div>' +
-            '<div class="card-block"><span class="mini-label">Conflict</span><p>' + escapeHtml(card.conflict) + '</p></div>' +
-            '<div class="card-block"><span class="mini-label">Contradiction</span><p>' + escapeHtml(card.contradiction) + '</p></div>' +
-            '<div class="card-block"><span class="mini-label">Voice Cue</span><p>' + escapeHtml(card.voice) + '</p></div>' +
+            '<div class="card-summary">' + escapeHtml(card.hook) + '</div>' +
+            '<div class="card-block secondary"><span class="mini-label">Conflict</span><p>' + escapeHtml(card.conflict) + '</p></div>' +
+            '<div class="card-block secondary"><span class="mini-label">Contradiction</span><p>' + escapeHtml(card.contradiction) + '</p></div>' +
+            '<div class="card-block secondary"><span class="mini-label">Voice Cue</span><p>' + escapeHtml(card.voice) + '</p></div>' +
             '<div class="card-actions">' +
               '<button class="mini-btn" type="button" data-card-action="select" data-card-id="' + escapeHtml(card.id) + '">Select</button>' +
               '<button class="mini-btn" type="button" data-card-action="copy" data-card-id="' + escapeHtml(card.id) + '">Copy</button>' +
               '<button class="mini-btn" type="button" data-card-action="favorite" data-card-id="' + escapeHtml(card.id) + '">' + (isFavorite ? 'Unsave' : 'Save') + '</button>' +
-              '<button class="mini-btn" type="button" data-card-action="context" data-card-id="' + escapeHtml(card.id) + '">Use in Context</button>' +
+              '<button class="mini-btn" type="button" data-card-action="context" data-card-id="' + escapeHtml(card.id) + '">Use Context</button>' +
             '</div>' +
           '</article>';
         }).join('');
@@ -1454,9 +1467,9 @@
           return '<article class="saved-card' + isSelected + '" data-card-id="' + escapeHtml(card.id) + '">' +
             '<div class="card-topline"><span class="card-tag">Favorite</span><span class="hero-pill">' + escapeHtml(card.flavor) + '</span></div>' +
             '<h3 class="card-title">' + escapeHtml(card.name) + '</h3>' +
-            '<p><strong>' + escapeHtml(card.adjective) + ' ' + escapeHtml(card.role) + '</strong></p>' +
-            '<p style="margin-top:10px;"><strong>Goal:</strong> ' + escapeHtml(toSentence(card.goal)) + '</p>' +
-            '<p style="margin-top:10px;">' + escapeHtml(card.hook) + '</p>' +
+            '<div class="card-role">' + escapeHtml(card.adjective) + ' ' + escapeHtml(card.role) + '</div>' +
+            '<div class="card-meta"><span class="hero-pill">Goal: ' + escapeHtml(toSentence(card.goal)) + '</span></div>' +
+            '<div class="card-summary">' + escapeHtml(card.hook) + '</div>' +
             '<div class="saved-actions" style="margin-top:14px;">' +
               '<button class="mini-btn" type="button" data-card-action="select" data-card-id="' + escapeHtml(card.id) + '">Select</button>' +
               '<button class="mini-btn" type="button" data-card-action="copy" data-card-id="' + escapeHtml(card.id) + '">Copy</button>' +
@@ -1475,9 +1488,9 @@
       }
 
       function renderMetrics() {
-        document.getElementById('metric-batch').textContent = String(state.batch.length);
-        document.getElementById('metric-favorites').textContent = String(state.favorites.length);
-        document.getElementById('metric-snapshots').textContent = String(state.snapshots.length);
+        document.getElementById('metric-batch').textContent = String(state.batch.length) + ' variant' + (state.batch.length === 1 ? '' : 's');
+        document.getElementById('metric-favorites').textContent = String(state.favorites.length) + ' favorite' + (state.favorites.length === 1 ? '' : 's');
+        document.getElementById('metric-snapshots').textContent = String(state.snapshots.length) + ' snapshot' + (state.snapshots.length === 1 ? '' : 's');
       }
 
       function renderStatus() {
