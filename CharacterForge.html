@@ -6,7 +6,7 @@
   <title>Character Forge | Writing Tools</title>
   <meta name="description" content="Create distinctive, story-ready characters for your writing projects.">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230e1016'/><path d='M20 74 L50 18 L80 74' stroke='%23ff7a59' stroke-width='7' fill='none'/><circle cx='50' cy='52' r='10' fill='%23ffd166'/><path d='M36 76h28' stroke='%23ffd166' stroke-width='6' stroke-linecap='round'/></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%2306070b'/><circle cx='50' cy='35' r='14' fill='none' stroke='%23fd19c8' stroke-width='7'/><path d='M24 78c4-16 16-24 26-24s22 8 26 24' fill='none' stroke='%23fd19c8' stroke-width='7' stroke-linecap='round'/><path d='M70 28l10-10' stroke='%23fae84f' stroke-width='5' stroke-linecap='round'/><path d='M76 18l6 6' stroke='%23fae84f' stroke-width='5' stroke-linecap='round'/></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Fraunces:opsz,wght@9..144,500;9..144,700&family=IBM+Plex+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -65,6 +65,13 @@
       font: inherit;
     }
 
+    a:focus-visible,
+    button:focus-visible,
+    input:focus-visible {
+      outline: 2px solid color-mix(in srgb, var(--accent) 78%, #fff 22%);
+      outline-offset: 2px;
+    }
+
     .shell {
       width: min(1240px, calc(100% - 28px));
       margin: 0 auto;
@@ -76,7 +83,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-      margin-bottom: 22px;
+      margin-bottom: 18px;
     }
 
     .brandline {
@@ -140,9 +147,6 @@
       border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
     }
 
-    .hero { margin-bottom: 12px; }
-
-    .hero-card,
     .panel,
     .card,
     .saved-card {
@@ -153,14 +157,7 @@
       backdrop-filter: blur(14px);
     }
 
-    .hero-card {
-      padding: 4px 0 2px;
-      border: none;
-      background: transparent;
-      backdrop-filter: none;
-    }
-
-    .eyebrow,
+    .page-title,
     .section-label,
     .metric-label,
     .card-tag,
@@ -171,29 +168,28 @@
       font-size: 11px;
     }
 
-    .eyebrow {
-      color: var(--muted);
-      margin-bottom: 6px;
+    .page-title {
+      color: var(--accent);
+      margin-bottom: 10px;
     }
 
     h1 {
-      margin: 0 0 6px;
+      margin: 0 0 4px;
       font-family: "Fraunces", serif;
-      font-size: clamp(1.7rem, 3vw, 2.2rem);
+      font-size: clamp(1.55rem, 2.6vw, 2rem);
       line-height: 1;
       letter-spacing: -0.03em;
       max-width: none;
     }
 
-    .hero-copy {
-      max-width: 56ch;
+    .page-copy {
+      max-width: 52ch;
       color: var(--muted);
       font-size: 13px;
-      line-height: 1.45;
-      margin-bottom: 0;
+      line-height: 1.5;
+      margin: 0 0 16px;
     }
 
-    .hero-pills,
     .chip-row,
     .suggestions,
     .flavor-row,
@@ -248,6 +244,10 @@
       color: var(--muted);
       font-size: 14px;
       line-height: 1.5;
+    }
+
+    .tool-header {
+      margin-bottom: 14px;
     }
 
     .field-grid {
@@ -508,19 +508,21 @@
     }
 
     @media (max-width: 1080px) {
-      .hero,
       .workspace {
         grid-template-columns: 1fr;
       }
     }
 
     @media (max-width: 720px) {
+      body {
+        padding-bottom: 72px;
+      }
+
       .shell {
         width: min(100% - 20px, 100%);
         padding-top: 18px;
       }
 
-      .hero-card,
       .panel,
       .card,
       .saved-card,
@@ -555,6 +557,14 @@
       .flavor-chip {
         min-height: 44px;
       }
+
+      #wtp-trigger {
+        right: 10px;
+        bottom: calc(10px + env(safe-area-inset-bottom));
+        padding: 8px 10px;
+        font-size: 10px;
+        opacity: 0.88;
+      }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -575,25 +585,19 @@
       </div>
       <div class="top-actions">
         <a class="ghost-link" href="index.html" target="_blank" rel="noopener">Suite Home</a>
-        <button id="theme-toggle" class="theme-btn" type="button" aria-label="Toggle theme">
+        <button id="theme-toggle" class="theme-btn" type="button" aria-label="Switch to light theme">
           <i data-lucide="sun-medium" style="width:18px;height:18px"></i>
         </button>
       </div>
     </header>
 
-    <section class="hero">
-      <div class="hero-card">
-        <div class="eyebrow">Character Forge</div>
-        <h1>Build characters with a spine.</h1>
-        <p class="hero-copy">Set a few inputs, generate a batch, and keep the one worth writing.</p>
-      </div>
-    </section>
-
     <main class="workspace">
       <aside class="panel" aria-label="Character inputs">
-        <div class="section-label">Input Builder</div>
-        <h2 class="section-title">Set the core ingredients</h2>
-        <p class="section-copy">Use all four fields for a tight brief, or leave any of them blank and let the tool fill the gap from curated prompts.</p>
+        <div class="tool-header">
+          <div class="page-title">Character Builder</div>
+          <h1>Build a character</h1>
+          <p class="page-copy">Enter any combination of name, role, trait, and goal. Leave blanks if you want the tool to fill them in.</p>
+        </div>
 
         <div class="field-grid">
           <section class="field">
@@ -607,7 +611,7 @@
 
           <section class="field">
             <div class="field-head">
-              <label for="field-role">Job or type of person</label>
+              <label for="field-role">Role</label>
               <button class="mini-btn" type="button" data-randomize-field="role">Shuffle</button>
             </div>
             <input id="field-role" data-field="role" type="text" placeholder="disgraced archivist, stunt lawyer, runaway prince..." autocomplete="off">
@@ -616,7 +620,7 @@
 
           <section class="field">
             <div class="field-head">
-              <label for="field-adjective">Descriptive adjective</label>
+              <label for="field-adjective">Trait</label>
               <button class="mini-btn" type="button" data-randomize-field="adjective">Shuffle</button>
             </div>
             <input id="field-adjective" data-field="adjective" type="text" placeholder="ruthless, grieving, magnetic, evasive..." autocomplete="off">
@@ -634,14 +638,14 @@
         </div>
 
         <div style="margin-top:16px;">
-          <span class="mini-label">Flavor Tags</span>
+          <span class="mini-label">Flavor</span>
           <div id="flavor-row" class="flavor-row"></div>
         </div>
 
         <div class="btn-row">
-          <button id="generate-btn" class="btn primary" type="button">Generate 5 Variants</button>
-          <button id="randomize-all-btn" class="btn secondary" type="button">Randomize All Inputs</button>
-          <button id="copy-batch-btn" class="btn secondary" type="button">Copy Current Batch</button>
+          <button id="generate-btn" class="btn primary" type="button">Generate 5</button>
+          <button id="randomize-all-btn" class="btn secondary" type="button">Randomize Inputs</button>
+          <button id="copy-batch-btn" class="btn secondary" type="button">Copy Batch</button>
           <button id="clear-draft-btn" class="btn secondary" type="button">Clear Draft</button>
         </div>
 
@@ -652,16 +656,16 @@
           <span class="status-pill"><strong id="metric-favorites">0 favorites</strong></span>
           <span class="status-pill"><strong id="metric-snapshots">0 snapshots</strong></span>
         </div>
-        <p id="status-copy" class="footer-note">Generate a batch, pick the strongest card, then save or hand it off into the rest of the suite.</p>
+        <p id="status-copy" class="footer-note">Generate a batch, pick one, and save the keepers.</p>
       </aside>
 
       <section class="results-stack" aria-label="Character results">
         <section class="panel" style="position:static;">
           <div class="results-header">
             <div>
-              <div class="section-label">Candidate Batch</div>
-              <h2 class="section-title">Story-ready character variants</h2>
-              <p class="section-copy">Scan the batch quickly. Select one card to reveal the full writing detail.</p>
+              <div class="section-label">Results</div>
+              <h2 class="section-title">Character variants</h2>
+              <p class="section-copy">Select a card to expand it.</p>
             </div>
             <div class="results-toolbar">
               <button id="download-batch-btn" class="mini-btn" type="button">Download Batch</button>
@@ -676,8 +680,8 @@
           <div class="saved-header">
             <div>
               <div class="section-label">Favorites</div>
-              <h2 class="section-title">Keep the ones worth writing</h2>
-              <p class="section-copy">This is your short list. Keep it clean and use it as the handoff point to the rest of the suite.</p>
+              <h2 class="section-title">Saved characters</h2>
+              <p class="section-copy">Keep your shortlist here.</p>
             </div>
             <div class="results-toolbar">
               <button id="copy-favorites-btn" class="mini-btn" type="button">Copy Favorites</button>
@@ -691,8 +695,8 @@
           <div class="recovery-head">
             <div>
               <div class="section-label">Recovery</div>
-              <h2 class="section-title">Snapshots before resets</h2>
-              <p class="recovery-copy">The tool keeps a short snapshot history before destructive changes so you can restore a batch you actually liked.</p>
+              <h2 class="section-title">Snapshots</h2>
+              <p class="recovery-copy">Recent batches are kept here before resets.</p>
             </div>
             <div class="recovery-actions">
               <button id="restore-snapshot-btn" class="mini-btn" type="button">Restore Latest</button>
@@ -1161,6 +1165,8 @@
       function setTheme(theme) {
         var next = theme === 'light' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-wt-theme', next);
+        var toggle = document.getElementById('theme-toggle');
+        if (toggle) toggle.setAttribute('aria-label', next === 'dark' ? 'Switch to light theme' : 'Switch to dark theme');
         try { localStorage.setItem(THEME_KEY, next); } catch (_) {}
       }
 
@@ -1511,7 +1517,7 @@
         FIELD_ORDER.forEach(function (field) {
           var holder = document.getElementById('suggestions-' + field);
           if (!holder) return;
-          holder.innerHTML = SUGGESTIONS[field].slice(0, 6).map(function (item) {
+          holder.innerHTML = SUGGESTIONS[field].slice(0, 3).map(function (item) {
             return '<button class="chip" type="button" data-suggestion-field="' + field + '" data-suggestion-value="' + escapeHtml(item) + '">' + escapeHtml(item) + '</button>';
           }).join('');
         });
@@ -1607,7 +1613,7 @@
         var selected = currentSelection();
         var copy = selected
           ? selected.name + ' is ready. Save it, copy it, or send it forward.'
-          : 'Generate a batch, pick the strongest card, then save or hand it off into the rest of the suite.';
+          : 'Generate a batch, pick one, and save the keepers.';
         document.getElementById('status-copy').textContent = copy;
       }
 
