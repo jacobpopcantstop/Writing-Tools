@@ -603,7 +603,6 @@
           <section class="field">
             <div class="field-head">
               <label for="field-name">Name</label>
-              <button class="mini-btn" type="button" data-randomize-field="name">Shuffle</button>
             </div>
             <input id="field-name" data-field="name" type="text" placeholder="Iris Vale, Mateo, June Holloway..." autocomplete="off">
             <div id="suggestions-name" class="suggestions"></div>
@@ -612,7 +611,6 @@
           <section class="field">
             <div class="field-head">
               <label for="field-role">Role</label>
-              <button class="mini-btn" type="button" data-randomize-field="role">Shuffle</button>
             </div>
             <input id="field-role" data-field="role" type="text" placeholder="disgraced archivist, stunt lawyer, runaway prince..." autocomplete="off">
             <div id="suggestions-role" class="suggestions"></div>
@@ -621,7 +619,6 @@
           <section class="field">
             <div class="field-head">
               <label for="field-adjective">Trait</label>
-              <button class="mini-btn" type="button" data-randomize-field="adjective">Shuffle</button>
             </div>
             <input id="field-adjective" data-field="adjective" type="text" placeholder="ruthless, grieving, magnetic, evasive..." autocomplete="off">
             <div id="suggestions-adjective" class="suggestions"></div>
@@ -630,7 +627,6 @@
           <section class="field">
             <div class="field-head">
               <label for="field-goal">Goal</label>
-              <button class="mini-btn" type="button" data-randomize-field="goal">Shuffle</button>
             </div>
             <input id="field-goal" data-field="goal" type="text" placeholder="win back her sister, clear his name, steal one perfect night..." autocomplete="off">
             <div id="suggestions-goal" class="suggestions"></div>
@@ -643,52 +639,34 @@
         </div>
 
         <div class="btn-row">
-          <button id="generate-btn" class="btn primary" type="button">Generate 5</button>
-          <button id="randomize-all-btn" class="btn secondary" type="button">Randomize Inputs</button>
-          <button id="copy-batch-btn" class="btn secondary" type="button">Copy Batch</button>
-          <button id="clear-draft-btn" class="btn secondary" type="button">Clear Draft</button>
+          <button id="generate-btn" class="btn primary" type="button">Build Character</button>
+          <button id="randomize-all-btn" class="btn secondary" type="button">Randomize</button>
+          <button id="clear-draft-btn" class="btn secondary" type="button">Clear</button>
         </div>
 
         <div class="status-row">
           <span class="status-pill">Selected: <strong id="selected-name">None</strong></span>
           <span class="status-pill">Flavor: <strong id="selected-flavor">General</strong></span>
-          <span class="status-pill"><strong id="metric-batch">0 variants</strong></span>
-          <span class="status-pill"><strong id="metric-favorites">0 favorites</strong></span>
+          <span class="status-pill"><strong id="metric-batch">No character yet</strong></span>
           <span class="status-pill"><strong id="metric-snapshots">0 snapshots</strong></span>
         </div>
-        <p id="status-copy" class="footer-note">Generate a batch, pick one, and save the keepers.</p>
+        <p id="status-copy" class="footer-note">Build one character or randomize the inputs.</p>
       </aside>
 
       <section class="results-stack" aria-label="Character results">
         <section class="panel" style="position:static;">
           <div class="results-header">
             <div>
-              <div class="section-label">Results</div>
-              <h2 class="section-title">Character variants</h2>
-              <p class="section-copy">Select a card to expand it.</p>
+              <div class="section-label">Character</div>
+              <h2 class="section-title">Current build</h2>
+              <p class="section-copy">One clean character card built from the inputs.</p>
             </div>
             <div class="results-toolbar">
-              <button id="download-batch-btn" class="mini-btn" type="button">Download Batch</button>
-              <button id="reroll-selected-btn" class="mini-btn" type="button">Reroll Selected</button>
+              <button id="copy-selected-btn" class="mini-btn" type="button">Copy Character</button>
               <button id="send-selected-btn" class="mini-btn" type="button">Send to Courius</button>
             </div>
           </div>
           <div id="results-grid" class="results-grid"></div>
-        </section>
-
-        <section class="panel" style="position:static;">
-          <div class="saved-header">
-            <div>
-              <div class="section-label">Favorites</div>
-              <h2 class="section-title">Saved characters</h2>
-              <p class="section-copy">Keep your shortlist here.</p>
-            </div>
-            <div class="results-toolbar">
-              <button id="copy-favorites-btn" class="mini-btn" type="button">Copy Favorites</button>
-              <button id="clear-favorites-btn" class="mini-btn danger" type="button">Clear Favorites</button>
-            </div>
-          </div>
-          <div id="favorites-grid" class="saved-grid"></div>
         </section>
 
         <section class="recovery-panel" aria-label="Recovery snapshots">
@@ -696,7 +674,7 @@
             <div>
               <div class="section-label">Recovery</div>
               <h2 class="section-title">Snapshots</h2>
-              <p class="recovery-copy">Recent batches are kept here before resets.</p>
+              <p class="recovery-copy">Recent character builds are kept here before resets.</p>
             </div>
             <div class="recovery-actions">
               <button id="restore-snapshot-btn" class="mini-btn" type="button">Restore Latest</button>
@@ -719,7 +697,7 @@
       var UPDATED_AT_KEY = 'writingtools_characterforge_updated_at';
       var THEME_KEY = 'writingtools_theme';
       var MAX_SNAPSHOTS = 12;
-      var BATCH_SIZE = 5;
+      var BATCH_SIZE = 1;
 
       var FIELD_ORDER = ['name', 'role', 'adjective', 'goal'];
       var FLAVOR_TAGS = ['General', 'Noir', 'Romance', 'Fantasy', 'Thriller', 'Comedy', 'Sci-Fi', 'Literary'];
@@ -1340,59 +1318,6 @@
         render();
       }
 
-      function rerollSelected() {
-        var selected = currentSelection();
-        if (!selected || !state.batch.length) {
-          notify('Generate a batch first.', 'error');
-          return;
-        }
-        var index = state.batch.findIndex(function (card) { return card.id === selected.id; });
-        if (index < 0) {
-          notify('Select a batch card to reroll.', 'error');
-          return;
-        }
-        saveSnapshot('before-reroll');
-        var used = {};
-        state.batch.forEach(function (card, cardIndex) {
-          if (cardIndex !== index) used[signatureFor(card)] = true;
-        });
-        var replacement = null;
-        var attempts = 0;
-        while (!replacement && attempts < 40) {
-          attempts += 1;
-          replacement = generateVariant(nextSeedDraft(), used);
-        }
-        if (!replacement) {
-          notify('Could not find a fresh variant.', 'error');
-          return;
-        }
-        state.batch[index] = replacement;
-        state.selectedId = replacement.id;
-        persistState(state, 'rerolled');
-        render();
-      }
-
-      function toggleFavorite(cardId) {
-        var batchCard = state.batch.find(function (card) { return card.id === cardId; });
-        var favoriteIndex = state.favorites.findIndex(function (card) { return card.id === cardId; });
-        if (favoriteIndex >= 0) {
-          saveSnapshot('before-unfavorite');
-          state.favorites.splice(favoriteIndex, 1);
-          persistState(state, 'unfavorited');
-          render();
-          return;
-        }
-        if (!batchCard) {
-          notify('Select a batch card to save.', 'error');
-          return;
-        }
-        var favorite = normalizeCard(batchCard);
-        favorite.isFavorite = true;
-        state.favorites.unshift(favorite);
-        persistState(state, 'favorited');
-        render();
-      }
-
       function clearDraft() {
         saveSnapshot('before-clear-draft');
         state.draft = normalizeDraft({ flavor: state.draft.flavor || 'General' });
@@ -1480,17 +1405,6 @@
         }
       }
 
-      function clearFavorites() {
-        if (!state.favorites.length) {
-          notify('No favorites to clear.', 'error');
-          return;
-        }
-        saveSnapshot('before-clear-favorites');
-        state.favorites = [];
-        persistState(state, 'cleared-favorites');
-        render();
-      }
-
       function restoreLatestSnapshot() {
         syncSnapshotsFromStorage();
         var snapshot = state.snapshots[0];
@@ -1546,54 +1460,25 @@
         var grid = document.getElementById('results-grid');
         if (!grid) return;
         if (!state.batch.length) {
-          grid.innerHTML = '<div class="empty" style="grid-column:1 / -1;">No characters yet. Set a few ingredients and generate a batch.</div>';
+          grid.innerHTML = '<div class="empty" style="grid-column:1 / -1;">No character yet. Fill the builder or hit randomize.</div>';
           return;
         }
-        grid.innerHTML = state.batch.map(function (card, index) {
-          var isSelected = card.id === state.selectedId ? ' selected' : '';
-          var isFavorite = state.favorites.some(function (saved) { return saved.id === card.id; });
-          return '<article class="card' + isSelected + '" data-card-id="' + escapeHtml(card.id) + '">' +
-            '<div class="card-topline"><span class="card-tag">Variant ' + (index + 1) + '</span><span class="hero-pill">' + escapeHtml(card.flavor) + '</span></div>' +
-            '<h3 class="card-title">' + escapeHtml(card.name) + '</h3>' +
-            '<div class="card-role">' + escapeHtml(card.adjective) + ' ' + escapeHtml(card.role) + '</div>' +
-            '<div class="card-meta"><span class="hero-pill">Goal: ' + escapeHtml(toSentence(card.goal)) + '</span></div>' +
-            '<div class="card-summary">' + escapeHtml(card.hook) + '</div>' +
-            '<div class="card-block secondary"><span class="mini-label">Conflict</span><p>' + escapeHtml(card.conflict) + '</p></div>' +
-            '<div class="card-block secondary"><span class="mini-label">Contradiction</span><p>' + escapeHtml(card.contradiction) + '</p></div>' +
-            '<div class="card-block secondary"><span class="mini-label">Voice Cue</span><p>' + escapeHtml(card.voice) + '</p></div>' +
-            '<div class="card-actions">' +
-              '<button class="mini-btn" type="button" data-card-action="select" data-card-id="' + escapeHtml(card.id) + '">Select</button>' +
-              '<button class="mini-btn" type="button" data-card-action="copy" data-card-id="' + escapeHtml(card.id) + '">Copy</button>' +
-              '<button class="mini-btn" type="button" data-card-action="favorite" data-card-id="' + escapeHtml(card.id) + '">' + (isFavorite ? 'Unsave' : 'Save') + '</button>' +
-              '<button class="mini-btn" type="button" data-card-action="context" data-card-id="' + escapeHtml(card.id) + '">Use Context</button>' +
-            '</div>' +
-          '</article>';
-        }).join('');
-      }
-
-      function renderFavorites() {
-        var grid = document.getElementById('favorites-grid');
-        if (!grid) return;
-        if (!state.favorites.length) {
-          grid.innerHTML = '<div class="empty" style="grid-column:1 / -1;">Favorites stay here between sessions. Save any card you want to revisit.</div>';
-          return;
-        }
-        grid.innerHTML = state.favorites.map(function (card) {
-          var isSelected = card.id === state.selectedId ? ' selected' : '';
-          return '<article class="saved-card' + isSelected + '" data-card-id="' + escapeHtml(card.id) + '">' +
-            '<div class="card-topline"><span class="card-tag">Favorite</span><span class="hero-pill">' + escapeHtml(card.flavor) + '</span></div>' +
-            '<h3 class="card-title">' + escapeHtml(card.name) + '</h3>' +
-            '<div class="card-role">' + escapeHtml(card.adjective) + ' ' + escapeHtml(card.role) + '</div>' +
-            '<div class="card-meta"><span class="hero-pill">Goal: ' + escapeHtml(toSentence(card.goal)) + '</span></div>' +
-            '<div class="card-summary">' + escapeHtml(card.hook) + '</div>' +
-            '<div class="saved-actions" style="margin-top:14px;">' +
-              '<button class="mini-btn" type="button" data-card-action="select" data-card-id="' + escapeHtml(card.id) + '">Select</button>' +
-              '<button class="mini-btn" type="button" data-card-action="copy" data-card-id="' + escapeHtml(card.id) + '">Copy</button>' +
-              '<button class="mini-btn" type="button" data-card-action="favorite" data-card-id="' + escapeHtml(card.id) + '">Remove</button>' +
-              '<button class="mini-btn" type="button" data-card-action="send" data-card-id="' + escapeHtml(card.id) + '">Send</button>' +
-            '</div>' +
-          '</article>';
-        }).join('');
+        var card = state.batch[0];
+        grid.innerHTML = '<article class="card selected" data-card-id="' + escapeHtml(card.id) + '">' +
+          '<div class="card-topline"><span class="card-tag">Character</span><span class="hero-pill">' + escapeHtml(card.flavor) + '</span></div>' +
+          '<h3 class="card-title">' + escapeHtml(card.name) + '</h3>' +
+          '<div class="card-role">' + escapeHtml(card.adjective) + ' ' + escapeHtml(card.role) + '</div>' +
+          '<div class="card-meta"><span class="hero-pill">Goal: ' + escapeHtml(toSentence(card.goal)) + '</span></div>' +
+          '<div class="card-block"><span class="mini-label">Hook</span><p>' + escapeHtml(card.hook) + '</p></div>' +
+          '<div class="card-block"><span class="mini-label">Conflict</span><p>' + escapeHtml(card.conflict) + '</p></div>' +
+          '<div class="card-block"><span class="mini-label">Contradiction</span><p>' + escapeHtml(card.contradiction) + '</p></div>' +
+          '<div class="card-block"><span class="mini-label">Voice Cue</span><p>' + escapeHtml(card.voice) + '</p></div>' +
+          '<div class="card-actions">' +
+            '<button class="mini-btn" type="button" data-card-action="copy" data-card-id="' + escapeHtml(card.id) + '">Copy</button>' +
+            '<button class="mini-btn" type="button" data-card-action="context" data-card-id="' + escapeHtml(card.id) + '">Use Context</button>' +
+            '<button class="mini-btn" type="button" data-card-action="send" data-card-id="' + escapeHtml(card.id) + '">Send</button>' +
+          '</div>' +
+        '</article>';
       }
 
       function renderRecovery() {
@@ -1604,16 +1489,15 @@
       }
 
       function renderMetrics() {
-        document.getElementById('metric-batch').textContent = String(state.batch.length) + ' variant' + (state.batch.length === 1 ? '' : 's');
-        document.getElementById('metric-favorites').textContent = String(state.favorites.length) + ' favorite' + (state.favorites.length === 1 ? '' : 's');
+        document.getElementById('metric-batch').textContent = state.batch.length ? 'Character ready' : 'No character yet';
         document.getElementById('metric-snapshots').textContent = String(state.snapshots.length) + ' snapshot' + (state.snapshots.length === 1 ? '' : 's');
       }
 
       function renderStatus() {
         var selected = currentSelection();
         var copy = selected
-          ? selected.name + ' is ready. Save it, copy it, or send it forward.'
-          : 'Generate a batch, pick one, and save the keepers.';
+          ? selected.name + ' is ready. Copy it or send it forward.'
+          : 'Build one character or randomize the inputs.';
         document.getElementById('status-copy').textContent = copy;
       }
 
@@ -1622,7 +1506,6 @@
         renderFlavorChips();
         renderDraft();
         renderBatch();
-        renderFavorites();
         renderRecovery();
         renderMetrics();
         renderStatus();
@@ -1647,9 +1530,7 @@
       function handleCardAction(action, cardId) {
         var card = findCard(cardId);
         if (!card) return;
-        if (action === 'select') selectCard(cardId);
         if (action === 'copy') copyText(cardToText(card), 'Character copied.');
-        if (action === 'favorite') toggleFavorite(cardId);
         if (action === 'context') useCardInContext(card);
         if (action === 'send') sendCardToCourius(card);
       }
@@ -1663,12 +1544,6 @@
           input.addEventListener('input', function () {
             state.draft[field] = clean(input.value);
             persistState(state, 'typing-' + field);
-          });
-        });
-
-        document.querySelectorAll('[data-randomize-field]').forEach(function (btn) {
-          btn.addEventListener('click', function () {
-            randomizeField(btn.getAttribute('data-randomize-field'));
           });
         });
 
@@ -1691,30 +1566,23 @@
             handleCardAction(actionBtn.getAttribute('data-card-action'), actionBtn.getAttribute('data-card-id'));
             return;
           }
-          var article = event.target.closest('[data-card-id]');
-          if (article && article.getAttribute('data-card-id')) {
-            selectCard(article.getAttribute('data-card-id'));
-          }
         });
 
         document.getElementById('generate-btn').addEventListener('click', function () {
           if (state.batch.length || state.favorites.length) saveSnapshot('before-generate');
           generateBatch();
-          notify('Generated ' + BATCH_SIZE + ' variants.');
+          notify('Character built.');
         });
         document.getElementById('randomize-all-btn').addEventListener('click', randomizeAllInputs);
-        document.getElementById('copy-batch-btn').addEventListener('click', function () {
-          copyText(batchToText(state.batch), 'Batch copied.');
-        });
         document.getElementById('clear-draft-btn').addEventListener('click', clearDraft);
-        document.getElementById('download-batch-btn').addEventListener('click', function () {
-          if (!state.batch.length) {
-            notify('No batch to download.', 'error');
+        document.getElementById('copy-selected-btn').addEventListener('click', function () {
+          var selected = currentSelection();
+          if (!selected) {
+            notify('No character to copy yet.', 'error');
             return;
           }
-          downloadText('character-forge-batch.txt', batchToText(state.batch));
+          copyText(cardToText(selected), 'Character copied.');
         });
-        document.getElementById('reroll-selected-btn').addEventListener('click', rerollSelected);
         document.getElementById('send-selected-btn').addEventListener('click', function () {
           var selected = currentSelection();
           if (!selected) {
@@ -1723,10 +1591,6 @@
           }
           sendCardToCourius(selected);
         });
-        document.getElementById('copy-favorites-btn').addEventListener('click', function () {
-          copyText(batchToText(state.favorites), 'Favorites copied.');
-        });
-        document.getElementById('clear-favorites-btn').addEventListener('click', clearFavorites);
         document.getElementById('restore-snapshot-btn').addEventListener('click', restoreLatestSnapshot);
         document.getElementById('clear-snapshots-btn').addEventListener('click', clearSnapshots);
 
@@ -1750,10 +1614,6 @@
             var selected = currentSelection();
             if (selected) {
               downloadText('character-' + selected.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.txt', cardToText(selected));
-              return;
-            }
-            if (state.batch.length) {
-              downloadText('character-forge-batch.txt', batchToText(state.batch));
               return;
             }
             notify('Nothing to export.', 'error');
