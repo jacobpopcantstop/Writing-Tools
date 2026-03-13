@@ -1243,10 +1243,17 @@
                     .replace(/</g, '&lt;')
                     .replace(/>/g, '&gt;');
 
-                const html = storyCells.map((cell, idx) => {
-                    const beatType = (BEAT_TYPES.find(t => t.id === cell.type) || BEAT_TYPES[4]).label;
+                let beatNum = 0;
+                const html = storyCells.map((cell) => {
                     const content = safe(getCellContentText(cell));
-                    return `<div class="scene-heading">BEAT ${idx + 1} - ${safe(beatType)}</div><div class="action">${content.replace(/\n/g, '<br>')}</div>`;
+                    if (cell.type === 'note') {
+                        // Notes/context become bullet points under the previous beat
+                        const bullets = content.split(/\n/).filter(l => l.trim()).map(l => `• ${l.trim()}`).join('<br>');
+                        return `<div class="action">${bullets}</div>`;
+                    }
+                    beatNum++;
+                    const beatType = (BEAT_TYPES.find(t => t.id === cell.type) || BEAT_TYPES[4]).label;
+                    return `<div class="scene-heading">BEAT ${beatNum} - ${safe(beatType)}</div><div class="action">${content.replace(/\n/g, '<br>')}</div>`;
                 }).join('');
 
                 const mode = couriusMode === 'overwrite' ? 'overwrite' : 'append';
