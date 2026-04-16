@@ -704,6 +704,27 @@ run_eval_check wt-papercut "PaperCut exposes censor bar tool" "$(cat <<'JS'
 JS
 )"
 
+run_eval_check wt-papercut "PaperCut can reorder loaded PDFs" "$(cat <<'JS'
+(() => {
+  if (typeof moveDoc !== 'function') throw new Error('moveDoc unavailable');
+  state.documents = [
+    { id: 'doc-a', fileName: 'alpha.pdf', fileSize: 100, totalPages: 1, currentPage: 1, pageMapping: [1], pageRotations: {}, annotations: {} },
+    { id: 'doc-b', fileName: 'beta.pdf', fileSize: 100, totalPages: 1, currentPage: 1, pageMapping: [1], pageRotations: {}, annotations: {} },
+    { id: 'doc-c', fileName: 'gamma.pdf', fileSize: 100, totalPages: 1, currentPage: 1, pageMapping: [1], pageRotations: {}, annotations: {} }
+  ];
+  state.activeDocId = 'doc-b';
+  renderFileList();
+  const moved = moveDoc('doc-c', 'doc-a');
+  if (!moved) throw new Error('moveDoc returned false');
+  const order = state.documents.map((doc) => doc.id).join(',');
+  if (order !== 'doc-c,doc-a,doc-b') throw new Error(`Unexpected PaperCut order: ${order}`);
+  const labels = Array.from(document.querySelectorAll('#file-list .file-name')).map((el) => (el.textContent || '').trim()).join(',');
+  if (labels !== 'gamma.pdf,alpha.pdf,beta.pdf') throw new Error(`Unexpected PaperCut file list render: ${labels}`);
+  return true;
+})()
+JS
+)"
+
 run_eval_check wt-courius "Courius append/overwrite import flows update storage" "$(cat <<'JS'
 (() => {
   const bus = window.WTContextBus;
