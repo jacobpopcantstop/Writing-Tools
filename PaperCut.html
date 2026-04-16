@@ -21,6 +21,7 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="shared-pwa.js"></script>
+    <script src="shared-tool-manifest.js"></script>
     <script src="shared-recent-sessions.js"></script>
     <script src="shared-commands.js"></script>
     <script src="shared-command-palette.js"></script>
@@ -199,6 +200,7 @@
         .annotation.text { background: transparent; padding: 4px; font-family: sans-serif; line-height: 1.2; color: black; white-space: pre-wrap; border: 1px dashed transparent; }
         .annotation.text.selected { background: rgba(255,255,255,0.8); border-color: var(--selection-border); }
         .annotation.shape { border: 2px solid var(--wt-primary); background: transparent; }
+        .annotation.censor { background: #000000; border: 1px solid rgba(0, 0, 0, 0.85); }
 
         /* Right Panel */
         .right-panel { width: 280px; background: var(--bg-panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; transition: width 0.3s; }
@@ -332,6 +334,7 @@
                     <button class="tool-btn" id="highlight-tool" title="Highlight"><i data-lucide="highlighter" style="width: 20px; height: 20px;"></i></button>
                     <button class="tool-btn" id="text-tool" title="Add Text"><i data-lucide="type" style="width: 20px; height: 20px;"></i></button>
                     <button class="tool-btn" id="shape-tool" title="Add Shape"><i data-lucide="square" style="width: 20px; height: 20px;"></i></button>
+                    <button class="tool-btn" id="censor-tool" title="Censor Bar"><i data-lucide="rectangle-horizontal" style="width: 20px; height: 20px;"></i></button>
                 </div>
                 <div class="toolbar-group">
                     <button class="tool-btn" id="rotate-left-btn" title="Rotate Left"><i data-lucide="rotate-ccw" style="width: 20px; height: 20px;"></i></button>
@@ -704,6 +707,7 @@
             document.getElementById('highlight-tool').addEventListener('click', () => setTool('highlight'));
             document.getElementById('text-tool').addEventListener('click', () => setTool('text'));
             document.getElementById('shape-tool').addEventListener('click', () => setTool('shape'));
+            document.getElementById('censor-tool').addEventListener('click', () => setTool('censor'));
 
             document.getElementById('rotate-left-btn').addEventListener('click', () => rotatePage(-90));
             document.getElementById('rotate-right-btn').addEventListener('click', () => rotatePage(90));
@@ -1099,6 +1103,8 @@
                     addHighlightAnnotation(xPct, yPct, wPct, hPct);
                 } else if (state.currentTool === 'shape') {
                     addShapeAnnotation(xPct, yPct, wPct, hPct);
+                } else if (state.currentTool === 'censor') {
+                    addCensorAnnotation(xPct, yPct, wPct, hPct);
                 }
             }
             state.isDrawing = false;
@@ -1164,6 +1170,11 @@
             renderAnnotations();
         }
 
+        function addCensorAnnotation(x, y, w, h) {
+            saveAnnotation({ id: getUniqueId(), type: 'censor', x, y, w, h });
+            renderAnnotations();
+        }
+
         function deleteSelectedAnnotation() {
             const doc = getActiveDoc();
             if (!doc || !state.selectedAnnotationId) return;
@@ -1201,6 +1212,7 @@
                 }
 
                 if (ann.type === 'highlight') el.style.background = ann.color;
+                if (ann.type === 'censor') el.style.background = '#000000';
 
                 el.addEventListener('mousedown', (e) => startDragging(e, ann.id));
                 el.addEventListener('click', (e) => selectAnnotation(e, ann.id));
@@ -1311,6 +1323,16 @@
                         page.drawRectangle({
                             x: rectX, y: rectY, width: rectWidth, height: rectHeight,
                             borderColor: PDFLib.rgb(0.99, 0.1, 0.78), borderWidth: 2, color: undefined,
+                        });
+                    } else if (ann.type === 'censor') {
+                        const rectWidth = ann.w * width;
+                        const rectHeight = ann.h * height;
+                        const rectX = ann.x * width;
+                        const rectY = height - (ann.y * height) - rectHeight;
+
+                        page.drawRectangle({
+                            x: rectX, y: rectY, width: rectWidth, height: rectHeight,
+                            color: PDFLib.rgb(0, 0, 0), opacity: 1,
                         });
                     } else if (ann.type === 'text') {
                         const textX = ann.x * width;

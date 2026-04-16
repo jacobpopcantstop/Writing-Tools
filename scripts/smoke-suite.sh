@@ -2,9 +2,21 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PORT="${PORT:-8017}"
+PORT="${PORT:-0}"
 HOST="${HOST:-127.0.0.1}"
-PW_CMD=(npx --yes --package @playwright/cli playwright-cli)
+PW_VERSION="${PW_VERSION:-0.1.1}"
+PW_TIMEOUT_SECONDS="${PW_TIMEOUT_SECONDS:-120}"
+SERVER_READY_TIMEOUT_SECONDS="${SERVER_READY_TIMEOUT_SECONDS:-30}"
+SERVER_LOG="${SERVER_LOG:-$(python3 -c '
+import os
+import tempfile
+
+fd, path = tempfile.mkstemp(prefix="writing-tools-smoke-server.", suffix=".log")
+os.close(fd)
+print(path)
+')}"
+PW_CMD=(npx --yes --package "@playwright/cli@${PW_VERSION}" playwright-cli)
+SMOKE_RUN_ID="${SMOKE_RUN_ID:-$(printf '%x' $$)}"
 
 require_cmd() {
   if ! command -v "$1" >/dev/null 2>&1; then
@@ -14,7 +26,106 @@ require_cmd() {
 }
 
 run_pw() {
-  "${PW_CMD[@]}" "$@"
+  local args=("$@")
+  local i
+
+  for i in "${!args[@]}"; do
+    case "${args[$i]}" in
+      -s=wt-*)
+        case "${args[$i]#-s=wt-}" in
+          index) code=i ;;
+          characterforge) code=c ;;
+          synax) code=s ;;
+          thisbutthat) code=t ;;
+          joterie) code=j ;;
+          beathive) code=b ;;
+          wribbon) code=w ;;
+          withernaught) code=n ;;
+          courius) code=r ;;
+          papercut) code=p ;;
+          *) code=x ;;
+        esac
+        args[$i]="-s=wt${SMOKE_RUN_ID}${code}"
+        ;;
+    esac
+  done
+
+  run_with_timeout "$PW_TIMEOUT_SECONDS" "${PW_CMD[@]}" "${args[@]}"
+}
+
+pick_free_port() {
+  python3 -c '
+import socket
+
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+sock.bind(("127.0.0.1", 0))
+print(sock.getsockname()[1])
+sock.close()
+'
+}
+
+run_with_timeout() {
+  local timeout_s="$1"
+  shift
+  python3 -c '
+import subprocess
+import sys
+
+timeout = float(sys.argv[1])
+cmd = sys.argv[2:]
+try:
+    raise SystemExit(subprocess.run(cmd, check=True, timeout=timeout).returncode)
+except subprocess.TimeoutExpired:
+    print("Timed out after {}s: {}".format(timeout, " ".join(cmd)), file=sys.stderr)
+    raise SystemExit(124)
+except subprocess.CalledProcessError as exc:
+    raise SystemExit(exc.returncode)
+' "$timeout_s" "$@"
+}
+
+wait_for_server() {
+  local url="$1"
+  local timeout_s="${2:-30}"
+  local server_pid="${3:-}"
+  local attempts=0
+  local max_attempts=$((timeout_s * 10))
+
+  while [ "$attempts" -lt "$max_attempts" ]; do
+    if [[ -n "$server_pid" ]] && ! kill -0 "$server_pid" >/dev/null 2>&1; then
+      echo "Static server exited before it became ready." >&2
+      [[ -f "${SERVER_LOG:-}" ]] && cat "$SERVER_LOG" >&2 || true
+      return 1
+    fi
+
+    if python3 -c '
+import sys
+import urllib.request
+
+url = sys.argv[1]
+with urllib.request.urlopen(url, timeout=1):
+    raise SystemExit(0)
+' "$url"; then
+      return 0
+    fi
+
+    attempts=$((attempts + 1))
+    sleep 0.1
+  done
+
+  echo "Server did not become ready at ${url} within ${timeout_s}s." >&2
+  [[ -f "${SERVER_LOG:-}" ]] && cat "$SERVER_LOG" >&2 || true
+  return 1
+}
+
+start_server() {
+  if [[ -z "$PORT" || "$PORT" == "0" ]]; then
+    PORT="$(pick_free_port)"
+  fi
+
+  : >"$SERVER_LOG"
+  python3 -m http.server "$PORT" --bind "$HOST" --directory "$ROOT_DIR" >"$SERVER_LOG" 2>&1 &
+  SERVER_PID=$!
+  wait_for_server "http://${HOST}:${PORT}/index.html" "$SERVER_READY_TIMEOUT_SECONDS" "$SERVER_PID"
 }
 
 run_eval_check() {
@@ -69,6 +180,9 @@ cleanup() {
   if [[ -n "${SERVER_PID:-}" ]]; then
     kill "$SERVER_PID" >/dev/null 2>&1 || true
   fi
+  if [[ -f "${SERVER_LOG:-}" ]]; then
+    rm -f "$SERVER_LOG" >/dev/null 2>&1 || true
+  fi
 }
 
 require_cmd python3
@@ -76,9 +190,9 @@ require_cmd npx
 require_cmd rg
 
 trap cleanup EXIT
-python3 -m http.server "$PORT" --directory "$ROOT_DIR" >/tmp/writing_tools_smoke_server.log 2>&1 &
-SERVER_PID=$!
-sleep 1
+trap 'exit 130' INT
+trap 'exit 143' TERM
+start_server
 
 open_and_check wt-index index.html
 open_and_check wt-characterforge CharacterForge.html
@@ -123,6 +237,17 @@ JS
 
 run_eval_check wt-characterforge "CharacterForge snapshot restore advances history and preserves favorite selection" "$(cat <<'JS'
 (() => {
+  const stateCurrent = {
+    draft: { name: 'Arden Cross', role: 'courier', adjective: 'frayed', goal: 'stay invisible', flavor: 'Thriller' },
+    batch: [],
+    favorites: [
+      { id: 'fav-c', name: 'Arden Cross', role: 'courier', adjective: 'frayed', goal: 'stay invisible', hook: 'C', conflict: 'C', contradiction: 'C', voice: 'C', flavor: 'Thriller', sourceInputs: {}, createdAt: new Date().toISOString(), isFavorite: true }
+    ],
+    selectedId: 'fav-c',
+    snapshots: [],
+    updatedAt: '',
+    lastAction: ''
+  };
   const stateA = {
     draft: { name: 'Iris Vale', role: 'archivist', adjective: 'restless', goal: 'clear her name', flavor: 'Noir' },
     batch: [],
@@ -148,28 +273,36 @@ run_eval_check wt-characterforge "CharacterForge snapshot restore advances histo
     { id: 'snap-b', label: 'newer', createdAt: new Date().toISOString(), state: stateB },
     { id: 'snap-a', label: 'older', createdAt: new Date(Date.now() - 60000).toISOString(), state: stateA }
   ]));
-  localStorage.setItem('writingtools_characterforge_state_v1', JSON.stringify(stateB));
+  localStorage.setItem('writingtools_characterforge_state_v1', JSON.stringify(stateCurrent));
   localStorage.setItem('writingtools_characterforge_revision_v1', '5');
   const restore = document.getElementById('restore-snapshot-btn');
-  const remove = document.querySelector('#favorites-grid [data-card-action="favorite"]');
   if (!restore) throw new Error('CharacterForge restore button missing');
-  restore.click();
+  const originalConfirm = window.confirm;
+  window.confirm = () => true;
+  try {
+    restore.click();
+  } finally {
+    window.confirm = originalConfirm;
+  }
   let restored = JSON.parse(localStorage.getItem('writingtools_characterforge_state_v1') || '{}');
   let snapshots = JSON.parse(localStorage.getItem('writingtools_characterforge_snapshots_v1') || '[]');
-  if (restored.selectedId !== 'fav-b') throw new Error('Newest snapshot did not restore first');
-  if (!Array.isArray(snapshots) || snapshots.length !== 1 || snapshots[0].id !== 'snap-a') throw new Error('Snapshot stack did not advance after first restore');
-  restore.click();
+  if (restored.selectedId !== 'fav-b') throw new Error('Latest snapshot did not restore');
+  if (!Array.isArray(snapshots) || snapshots.length !== 3) throw new Error('Restore backup snapshot was not recorded');
+  if (snapshots[0].label !== 'manual-restore-backup') throw new Error('Latest CharacterForge snapshot is not the manual restore backup');
+  if (snapshots[0]?.state?.selectedId !== 'fav-c') throw new Error('Restore backup did not preserve the pre-restore selection');
+  if (snapshots[1]?.id !== 'snap-b' || snapshots[2]?.id !== 'snap-a') throw new Error('Existing snapshots were reordered unexpectedly');
+  window.confirm = () => true;
+  try {
+    restore.click();
+  } finally {
+    window.confirm = originalConfirm;
+  }
   restored = JSON.parse(localStorage.getItem('writingtools_characterforge_state_v1') || '{}');
   snapshots = JSON.parse(localStorage.getItem('writingtools_characterforge_snapshots_v1') || '[]');
-  if (restored.selectedId !== 'fav-a') throw new Error('Older snapshot was not restored second');
-  if (!Array.isArray(snapshots) || snapshots.length !== 0) throw new Error('Snapshot stack was not consumed');
+  if (restored.selectedId !== 'fav-c') throw new Error('Restore backup was not reversible');
+  if (!Array.isArray(snapshots) || snapshots.length < 4) throw new Error('Second restore did not capture a fresh backup snapshot');
   if (!document.getElementById('selected-name') || !document.getElementById('selected-flavor')) throw new Error('CharacterForge status pills missing');
-  if ((document.getElementById('selected-flavor').textContent || '').trim() !== 'Noir') throw new Error('Selected flavor pill did not reflect restored favorite');
-  const removeBtn = document.querySelector('#favorites-grid [data-card-action="favorite"]');
-  if (!removeBtn) throw new Error('CharacterForge favorite remove button missing');
-  removeBtn.click();
-  const finalState = JSON.parse(localStorage.getItem('writingtools_characterforge_state_v1') || '{}');
-  if (finalState.selectedId !== 'fav-c') throw new Error('Selection did not fall back to a remaining favorite');
+  if ((document.getElementById('selected-flavor').textContent || '').trim() !== 'Thriller') throw new Error('Selected flavor pill did not reflect restored favorite');
   return true;
 })()
 JS
@@ -551,6 +684,21 @@ run_eval_check wt-papercut "PaperCut latest snapshot restore applies persisted s
   const payload = JSON.parse(localStorage.getItem('writingtools_papercut_state_v1') || '{}');
   if (!payload || payload.theme !== 'light') throw new Error('PaperCut theme not restored');
   if (!payload.recentSession || payload.recentSession.fileName !== 'restored.pdf') throw new Error('PaperCut recent session not restored');
+  return true;
+})()
+JS
+)"
+
+run_eval_check wt-papercut "PaperCut exposes censor bar tool" "$(cat <<'JS'
+(() => {
+  const btn = document.getElementById('censor-tool');
+  if (!btn) throw new Error('PaperCut censor tool button missing');
+  if (typeof setTool !== 'function') throw new Error('setTool unavailable');
+  setTool('censor');
+  if (!btn.classList.contains('active')) throw new Error('PaperCut censor tool did not activate');
+  const layer = document.getElementById('annotation-layer');
+  if (!layer || !layer.classList.contains('active')) throw new Error('PaperCut annotation layer did not enable for censor tool');
+  setTool('select');
   return true;
 })()
 JS

@@ -6,6 +6,7 @@
     <title>Courius Screenwriter</title>
     <script src="shared-context.js"></script>
     <script src="shared-pwa.js"></script>
+    <script src="shared-tool-manifest.js"></script>
     <script src="shared-recent-sessions.js"></script>
     <script src="shared-commands.js"></script>
     <script src="shared-command-palette.js"></script>
@@ -384,6 +385,7 @@
             main { padding: 0; display: block; overflow: visible; height: auto; }
             #page { box-shadow: none; margin: 0; padding: 1in 1in 1in 1.5in !important; width: 100%; background-image: none; height: auto; overflow: visible; color: #000000 !important; caret-color: transparent !important; }
             #page div { opacity: 1 !important; }
+            #page div[data-placeholder]::before { content: none !important; display: none !important; }
             .title-page-container { height: auto; min-height: 9in; margin-bottom: 0; border: none; }
             ::selection { background: transparent !important; }
         }
