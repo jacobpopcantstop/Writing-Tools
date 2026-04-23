@@ -157,6 +157,8 @@
         #page {
             background-color: var(--paper-color);
             color: var(--text-color);
+            font-size: var(--font-size);
+            line-height: var(--line-height);
             width: 8.5in;
             min-height: 11in; 
             padding: 1in 1in 1in 1.5in; 
@@ -285,6 +287,8 @@
             min-height: 1.1em; 
             position: relative; 
             overflow-wrap: break-word; 
+            font-size: inherit;
+            line-height: inherit;
         }
 
         #page .scene-heading { 
@@ -379,11 +383,12 @@
         @media print {
             html, body { height: auto; overflow: visible; }
             body { background: none; }
-            .floating-controls, #save-bar, .scene-nav, .help-modal { display: none !important; }
+            .floating-controls, #save-bar, .scene-nav, .help-modal, #context-tip, .imports-panel, .autocomplete-dropdown { display: none !important; }
             a[href="index.html"] { display: none !important; }
             .courius-import-marker { display: none !important; }
             main { padding: 0; display: block; overflow: visible; height: auto; }
             #page { box-shadow: none; margin: 0; padding: 1in 1in 1in 1.5in !important; width: 100%; background-image: none; height: auto; overflow: visible; color: #000000 !important; caret-color: transparent !important; }
+            #page, #page div { font-size: 12pt !important; line-height: 1.15 !important; }
             #page div { opacity: 1 !important; }
             #page div[data-placeholder]::before { content: none !important; display: none !important; }
             .title-page-container { height: auto; min-height: 9in; margin-bottom: 0; border: none; }
@@ -583,6 +588,11 @@
             cursor: pointer;
             flex-shrink: 0;
         }
+        #context-tip button.context-tip-dismiss {
+            border-color: rgba(255, 255, 255, 0.18);
+            opacity: 0.7;
+            padding: 5px 7px;
+        }
         #context-tip button:hover { background: rgba(253, 25, 200, 0.12); }
         .courius-import-marker {
             display: flex;
@@ -743,6 +753,7 @@
 <div id="context-tip">
     <span id="context-tip-text"></span>
     <button onclick="insertContextSnapshot()">Insert</button>
+    <button class="context-tip-dismiss" onclick="dismissContextTip()" aria-label="Dismiss context tip">✕</button>
 </div>
 
 <div id="imports-panel" class="imports-panel">
@@ -825,6 +836,7 @@
     const STORAGE_REV_KEY = 'writingtools_courius_revision_v1';
     const STORAGE_SNAPSHOTS_KEY = 'writingtools_courius_snapshots_v1';
     const IMPORTS_KEY = 'writingtools_courius_imports_v1';
+    const CONTEXT_TIP_DISMISS_KEY = 'writingtools_courius_context_tip_dismiss_v1';
     // NEW KEY to avoid conflict with previous Light Mode settings
     const THEME_STORAGE_KEY = 'courius_theme_v2'; 
     
@@ -865,6 +877,7 @@
     let dropdownBlock = null;
     let dropdownMatches = [];
     let dropdownActiveIndex = 0;
+    let suggestionsRefreshTimer = null;
     let localKnownRevision = 0;
     const COURIUS_TAB_ID = 'courius-' + Math.random().toString(36).slice(2, 10);
 
@@ -893,6 +906,12 @@
         const container = document.createElement('div');
         container.innerHTML = raw;
         container.querySelectorAll('script,iframe,object,embed,link,meta').forEach((node) => node.remove());
+        container.querySelectorAll('font').forEach((node) => {
+            const parent = node.parentNode;
+            if (!parent) return;
+            while (node.firstChild) parent.insertBefore(node.firstChild, node);
+            parent.removeChild(node);
+        });
         container.querySelectorAll('*').forEach((el) => {
             Array.from(el.attributes).forEach((attr) => {
                 const name = String(attr.name || '').toLowerCase();
@@ -903,6 +922,9 @@
                     return;
                 }
                 if ((name === 'href' || name === 'src') && /^\s*javascript:/i.test(value)) {
+                    el.removeAttribute(attr.name);
+                }
+                if (name === 'style') {
                     el.removeAttribute(attr.name);
                 }
             });
@@ -1051,13 +1073,28 @@
         const el = document.getElementById('context-tip');
         const text = document.getElementById('context-tip-text');
         const ctx = getSharedContext();
+        const dismissedAt = localStorage.getItem(CONTEXT_TIP_DISMISS_KEY) || '';
         if (!el || !text || !ctx || !ctx.topic) {
             if (el) el.classList.remove('visible');
+            return;
+        }
+        if (ctx.updatedAt && dismissedAt && dismissedAt === ctx.updatedAt) {
+            el.classList.remove('visible');
             return;
         }
         const stamp = ctx.updatedAt ? new Date(ctx.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
         text.textContent = `Context: ${ctx.topic}${stamp ? ` · ${stamp}` : ''}`;
         el.classList.add('visible');
+    }
+
+    function dismissContextTip() {
+        const ctx = getSharedContext();
+        const stamp = ctx && ctx.updatedAt ? String(ctx.updatedAt) : 'dismissed';
+        try {
+            localStorage.setItem(CONTEXT_TIP_DISMISS_KEY, stamp);
+        } catch (_) {}
+        const el = document.getElementById('context-tip');
+        if (el) el.classList.remove('visible');
     }
 
     function getStorageComparableHtml(rawHtml) {
@@ -1269,25 +1306,9 @@
 
         const type = block.className;
         
-        if ((type === 'scene-heading' || type === 'character') && e.data) {
+        if ((type === 'scene-heading' || type === 'character') && e.inputType === 'insertText' && e.data) {
             e.preventDefault();
             document.execCommand('insertText', false, e.data.toUpperCase());
-        }
-
-        if (type === 'action') {
-            const text = getPureText(block);
-            if ((text.length === 0 || text.match(/[.!?]\s*$/)) && e.data && e.data.match(/[a-z]/)) {
-                e.preventDefault();
-                document.execCommand('insertText', false, e.data.toUpperCase());
-            }
-        }
-
-        if (type === 'dialogue') {
-            const text = getPureText(block);
-            if (text.length === 0 && e.data && e.data.match(/[a-z]/)) {
-                e.preventDefault();
-                document.execCommand('insertText', false, e.data.toUpperCase());
-            }
         }
     });
 
@@ -1375,9 +1396,12 @@
     });
 
     EDITOR.addEventListener('keyup', (e) => {
-        // Eagerly refresh suggestion sets so newly typed chars/headings are immediately available
-        updateSuggestions();
         const block = getBlock(window.getSelection().anchorNode);
+        if (block && (block.className === 'character' || block.className === 'scene-heading')) {
+            updateSuggestions();
+        } else {
+            queueSuggestionsRefresh();
+        }
         if (block && (block.className === 'character' || block.className === 'scene-heading')) {
             handleAutofill(block, block.className, e.key);
         } else {
@@ -1408,6 +1432,14 @@
              node = node.parentElement;
         }
         return node;
+    }
+
+    function queueSuggestionsRefresh() {
+        if (suggestionsRefreshTimer) clearTimeout(suggestionsRefreshTimer);
+        suggestionsRefreshTimer = setTimeout(() => {
+            updateSuggestions();
+            suggestionsRefreshTimer = null;
+        }, 120);
     }
 
     function setBlockType(div, type) {
