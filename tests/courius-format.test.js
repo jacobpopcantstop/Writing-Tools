@@ -50,3 +50,27 @@ test('buildRtf: title page is all 12pt centered', () => {
   const rtf = WT.buildRtf({ title: 'T', author: 'A', contact: 'C', elements: [] });
   assert.ok(rtf.includes('\\pard\\qc\\sa240\\sb0\\fs24'));
 });
+
+test('buildFdx maps element types and escapes XML', () => {
+  const fdx = WT.buildFdx({
+    title: 'My <Film>', author: 'A & B',
+    elements: [
+      { type: 'scene-heading', text: 'INT. ROOM - DAY' },
+      { type: 'character', text: 'JANE' },
+      { type: 'dialogue', text: 'Hi & bye' },
+      { type: 'parenthetical', text: '(softly)' },
+      { type: 'transition', text: 'CUT TO:' },
+      { type: 'action', text: 'A pause.' }
+    ]
+  });
+  assert.ok(fdx.startsWith('<?xml version="1.0" encoding="UTF-8"?>'));
+  assert.ok(fdx.includes('<Title>My &lt;Film&gt;</Title>'));
+  assert.ok(fdx.includes('<Author>A &amp; B</Author>'));
+  assert.ok(fdx.includes('<Paragraph Type="Scene Heading">'));
+  assert.ok(fdx.includes('<Paragraph Type="Character">'));
+  assert.ok(fdx.includes('<Paragraph Type="Dialogue"><Text>Hi &amp; bye</Text>'));
+  assert.ok(fdx.includes('<Paragraph Type="Parenthetical">'));
+  assert.ok(fdx.includes('<Paragraph Type="Transition">'));
+  assert.ok(fdx.includes('<Paragraph Type="Action">'));
+  assert.ok(fdx.endsWith('</Content></FinalDraft>'));
+});

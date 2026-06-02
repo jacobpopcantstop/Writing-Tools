@@ -48,7 +48,47 @@
       '}';
   }
 
-  var WTScreenplay = { rtfPrefix: rtfPrefix, rtfSuffix: rtfSuffix, escapeRtf: escapeRtf, buildRtf: buildRtf };
+  function escapeXml(unsafe) {
+    return String(unsafe || '').replace(/[<>&'"]/g, function (c) {
+      switch (c) {
+        case '<': return '&lt;';
+        case '>': return '&gt;';
+        case '&': return '&amp;';
+        case '\'': return '&apos;';
+        case '"': return '&quot;';
+      }
+    });
+  }
+
+  function fdxType(type) {
+    switch (type) {
+      case 'scene-heading': return 'Scene Heading';
+      case 'character':     return 'Character';
+      case 'dialogue':      return 'Dialogue';
+      case 'parenthetical': return 'Parenthetical';
+      case 'transition':    return 'Transition';
+      default:              return 'Action';
+    }
+  }
+
+  function buildFdx(doc) {
+    var d = doc || {};
+    var xml = '<?xml version="1.0" encoding="UTF-8"?><FinalDraft DocumentType="Script" Template="No" Version="1">';
+    if (d.title || d.author) {
+      xml += '<TitlePage><Title>' + escapeXml(d.title || '') + '</Title>' +
+             '<Author>' + escapeXml(d.author || '') + '</Author></TitlePage>';
+    }
+    xml += '<Content>';
+    (d.elements || []).forEach(function (el) {
+      var type = (el && el.type) || 'action';
+      xml += '<Paragraph Type="' + fdxType(type) + '"><Text>' +
+             escapeXml(String((el && el.text) || '').trim()) + '</Text></Paragraph>';
+    });
+    xml += '</Content></FinalDraft>';
+    return xml;
+  }
+
+  var WTScreenplay = { rtfPrefix: rtfPrefix, rtfSuffix: rtfSuffix, escapeRtf: escapeRtf, buildRtf: buildRtf, escapeXml: escapeXml, fdxType: fdxType, buildFdx: buildFdx };
   if (typeof module !== 'undefined' && module.exports) module.exports = WTScreenplay;
   if (root) root.WTScreenplay = WTScreenplay;
 })(typeof window !== 'undefined' ? window : null);
