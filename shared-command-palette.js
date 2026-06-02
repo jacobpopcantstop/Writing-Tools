@@ -119,7 +119,8 @@
       '.wtp-item span{font:500 13px/1.3 "Space Grotesk", sans-serif;opacity:.75;}',
       '.wtp-item.active,.wtp-item:hover{background:rgba(255,255,255,0.09);}',
       '.wtp-empty{padding:14px;color:rgba(255,255,255,0.7);font:500 13px/1.3 "Space Grotesk", sans-serif;}',
-      '.wtp-foot{padding:8px 12px;border-top:1px solid rgba(255,255,255,0.1);font:600 10px/1.2 "IBM Plex Mono", monospace;letter-spacing:.08em;text-transform:uppercase;opacity:.7;}'
+      '.wtp-foot{padding:8px 12px;border-top:1px solid rgba(255,255,255,0.1);font:600 10px/1.2 "IBM Plex Mono", monospace;letter-spacing:.08em;text-transform:uppercase;opacity:.7;}',
+      '@media print{.wtp-trigger,.wtp-overlay{display:none !important;}}'
     ].join('');
     document.head.appendChild(style);
   }
