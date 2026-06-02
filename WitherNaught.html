@@ -6,9 +6,11 @@
   <title>WitherNaught</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23050505'/><path d='M35 78 Q62 48 68 22' stroke='%23da70d6' stroke-width='5.5' stroke-linecap='round' fill='none'/><path d='M35 78 Q55 58 65 38' stroke='%23da70d6' stroke-width='3.5' stroke-linecap='round' fill='none' opacity='0.6'/><path d='M35 78 L68 22' stroke='%23da70d6' stroke-width='2' stroke-linecap='round' fill='none' opacity='0.3'/><circle cx='68' cy='22' r='4' fill='%23da70d6'/></svg>">
   <link rel="manifest" href="manifest.webmanifest">
-  <script src="shared-context.js"></script>
+  <script src="shared-toast.js"></script>
+  <script src="shared-courius.js"></script>
   <script src="shared-pwa.js"></script>
   <script src="shared-export.js"></script>
+  <script src="shared-tool-manifest.js"></script>
   <script src="shared-recent-sessions.js"></script>
   <script src="shared-commands.js"></script>
   <script src="shared-command-palette.js"></script>
@@ -330,7 +332,7 @@ const THEMES = {
       _highScoresCache: null,
       _highScoresCacheKey: null,
       couriusMode: 'append',
-      sharedContext: { topic: '', constraints: '', audience: '', tone: '', updatedAt: '', lastTool: '' }
+      sharedContext: null
     };
     const WITHER_STATE_KEY = 'writingtools_withernaught_state_v1';
     const WITHER_REV_KEY = 'writingtools_withernaught_revision_v1';
@@ -644,46 +646,6 @@ const THEMES = {
       window.open(`mailto:?subject=${encodeURIComponent(subjectText)}&body=${encodeURIComponent(bodyText)}`);
     }
 
-    function syncSharedContext() {
-      const bus = window.WTContextBus;
-      if (!bus) return;
-      const ctx = bus.getContext();
-      state.sharedContext = {
-        topic: ctx.topic || '',
-        constraints: ctx.constraints || '',
-        audience: ctx.audience || '',
-        tone: ctx.tone || '',
-        updatedAt: ctx.updatedAt || '',
-        lastTool: ctx.lastTool || ''
-      };
-    }
-
-    function pushToContext() {
-      const bus = window.WTContextBus;
-      if (!bus) return;
-      const topicFromText = state.text.trim().split(/\s+/).slice(0, 8).join(' ');
-      bus.mergeContext({
-        topic: state.sharedContext.topic || topicFromText,
-        constraints: `WitherNaught draft: ${state.wordCount} words, ${formatTime(state.totalTime)}`,
-        lastTool: 'WitherNaught'
-      });
-      syncSharedContext();
-    }
-
-    function pullContextIntoDraft() {
-      syncSharedContext();
-      const topic = (state.sharedContext.topic || '').trim();
-      if (!topic) return;
-      const hasText = state.text.trim().length > 0;
-      if (!hasText) {
-        state.text = `${topic}\n\n`;
-      } else if (!state.text.toLowerCase().includes(topic.toLowerCase())) {
-        state.text = `${topic}\n\n${state.text}`;
-      }
-      state.wordCount = state.text.trim().split(/\s+/).filter(w => w.length > 0).length;
-      render();
-    }
-
     function sendToCourius() {
       if (!state.text.trim()) return;
       const mode = state.couriusMode === 'overwrite' ? 'overwrite' : 'append';
@@ -693,29 +655,17 @@ const THEMES = {
         return `<div class="action">${escapeHtml(line)}</div>`;
       }).join('');
       let transferOk = false;
-      const bus = window.WTContextBus;
       try {
-        if (bus && typeof bus.transferToCourius === 'function') {
-          transferOk = !!bus.transferToCourius(html, 'WitherNaught', mode);
-        } else if (bus && mode === 'overwrite' && typeof bus.overwriteCourius === 'function') {
-          transferOk = !!bus.overwriteCourius(html, 'WitherNaught');
-        } else if (bus && typeof bus.appendToCourius === 'function') {
-          transferOk = !!bus.appendToCourius(html, 'WitherNaught');
-        } else {
-          const key = 'writingtools_courius_storage';
-          const existing = localStorage.getItem(key) || '';
+        if (window.WTCourius) {
           if (mode === 'overwrite') {
-            localStorage.setItem(key, html);
+            transferOk = !!window.WTCourius.overwrite(html, 'WitherNaught');
           } else {
-            const divider = existing && existing.trim() ? '<div class="action"><br></div><div class="action">--- WITHERNAUGHT ---</div>' : '';
-            localStorage.setItem(key, `${existing}${divider}${html}`);
+            transferOk = !!window.WTCourius.append(html, 'WitherNaught');
           }
-          transferOk = true;
         }
       } catch (_) {}
-      pushToContext();
-      if (bus && typeof bus.notify === 'function') {
-        bus.notify(
+      if (window.WTToast && typeof window.WTToast.notify === 'function') {
+        window.WTToast.notify(
           transferOk
             ? `Sent to Courius (${mode === 'overwrite' ? 'replace' : 'append'})`
             : 'Courius transfer failed',
@@ -992,19 +942,6 @@ const THEMES = {
                   </div>
                 </section>
 
-                <section class="animate-slide-up stagger-2 p-4 rounded-xl border" style="border-color: ${t.border}; background: ${t.accentLight};">
-                  <div class="flex items-center justify-between gap-3">
-                    <div>
-                      <div class="text-[10px] uppercase tracking-[0.25em] opacity-50 font-sans mb-1">Context Bus</div>
-                      <div class="text-sm font-sans">${state.sharedContext.topic || 'No topic set'}</div>
-                    </div>
-                    <div class="flex gap-2">
-                      <button onclick="WitherNaught.pullContextIntoDraft()" class="px-3 py-2 rounded-lg text-[10px] uppercase tracking-wider font-sans border opacity-70 hover:opacity-100" style="border-color: ${t.border};">Pull</button>
-                      <button onclick="WitherNaught.pushToContext()" class="px-3 py-2 rounded-lg text-[10px] uppercase tracking-wider font-sans border opacity-70 hover:opacity-100" style="border-color: ${t.border};">Push</button>
-                    </div>
-                  </div>
-                </section>
-
                 <section class="animate-slide-up stagger-2">
                   <h3 class="text-[10px] uppercase tracking-[0.25em] opacity-50 mb-6 flex items-center gap-2 font-sans">
                     ${icons.trendingUp} Score Progression
@@ -1120,7 +1057,6 @@ const THEMES = {
               <div>
                 <h1 class="text-lg md:text-xl font-light tracking-[0.3em] uppercase">WitherNaught</h1>
                 <p class="text-[9px] tracking-[0.2em] uppercase opacity-40 font-sans hidden md:block">${DIFFICULTIES[state.difficulty].label}</p>
-                ${state.sharedContext.updatedAt ? `<p class="text-[9px] tracking-[0.14em] uppercase opacity-30 font-sans hidden md:block mt-1">Context · ${new Date(state.sharedContext.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>` : ''}
               </div>
             </div>
             
@@ -1590,8 +1526,6 @@ const THEMES = {
       exportToGmail,
       sendToCourius,
       setCouriusMode,
-      pushToContext,
-      pullContextIntoDraft,
       restoreWitherSnapshot,
       clearWitherSnapshots
     };
@@ -1600,7 +1534,6 @@ const THEMES = {
     function init() {
       localKnownRevision = parseInt(localStorage.getItem(WITHER_REV_KEY) || '0', 10) || 0;
       loadFromStorage();
-      syncSharedContext();
 
       if (!localStorage.getItem('flowstate_prefs_v13')) {
         // Sync from suite-wide theme if available
@@ -1618,12 +1551,6 @@ const THEMES = {
       render();
       animationId = requestAnimationFrame(animate);
 
-      if (window.WTContextBus && typeof window.WTContextBus.subscribe === 'function') {
-        window.WTContextBus.subscribe(() => {
-          syncSharedContext();
-          render();
-        });
-      }
       window.addEventListener('storage', (event) => {
         if (!event || event.key !== WITHER_REV_KEY) return;
         const incomingRev = parseInt(event.newValue || '0', 10) || 0;
