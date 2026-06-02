@@ -18,8 +18,9 @@
     
     <!-- Babel for JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="shared-context.js"></script>
+    <script src="shared-toast.js"></script>
     <script src="shared-pwa.js"></script>
+    <script src="shared-tool-manifest.js"></script>
     <script src="shared-recent-sessions.js"></script>
     <script src="shared-commands.js"></script>
     <script src="shared-command-palette.js"></script>
@@ -370,7 +371,7 @@
         /* --- APP COMPONENTS --- */
 
         const Card = ({ id, word, type, onPin, isPinned, onDefine, onSwap, onDelete }) => (
-        <div className="group relative bg-white/80 dark:bg-slate-800/60 backdrop-blur-sm border border-pink-100 dark:border-white/5 rounded-2xl p-8 shadow-sm hover:shadow-2xl hover:shadow-pink-500/10 hover:-translate-y-1 hover:border-pink-200 dark:hover:border-pink-500/30 transition-all duration-500 animate-in fade-in zoom-in-95 fill-mode-forwards">
+        <div className="group relative bg-white/80 dark:bg-slate-800/60 backdrop-blur-sm border border-pink-100 dark:border-white/5 rounded-2xl p-8 shadow-sm hover:shadow-2xl hover:shadow-pink-500/10 hover:-translate-y-1 hover:border-pink-200 dark:hover:border-pink-500/30 transition-all duration-300">
             <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 bg-white/90 dark:bg-slate-800/90 rounded-lg p-1 shadow-sm backdrop-blur-sm border border-slate-100 dark:border-white/5">
                 <button 
                     onClick={(e) => { e.stopPropagation(); onSwap(id, type); }} 
@@ -455,7 +456,6 @@
             const [showCanvas, setShowCanvas] = useState(false);
             const [showSettings, setShowSettings] = useState(false);
             const [serendipityCount, setSerendipityCount] = useState(4);
-            const [contextMeta, setContextMeta] = useState({ updatedAt: '', topic: '' });
             const [snapshotRows, setSnapshotRows] = useState([]);
             
             // Persistent State
@@ -503,10 +503,16 @@
             const stateRef = useRef(null);
 
             const notifyReliability = useCallback((message, level = 'info') => {
-                const bus = window.WTContextBus;
-                if (bus && typeof bus.notify === 'function') {
-                    bus.notify(String(message || ''), level);
+                if (window.WTToast && typeof window.WTToast.notify === 'function') {
+                    window.WTToast.notify(String(message || ''), level);
                 }
+            }, []);
+
+            const stableEntryId = useCallback((entry, idx) => {
+                if (entry && entry.id != null && String(entry.id).trim()) return String(entry.id);
+                const word = String(entry && entry.word || '').trim().toLowerCase();
+                const type = String(entry && entry.type || 'Word').trim().toLowerCase();
+                return `${type}:${word}:${idx}`;
             }, []);
 
             const normalizeWordSet = useCallback((list) => {
@@ -514,24 +520,24 @@
                 return list
                     .filter((entry) => entry && typeof entry.word === 'string')
                     .map((entry, idx) => ({
-                        id: Number(entry.id) || (Date.now() + idx),
+                        id: stableEntryId(entry, idx),
                         word: String(entry.word || '').trim(),
                         type: String(entry.type || 'Word')
                     }))
                     .filter((entry) => entry.word);
-            }, []);
+            }, [stableEntryId]);
 
             const normalizePinned = useCallback((list) => {
                 if (!Array.isArray(list)) return [];
                 return list
                     .filter((entry) => entry && typeof entry.word === 'string')
                     .map((entry, idx) => ({
-                        id: Number(entry.id) || (Date.now() + idx),
+                        id: stableEntryId(entry, idx),
                         word: String(entry.word || '').trim(),
                         type: String(entry.type || 'Word')
                     }))
                     .filter((entry) => entry.word);
-            }, []);
+            }, [stableEntryId]);
 
             const normalizeHistory = useCallback((list) => {
                 if (!Array.isArray(list)) return [];
@@ -675,25 +681,6 @@
                 refreshSnapshots();
             }, [refreshSnapshots]);
 
-            const publishContext = useCallback((partial) => {
-                const bus = window.WTContextBus;
-                if (!bus || !partial || typeof partial !== 'object') return;
-                bus.mergeContext({ ...partial, lastTool: 'Synax' });
-            }, []);
-
-            useEffect(() => {
-                const bus = window.WTContextBus;
-                if (!bus) return;
-                const ctx = bus.getContext();
-                if (ctx.topic && !contextInput.trim()) {
-                    setContextInput(ctx.topic);
-                }
-                setContextMeta({ updatedAt: ctx.updatedAt || '', topic: ctx.topic || '' });
-                const unsub = bus.subscribe((next) => {
-                    setContextMeta({ updatedAt: next.updatedAt || '', topic: next.topic || '' });
-                });
-                return () => { if (typeof unsub === 'function') unsub(); };
-            }, []);
             const serendipityPoolRef = useRef({ nouns: [], verbs: [], adjectives: [], updatedAt: 0 });
 
             // --- EFFECTS ---
@@ -966,9 +953,6 @@
 
             const generate = useCallback(async () => {
                 setLoading(true);
-                if ((mode === 'context' || mode === 'rhyme') && contextInput.trim()) {
-                    publishContext({ topic: contextInput.trim() });
-                }
                 let newWords = [];
 
                 try {
@@ -1143,10 +1127,13 @@
                     { word: getRandomAvoidRecent(LOCAL_LIBRARY.nouns), type: 'Noun (Offline)' }
                 ];
                 }
-                const finalSet = newWords.map((w, i) => ({ ...w, id: Date.now() + i }));
+                const finalSet = newWords.map((w, i) => ({
+                    ...w,
+                    id: `${String(w.type || 'word').toLowerCase()}:${String(w.word || '').toLowerCase()}:${Date.now()}:${i}`
+                }));
                 addToHistory(finalSet);
                 setLoading(false);
-            }, [mode, contextInput, offlineMode, serendipityCount, publishContext]); 
+            }, [mode, contextInput, offlineMode, serendipityCount]);
 
             // Auto-Generate Effect
             useEffect(() => {
@@ -1180,7 +1167,7 @@
 
             const handlePin = useCallback((word, type) => {
                 if (!pinned.some(p => p.word === word)) {
-                setPinned([...pinned, { word, type, id: Date.now() }]);
+                setPinned([...pinned, { word, type, id: `${String(type || 'word').toLowerCase()}:${String(word || '').toLowerCase()}` }]);
                 } else {
                 setPinned(pinned.filter(p => p.word !== word));
                 }
@@ -1273,9 +1260,6 @@
                         <div>
                             <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-white font-serif leading-none">Synax</h1>
                             <span className="text-[10px] font-bold tracking-widest text-pink-500 dark:text-pink-400 uppercase">Creative Engine</span>
-                            <div className="text-[9px] uppercase tracking-[0.14em] opacity-35 mt-1" title={contextMeta.topic || 'No topic set'}>
-                                Context · {contextMeta.updatedAt ? new Date(contextMeta.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'idle'}
-                            </div>
                         </div>
                         </div>
 
