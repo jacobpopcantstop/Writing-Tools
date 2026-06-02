@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Courius Screenwriter</title>
-    <script src="shared-context.js"></script>
+    <script src="shared-toast.js"></script>
+    <script src="shared-courius.js"></script>
     <script src="shared-pwa.js"></script>
     <script src="shared-tool-manifest.js"></script>
     <script src="shared-recent-sessions.js"></script>
@@ -553,37 +554,6 @@
             font-family: var(--courier);
         }
 
-        #context-tip {
-            position: fixed;
-            left: 16px;
-            top: 16px;
-            z-index: 1200;
-            max-width: min(360px, calc(100vw - 32px));
-            background: var(--ui-bg);
-            color: var(--ui-text);
-            border: 1px solid rgba(253, 25, 200, 0.25);
-            border-radius: 10px;
-            padding: 8px 10px;
-            font-size: 0.62rem;
-            letter-spacing: 0.03em;
-            display: none;
-            align-items: center;
-            gap: 8px;
-        }
-        #context-tip.visible { display: flex; }
-        #context-tip button {
-            border: 1px solid rgba(253, 25, 200, 0.4);
-            background: transparent;
-            color: inherit;
-            border-radius: 7px;
-            font-size: 0.58rem;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            padding: 5px 8px;
-            cursor: pointer;
-            flex-shrink: 0;
-        }
-        #context-tip button:hover { background: rgba(253, 25, 200, 0.12); }
         .courius-import-marker {
             display: flex;
             align-items: center;
@@ -724,12 +694,6 @@
             }
             .side-btn { min-height: 44px; min-width: 44px; }
             #save-bar { right: 12px; bottom: calc(62px + env(safe-area-inset-bottom)); }
-            #context-tip {
-                left: 10px;
-                right: 10px;
-                max-width: none;
-                top: calc(10px + env(safe-area-inset-top));
-            }
             .imports-panel {
                 right: 10px;
                 top: calc(56px + env(safe-area-inset-top));
@@ -740,11 +704,6 @@
     </style>
 </head>
 <body>
-<div id="context-tip">
-    <span id="context-tip-text"></span>
-    <button onclick="insertContextSnapshot()">Insert</button>
-</div>
-
 <div id="imports-panel" class="imports-panel">
     <div class="imports-header">
         <span>Courius Imports</span>
@@ -868,15 +827,9 @@
     let localKnownRevision = 0;
     const COURIUS_TAB_ID = 'courius-' + Math.random().toString(36).slice(2, 10);
 
-    function getSharedContext() {
-        const bus = window.WTContextBus;
-        return bus ? bus.getContext() : null;
-    }
-
     function getImportHistory() {
-        const bus = window.WTContextBus;
-        if (bus && typeof bus.getCouriusImportHistory === 'function') {
-            return bus.getCouriusImportHistory();
+        if (window.WTCourius && typeof window.WTCourius.getImportHistory === 'function') {
+            return window.WTCourius.getImportHistory();
         }
         try {
             const raw = localStorage.getItem(IMPORTS_KEY);
@@ -1047,19 +1000,6 @@
         renderImportHistory();
     }
 
-    function updateContextTip() {
-        const el = document.getElementById('context-tip');
-        const text = document.getElementById('context-tip-text');
-        const ctx = getSharedContext();
-        if (!el || !text || !ctx || !ctx.topic) {
-            if (el) el.classList.remove('visible');
-            return;
-        }
-        const stamp = ctx.updatedAt ? new Date(ctx.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-        text.textContent = `Context: ${ctx.topic}${stamp ? ` · ${stamp}` : ''}`;
-        el.classList.add('visible');
-    }
-
     function getStorageComparableHtml(rawHtml) {
         return String(rawHtml || '')
             .replace(/<span class="suggestion">[\s\S]*?<\/span>/gi, '')
@@ -1147,15 +1087,11 @@
         
         updateSelectorUI();
         updatePageCount();
-        updateContextTip();
         if (writingTimerLastStart && !writingTimerInterval) {
             writingTimerInterval = setInterval(tickWritingTimer, 250);
         }
         renderWritingTimer();
         renderImportHistory();
-        if (window.WTContextBus && typeof window.WTContextBus.subscribe === 'function') {
-            window.WTContextBus.subscribe(() => updateContextTip());
-        }
     });
 
     window.addEventListener('storage', (e) => {
@@ -1197,31 +1133,6 @@
         const isLight = document.body.classList.contains('day-mode');
         localStorage.setItem(THEME_STORAGE_KEY, isLight ? 'light' : 'dark');
         localStorage.setItem('writingtools_theme', isLight ? 'light' : 'dark');
-    }
-
-    function insertContextSnapshot() {
-        const ctx = getSharedContext();
-        if (!ctx || !ctx.topic) return;
-        const lines = [
-            `CONTEXT TOPIC: ${ctx.topic}`,
-            ctx.tone ? `TONE: ${ctx.tone}` : '',
-            ctx.audience ? `AUDIENCE: ${ctx.audience}` : '',
-            ctx.constraints ? `CONSTRAINTS: ${ctx.constraints}` : ''
-        ].filter(Boolean).join('\n');
-        if (!lines) return;
-
-        const block = document.createElement('div');
-        block.className = 'action';
-        block.innerText = lines;
-
-        const firstScriptBlock = Array.from(EDITOR.children).find((el) => !el.classList.contains('title-page-container'));
-        if (firstScriptBlock) {
-            firstScriptBlock.before(block);
-        } else {
-            EDITOR.appendChild(block);
-        }
-        triggerSave();
-        updateContextTip();
     }
 
     // --- Title Page Logic ---
