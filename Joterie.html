@@ -10,9 +10,10 @@
     <link rel="manifest" href="manifest.webmanifest">
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="shared-context.js"></script>
+    <script src="shared-toast.js"></script>
     <script src="shared-pwa.js"></script>
     <script src="shared-export.js"></script>
+    <script src="shared-tool-manifest.js"></script>
     <script src="shared-recent-sessions.js"></script>
     <script src="shared-commands.js"></script>
     <script src="shared-command-palette.js"></script>
@@ -395,26 +396,6 @@
             archives: loadJoterieArchives()
         };
 
-        function getContextBus() {
-            return window.WTContextBus || null;
-        }
-
-        function refreshContextBadge() {
-            const badge = document.getElementById('ctx-badge');
-            if (!badge) return;
-            const bus = getContextBus();
-            if (!bus) {
-                badge.innerText = 'Context · n/a';
-                return;
-            }
-            const ctx = bus.getContext();
-            const stamp = ctx.updatedAt
-                ? new Date(ctx.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                : 'idle';
-            badge.innerText = `Context · ${stamp}`;
-            badge.title = ctx.topic || 'No topic set';
-        }
-
         const elements = {
             html: document.getElementById('main-html'),
             logoContainer: document.getElementById('logo-container'),
@@ -531,10 +512,6 @@
         // Session Logic
         function startSession() {
             state.focusPrompt = elements.homePrompt.value;
-            const bus = getContextBus();
-            if (bus && state.focusPrompt.trim()) {
-                bus.mergeContext({ topic: state.focusPrompt.trim(), lastTool: 'Joterie' });
-            }
             state.sessionCards = [];
             state.timeLeft = state.configTime;
             state.elapsedTime = 0;
@@ -589,12 +566,19 @@
             state.sessionCards.forEach(card => {
                 const cardEl = document.createElement('div');
                 cardEl.className = `flex items-stretch gap-4 rounded-xl transition-all duration-200 border border-transparent hover:border-current/10 ${card.status === 'kept' ? 'bg-white/5' : 'opacity-20'}`;
-                cardEl.innerHTML = `
-                    <div class="flex-1 font-serif-italic text-lg md:text-xl leading-relaxed p-4 cursor-pointer">${card.text}</div>
-                    <button class="w-16 flex items-center justify-center transition-all bg-black/5 rounded-r-xl">
-                        <i data-lucide="${card.status === 'kept' ? 'check' : 'rotate-ccw'}" class="w-5 h-5"></i>
-                    </button>
-                `;
+                const textWrap = document.createElement('div');
+                textWrap.className = 'flex-1 font-serif-italic text-lg md:text-xl leading-relaxed p-4 cursor-pointer';
+                textWrap.textContent = card.text;
+
+                const toggleBtn = document.createElement('button');
+                toggleBtn.className = 'w-16 flex items-center justify-center transition-all bg-black/5 rounded-r-xl';
+                const icon = document.createElement('i');
+                icon.setAttribute('data-lucide', card.status === 'kept' ? 'check' : 'rotate-ccw');
+                icon.className = 'w-5 h-5';
+                toggleBtn.appendChild(icon);
+
+                cardEl.appendChild(textWrap);
+                cardEl.appendChild(toggleBtn);
                 cardEl.onclick = () => {
                     card.status = card.status === 'kept' ? 'tossed' : 'kept';
                     renderReview();
@@ -607,13 +591,16 @@
         function renderSummaryList(cards) {
             elements.summaryList.innerHTML = '';
             if (cards.length === 0) {
-                elements.summaryList.innerHTML = '<div class="text-center opacity-40 text-sm font-serif-italic italic">No jots kept.</div>';
+                const empty = document.createElement('div');
+                empty.className = 'text-center opacity-40 text-sm font-serif-italic italic';
+                empty.textContent = 'No jots kept.';
+                elements.summaryList.appendChild(empty);
                 return;
             }
             cards.forEach(card => {
                 const el = document.createElement('div');
                 el.className = 'font-serif-italic text-xl border-b border-theme pb-2 mb-2 opacity-80';
-                el.innerText = card.text;
+                el.textContent = card.text;
                 elements.summaryList.appendChild(el);
             });
         }
@@ -652,23 +639,45 @@
             if (snapshots.length > 0) {
                 const snapWrap = document.createElement('div');
                 snapWrap.className = 'bg-white/5 p-4 rounded-2xl border history-item-border transition-colors';
-                snapWrap.innerHTML = `
-                    <div class="flex justify-between items-center mb-3">
-                        <div class="text-[10px] font-black tracking-[0.2em] opacity-60 uppercase">Recovery Snapshots</div>
-                        <button id="clear-archive-snapshots-btn" class="text-[9px] font-black tracking-[0.2em] opacity-60 hover:opacity-100 uppercase">Clear</button>
-                    </div>
-                    <div class="grid gap-2">
-                        ${snapshots.slice(0, 8).map((snap) => `
-                            <button data-restore-snapshot="${snap.id}" class="text-left p-2 rounded-lg border history-item-border transition-colors hover:bg-white/5">
-                                <div class="text-[10px] font-black tracking-[0.15em] uppercase">${String(snap.reason || 'snapshot').replace(/-/g, ' ')}</div>
-                                <div class="text-[11px] opacity-50">${snap.at ? new Date(snap.at).toLocaleString() : 'Unknown time'}</div>
-                            </button>
-                        `).join('')}
-                    </div>
-                `;
+                const snapHeader = document.createElement('div');
+                snapHeader.className = 'flex justify-between items-center mb-3';
+
+                const snapTitle = document.createElement('div');
+                snapTitle.className = 'text-[10px] font-black tracking-[0.2em] opacity-60 uppercase';
+                snapTitle.textContent = 'Recovery Snapshots';
+
+                const clearBtn = document.createElement('button');
+                clearBtn.id = 'clear-archive-snapshots-btn';
+                clearBtn.className = 'text-[9px] font-black tracking-[0.2em] opacity-60 hover:opacity-100 uppercase';
+                clearBtn.textContent = 'Clear';
+
+                snapHeader.appendChild(snapTitle);
+                snapHeader.appendChild(clearBtn);
+
+                const snapGrid = document.createElement('div');
+                snapGrid.className = 'grid gap-2';
+                snapshots.slice(0, 8).forEach((snap) => {
+                    const restoreBtn = document.createElement('button');
+                    restoreBtn.setAttribute('data-restore-snapshot', snap.id);
+                    restoreBtn.className = 'text-left p-2 rounded-lg border history-item-border transition-colors hover:bg-white/5';
+
+                    const reason = document.createElement('div');
+                    reason.className = 'text-[10px] font-black tracking-[0.15em] uppercase';
+                    reason.textContent = String(snap.reason || 'snapshot').replace(/-/g, ' ');
+
+                    const time = document.createElement('div');
+                    time.className = 'text-[11px] opacity-50';
+                    time.textContent = snap.at ? new Date(snap.at).toLocaleString() : 'Unknown time';
+
+                    restoreBtn.appendChild(reason);
+                    restoreBtn.appendChild(time);
+                    snapGrid.appendChild(restoreBtn);
+                });
+
+                snapWrap.appendChild(snapHeader);
+                snapWrap.appendChild(snapGrid);
                 elements.historyList.appendChild(snapWrap);
-                const clearBtn = document.getElementById('clear-archive-snapshots-btn');
-                if (clearBtn) clearBtn.onclick = clearArchiveSnapshots;
+                clearBtn.onclick = clearArchiveSnapshots;
                 snapWrap.querySelectorAll('[data-restore-snapshot]').forEach((btn) => {
                     btn.onclick = () => restoreArchiveSnapshot(btn.getAttribute('data-restore-snapshot'));
                 });
@@ -684,22 +693,50 @@
                 const el = document.createElement('div');
                 // Use history-item-border class to use theme color instead of generic current/10
                 el.className = 'bg-white/5 p-6 rounded-2xl border history-item-border transition-colors cursor-pointer group';
-                el.innerHTML = `
-                    <div class="flex justify-between items-start mb-4 pointer-events-none">
-                        <div>
-                            <div class="text-[10px] font-black tracking-[0.2em] opacity-40 uppercase mb-1">${entry.date}</div>
-                            <div class="font-serif-italic text-2xl">${entry.prompt}</div>
-                        </div>
-                        <div class="text-right opacity-40">
-                            <div class="text-[10px] font-black tracking-[0.2em]">${entry.cards.length} JOTS</div>
-                            <div class="text-[10px] font-black tracking-[0.2em]">${entry.ipm} IPM</div>
-                        </div>
-                    </div>
-                    <div class="space-y-2 opacity-60 text-sm font-serif-italic pl-2 border-l-2 history-divider pointer-events-none">
-                        ${entry.cards.slice(0, 3).map(c => `<div class="truncate">${c}</div>`).join('')}
-                        ${entry.cards.length > 3 ? `<div class="text-[10px] opacity-50">+${entry.cards.length - 3} more</div>` : ''}
-                    </div>
-                `;
+                const topRow = document.createElement('div');
+                topRow.className = 'flex justify-between items-start mb-4 pointer-events-none';
+
+                const left = document.createElement('div');
+                const date = document.createElement('div');
+                date.className = 'text-[10px] font-black tracking-[0.2em] opacity-40 uppercase mb-1';
+                date.textContent = entry.date;
+                const prompt = document.createElement('div');
+                prompt.className = 'font-serif-italic text-2xl';
+                prompt.textContent = entry.prompt;
+                left.appendChild(date);
+                left.appendChild(prompt);
+
+                const right = document.createElement('div');
+                right.className = 'text-right opacity-40';
+                const jots = document.createElement('div');
+                jots.className = 'text-[10px] font-black tracking-[0.2em]';
+                jots.textContent = `${entry.cards.length} JOTS`;
+                const ipm = document.createElement('div');
+                ipm.className = 'text-[10px] font-black tracking-[0.2em]';
+                ipm.textContent = `${entry.ipm} IPM`;
+                right.appendChild(jots);
+                right.appendChild(ipm);
+
+                topRow.appendChild(left);
+                topRow.appendChild(right);
+
+                const cardsWrap = document.createElement('div');
+                cardsWrap.className = 'space-y-2 opacity-60 text-sm font-serif-italic pl-2 border-l-2 history-divider pointer-events-none';
+                entry.cards.slice(0, 3).forEach((text) => {
+                    const item = document.createElement('div');
+                    item.className = 'truncate';
+                    item.textContent = text;
+                    cardsWrap.appendChild(item);
+                });
+                if (entry.cards.length > 3) {
+                    const more = document.createElement('div');
+                    more.className = 'text-[10px] opacity-50';
+                    more.textContent = `+${entry.cards.length - 3} more`;
+                    cardsWrap.appendChild(more);
+                }
+
+                el.appendChild(topRow);
+                el.appendChild(cardsWrap);
                 
                 // Add click handler to load the session
                 el.onclick = () => loadArchiveEntry(entry);
@@ -759,13 +796,6 @@
         }
 
         function sendToBeatHive() {
-            const kept = state.sessionCards.filter(c => c.status === 'kept').map(c => c.text.trim()).filter(Boolean);
-            const topic = (state.focusPrompt || '').trim();
-            const bus = getContextBus();
-            if (bus) {
-                const constraints = kept.length ? `Joterie keeps: ${kept.slice(0, 6).join(' | ')}` : '';
-                bus.mergeContext({ topic, constraints, lastTool: 'Joterie' });
-            }
             window.open('BeatHive.html', '_blank', 'noopener');
         }
 
@@ -822,15 +852,6 @@
         // Init
         localKnownRevision = parseInt(localStorage.getItem(JOTERIE_REV_KEY) || '0', 10) || 0;
         applyTheme();
-        const bus = getContextBus();
-        if (bus) {
-            const ctx = bus.getContext();
-            if (ctx.topic && !elements.homePrompt.value.trim()) {
-                elements.homePrompt.value = ctx.topic;
-            }
-            bus.subscribe(() => refreshContextBadge());
-        }
-        refreshContextBadge();
         window.addEventListener('storage', (event) => {
             if (!event || event.key !== JOTERIE_REV_KEY) return;
             const incomingRev = parseInt(event.newValue || '0', 10) || 0;
