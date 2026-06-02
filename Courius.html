@@ -6,6 +6,7 @@
     <title>Courius Screenwriter</title>
     <script src="shared-toast.js"></script>
     <script src="shared-courius.js"></script>
+    <script src="courius-format.js"></script>
     <script src="shared-pwa.js"></script>
     <script src="shared-tool-manifest.js"></script>
     <script src="shared-recent-sessions.js"></script>
@@ -1983,119 +1984,40 @@
         return div.innerHTML;
     }
 
+    function collectScriptElements() {
+        return Array.from(EDITOR.children).map(function (div) {
+            return { className: div.className || '', text: getPureText(div).trim() };
+        });
+    }
+    function collectTitlePage() {
+        var tp = EDITOR.querySelector('.title-page-container');
+        if (!tp) return {};
+        return {
+            title: (tp.querySelector('.tp-title') && tp.querySelector('.tp-title').innerText) || '',
+            author: (tp.querySelector('.tp-author') && tp.querySelector('.tp-author').innerText) || '',
+            contact: (tp.querySelector('.tp-contact') && tp.querySelector('.tp-contact').innerText) || ''
+        };
+    }
+
     // --- FDX Export ---
     function downloadFDX() {
-        let xml = '<?xml version="1.0" encoding="UTF-8"?><FinalDraft DocumentType="Script" Template="No" Version="1">';
-        
-        // Handle Title Page
-        const tpContainer = EDITOR.querySelector('.title-page-container');
-        if (tpContainer) {
-            const title = tpContainer.querySelector('.tp-title').innerText;
-            const author = tpContainer.querySelector('.tp-author').innerText;
-            xml += `<TitlePage><Title>${escapeXml(title)}</Title><Author>${escapeXml(author)}</Author></TitlePage>`;
-        }
-        
-        xml += '<Content>';
-        
-        // Loop through script elements, ignoring title page container
-        Array.from(EDITOR.children).forEach(div => {
-            if (div.classList.contains('title-page-container')) return;
-            
-            const type = div.className;
-            let fdxType = 'Action';
-            if (type === 'scene-heading') fdxType = 'Scene Heading';
-            else if (type === 'character') fdxType = 'Character';
-            else if (type === 'dialogue') fdxType = 'Dialogue';
-            else if (type === 'parenthetical') fdxType = 'Parenthetical';
-            else if (type === 'transition') fdxType = 'Transition';
-            xml += `<Paragraph Type="${fdxType}"><Text>${escapeXml(getPureText(div).trim())}</Text></Paragraph>`;
-        });
-        
-        xml += '</Content></FinalDraft>';
-        const blob = new Blob([xml], { type: 'text/xml' });
-        const a = document.createElement('a');
+        var tp = collectTitlePage();
+        var elements = WTScreenplay.extractElements(collectScriptElements());
+        var xml = WTScreenplay.buildFdx({ title: tp.title, author: tp.author, elements: elements });
+        var blob = new Blob([xml], { type: 'text/xml' });
+        var a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         a.download = 'script.fdx';
         a.click();
-    }
-
-    function escapeXml(unsafe) {
-        return unsafe.replace(/[<>&'"]/g, function (c) {
-            switch (c) {
-                case '<': return '&lt;';
-                case '>': return '&gt;';
-                case '&': return '&amp;';
-                case '\'': return '&apos;';
-                case '"': return '&quot;';
-            }
-        });
-    }
-
-    function escapeRtf(text) {
-        return String(text || '')
-            .replace(/\\/g, '\\\\')
-            .replace(/\{/g, '\\{')
-            .replace(/\}/g, '\\}')
-            .replace(/\r\n|\r|\n/g, '\\line ');
-    }
-
-    function paragraphPrefixForType(type) {
-        switch (type) {
-            case 'scene-heading':
-                return '\\pard\\sa120\\sb120\\li0\\ri0\\qj\\b ';
-            case 'character':
-                return '\\pard\\sa60\\sb0\\li2160\\ri1440\\qj\\b ';
-            case 'parenthetical':
-                return '\\pard\\sa0\\sb0\\li1800\\ri1800\\qj\\i ';
-            case 'dialogue':
-                return '\\pard\\sa60\\sb60\\li1440\\ri1080\\qj ';
-            case 'transition':
-                return '\\pard\\sa120\\sb120\\li2880\\ri0\\qr\\b ';
-            case 'action':
-            default:
-                return '\\pard\\sa120\\sb120\\li0\\ri0\\qj ';
-        }
-    }
-
-    function buildRtfDocument() {
-        const sections = [];
-        const tpContainer = EDITOR.querySelector('.title-page-container');
-        if (tpContainer) {
-            const title = tpContainer.querySelector('.tp-title')?.innerText || 'TITLE';
-            const author = tpContainer.querySelector('.tp-author')?.innerText || '';
-            const contact = tpContainer.querySelector('.tp-contact')?.innerText || '';
-            sections.push('\\pard\\qc\\sa240\\sb120\\fs32\\b ' + escapeRtf(title) + '\\b0\\par');
-            if (author) sections.push('\\pard\\qc\\sa120\\sb120\\fs24 ' + escapeRtf(author) + '\\par');
-            if (contact) sections.push('\\pard\\qc\\sa120\\sb240\\fs20 ' + escapeRtf(contact) + '\\par');
-            sections.push('\\pard\\par');
-        }
-
-        Array.from(EDITOR.children).forEach((div) => {
-            if (!div || div.classList.contains('title-page-container')) return;
-            const type = div.className || 'action';
-            const text = getPureText(div).trim();
-            if (!text) {
-                sections.push('\\pard\\par');
-                return;
-            }
-            const prefix = paragraphPrefixForType(type);
-            const suffix = (type === 'scene-heading' || type === 'character' || type === 'transition')
-                ? '\\b0\\par'
-                : (type === 'parenthetical' ? '\\i0\\par' : '\\par');
-            sections.push(prefix + escapeRtf(text) + suffix);
-        });
-
-        return '{\\rtf1\\ansi\\deff0' +
-            '{\\fonttbl{\\f0 Courier New;}}' +
-            '\\viewkind4\\uc1\\pard\\f0\\fs24 ' +
-            sections.join('') +
-            '}';
+        URL.revokeObjectURL(a.href);
     }
 
     function downloadRTF() {
-        const rtf = buildRtfDocument();
-        const blob = new Blob([rtf], { type: 'application/rtf' });
-        const a = document.createElement('a');
+        var tp = collectTitlePage();
+        var elements = WTScreenplay.extractElements(collectScriptElements());
+        var rtf = WTScreenplay.buildRtf({ title: tp.title, author: tp.author, contact: tp.contact, elements: elements });
+        var blob = new Blob([rtf], { type: 'application/rtf' });
+        var a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         a.download = 'script.rtf';
         a.click();
