@@ -88,7 +88,31 @@
     return xml;
   }
 
-  var WTScreenplay = { rtfPrefix: rtfPrefix, rtfSuffix: rtfSuffix, escapeRtf: escapeRtf, buildRtf: buildRtf, escapeXml: escapeXml, fdxType: fdxType, buildFdx: buildFdx };
+  var KNOWN_TYPES = ['scene-heading', 'character', 'parenthetical', 'dialogue', 'transition', 'action'];
+  var SKIP_CLASSES = ['title-page-container', 'courius-import-marker', 'snapshot-marker'];
+
+  function classifyType(className) {
+    var tokens = String(className || '').split(/\s+/);
+    for (var i = 0; i < tokens.length; i += 1) {
+      if (KNOWN_TYPES.indexOf(tokens[i]) !== -1) return tokens[i];
+    }
+    return 'action';
+  }
+
+  function shouldSkip(className) {
+    var tokens = String(className || '').split(/\s+/);
+    return tokens.some(function (t) { return SKIP_CLASSES.indexOf(t) !== -1; });
+  }
+
+  function extractElements(rawList) {
+    return (rawList || []).reduce(function (acc, item) {
+      if (!item || shouldSkip(item.className)) return acc;
+      acc.push({ type: classifyType(item.className), text: String(item.text || '') });
+      return acc;
+    }, []);
+  }
+
+  var WTScreenplay = { rtfPrefix: rtfPrefix, rtfSuffix: rtfSuffix, escapeRtf: escapeRtf, buildRtf: buildRtf, escapeXml: escapeXml, fdxType: fdxType, buildFdx: buildFdx, extractElements: extractElements, classifyType: classifyType };
   if (typeof module !== 'undefined' && module.exports) module.exports = WTScreenplay;
   if (root) root.WTScreenplay = WTScreenplay;
 })(typeof window !== 'undefined' ? window : null);

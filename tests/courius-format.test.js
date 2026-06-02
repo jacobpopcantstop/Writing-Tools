@@ -74,3 +74,22 @@ test('buildFdx maps element types and escapes XML', () => {
   assert.ok(fdx.includes('<Paragraph Type="Action">'));
   assert.ok(fdx.endsWith('</Content></FinalDraft>'));
 });
+
+test('extractElements drops import markers, snapshots, and title-page container', () => {
+  const raw = [
+    { className: 'title-page-container', text: 'MY FILM' },
+    { className: 'action courius-import-marker', text: 'WRIBBON imported 1/2/2026' },
+    { className: 'scene-heading', text: 'INT. ROOM - DAY' },
+    { className: 'action', text: 'A pause.' },
+    { className: 'action snapshot-marker', text: 'SNAPSHOT restored' }
+  ];
+  const out = WT.extractElements(raw);
+  assert.deepStrictEqual(out, [
+    { type: 'scene-heading', text: 'INT. ROOM - DAY' },
+    { type: 'action', text: 'A pause.' }
+  ]);
+});
+test('extractElements normalizes class to first known token', () => {
+  const out = WT.extractElements([{ className: 'character extra-class', text: 'JANE' }]);
+  assert.deepStrictEqual(out, [{ type: 'character', text: 'JANE' }]);
+});
