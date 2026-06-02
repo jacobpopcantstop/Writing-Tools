@@ -289,16 +289,6 @@
       font-family: "IBM Plex Mono", monospace;
     }
 
-    .featured {
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 16px;
-      background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 10%, var(--card)), color-mix(in srgb, var(--accent-2) 8%, var(--card)));
-      margin-bottom: 16px;
-    }
-
-    .featured h3 { font-size: 15px; text-transform: uppercase; letter-spacing: .12em; color: var(--accent-2); margin-bottom: 10px; font-family: "IBM Plex Mono", monospace; }
-    .featured p { font-size: 15px; color: var(--text); opacity: .9; }
     .context-workspace {
       border: 1px solid var(--line);
       border-radius: 16px;
@@ -368,26 +358,6 @@
     }
     .ctx-btn:hover { background: var(--card-hover); }
     .ctx-btn.primary { border-color: var(--accent); color: var(--accent); }
-    .quick-links {
-      margin-top: 12px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    .quick-link {
-      text-decoration: none;
-      font-family: "IBM Plex Mono", monospace;
-      font-size: 11px;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      padding: 7px 10px;
-      color: var(--text);
-      background: color-mix(in srgb, var(--bg-soft) 75%, transparent);
-      transition: background .2s ease, transform .2s ease;
-    }
-    .quick-link:hover { background: var(--card-hover); transform: translateY(-1px); }
     .panel-toggle {
       display: inline-flex;
       align-items: center;
@@ -789,7 +759,7 @@
       .cards .card:nth-child(3n) { border-right: 1px solid var(--line); }
       .card { min-height: 146px; padding: 14px; }
       .card h2 { font-size: 21px; }
-      .theme-btn, .quick-link, .hero-action { min-height: 44px; }
+      .theme-btn, .hero-action { min-height: 44px; }
       .context-grid { grid-template-columns: 1fr; }
       .ctx-btn { min-height: 44px; }
       .cmdk-trigger { display: inline-flex; }
@@ -819,18 +789,6 @@
         <p>Build sketch premises, comic characters, structure, and scripts in one local writing suite.</p>
       </div>
     </section>
-
-    <div class="featured">
-      <h3>Front And Center For Sketch Comedy</h3>
-      <p>Start in <strong>Character Forge</strong> when you need a sketch-ready person with a job, point of view, and comic want. Then pressure-test the premise in <strong>ThisButThat</strong> or branch into <strong>Synax</strong> if the idea still needs a stronger hook.</p>
-      <div class="quick-links">
-        <a class="quick-link" href="CharacterForge.html" target="_blank" rel="noopener">Build Character</a>
-        <a class="quick-link" href="ThisButThat.html" target="_blank" rel="noopener">Test Premise</a>
-        <a class="quick-link" href="Synax.html" target="_blank" rel="noopener">Find Hook</a>
-        <a class="quick-link" href="BeatHive.html" target="_blank" rel="noopener">Build Structure</a>
-        <a class="quick-link" href="#recent-sessions">Resume Work</a>
-      </div>
-    </div>
 
     <main id="main-content" class="sections">
       <section class="section">
@@ -941,44 +899,6 @@
 
     <div class="suite-ops-label">Advanced Panels</div>
     <div class="suite-ops">
-      <section class="context-workspace is-collapsed" aria-label="Shared Project Context" data-collapsible-panel>
-        <div class="context-head" data-panel-toggle tabindex="0" role="button" aria-expanded="false">
-          <div class="panel-toggle">
-            <span class="panel-caret" aria-hidden="true">▾</span>
-            <h3>Project Context Bus</h3>
-          </div>
-          <span id="ctx-meta" class="card-cta">Not Saved</span>
-        </div>
-        <div class="panel-body">
-          <div class="context-grid">
-            <div class="context-field">
-              <label for="ctx-topic">Topic</label>
-              <input id="ctx-topic" type="text" placeholder="Bruce Lee, climate comedy, startup satire..." />
-            </div>
-            <div class="context-field">
-              <label for="ctx-tone">Tone</label>
-              <input id="ctx-tone" type="text" placeholder="Sharp, absurdist, dry, cinematic..." />
-            </div>
-            <div class="context-field">
-              <label for="ctx-audience">Audience</label>
-              <input id="ctx-audience" type="text" placeholder="Late-night, Gen Z, broad streaming..." />
-            </div>
-            <div class="context-field">
-              <label for="ctx-constraints">Constraints</label>
-              <textarea id="ctx-constraints" placeholder="No politics, PG-13, 2 locations max, 5-minute set..."></textarea>
-            </div>
-          </div>
-          <div class="context-actions">
-            <button class="ctx-btn primary" id="ctx-save" type="button">Save Context</button>
-            <button class="ctx-btn" id="ctx-clear" type="button">Clear</button>
-            <button class="ctx-btn" id="ctx-open-characterforge" type="button">Open Character Forge</button>
-            <button class="ctx-btn" id="ctx-open-synax" type="button">Open Synax</button>
-            <button class="ctx-btn" id="ctx-open-thisbutthat" type="button">Open ThisButThat</button>
-            <button class="ctx-btn" id="ctx-open-joterie" type="button">Open Joterie</button>
-          </div>
-        </div>
-      </section>
-
       <section id="recent-sessions" class="recent-browser is-collapsed" aria-label="Recent Sessions" data-collapsible-panel>
         <div class="context-head" data-panel-toggle tabindex="0" role="button" aria-expanded="false">
           <div class="panel-toggle">
@@ -1058,8 +978,9 @@
     </div>
   </div>
 
-  <script src="shared-context.js"></script>
+  <script src="shared-toast.js"></script>
   <script src="shared-pwa.js"></script>
+  <script src="shared-tool-manifest.js"></script>
   <script src="shared-recent-sessions.js"></script>
   <script src="shared-commands.js"></script>
   <script>
@@ -1133,78 +1054,28 @@
 
     document.getElementById('theme-btn').addEventListener('click', toggleTheme);
 
-    function initContextWorkspace() {
-      const bus = window.WTContextBus;
-      if (!bus) return;
-
-      const els = {
-        topic: document.getElementById('ctx-topic'),
-        tone: document.getElementById('ctx-tone'),
-        audience: document.getElementById('ctx-audience'),
-        constraints: document.getElementById('ctx-constraints'),
-        meta: document.getElementById('ctx-meta'),
-        save: document.getElementById('ctx-save'),
-        clear: document.getElementById('ctx-clear')
-      };
-
-      function paint(ctx) {
-        els.topic.value = ctx.topic || '';
-        els.tone.value = ctx.tone || '';
-        els.audience.value = ctx.audience || '';
-        els.constraints.value = ctx.constraints || '';
-        const stamp = ctx.updatedAt ? new Date(ctx.updatedAt).toLocaleString() : 'Not Saved';
-        els.meta.textContent = `${ctx.lastTool || 'Suite'} · ${stamp}`;
-      }
-
-      function payload() {
-        return {
-          topic: els.topic.value.trim(),
-          tone: els.tone.value.trim(),
-          audience: els.audience.value.trim(),
-          constraints: els.constraints.value.trim(),
-          lastTool: 'index'
-        };
-      }
-
-      function save() {
-        paint(bus.mergeContext(payload()));
-      }
-
-      function openTool(path) {
-        save();
-        window.open(path, '_blank', 'noopener');
-      }
-
-      window.__wtSaveContext = save;
-      window.__wtOpenToolWithContext = openTool;
-      window.__wtClearContext = () => paint(bus.clearContext());
-
-      paint(bus.getContext());
-      els.save.addEventListener('click', save);
-      els.clear.addEventListener('click', window.__wtClearContext);
-      document.getElementById('ctx-open-characterforge').addEventListener('click', () => openTool('CharacterForge.html'));
-      document.getElementById('ctx-open-synax').addEventListener('click', () => openTool('Synax.html'));
-      document.getElementById('ctx-open-thisbutthat').addEventListener('click', () => openTool('ThisButThat.html'));
-      document.getElementById('ctx-open-joterie').addEventListener('click', () => openTool('Joterie.html'));
-      bus.subscribe(paint);
-    }
-
     const recentState = {
       filter: 'all',
       query: ''
     };
     const EXPORT_EVENTS_KEY = 'writingtools_export_events_v1';
-    const RECOVERY_SNAPSHOT_CONFIG = [
-      { tool: 'CharacterForge', key: 'writingtools_characterforge_snapshots_v1', path: 'CharacterForge.html' },
-      { tool: 'Synax', key: 'writingtools_synax_snapshots_v1', path: 'Synax.html' },
-      { tool: 'ThisButThat', key: 'writingtools_thisbutthat_snapshots_v1', path: 'ThisButThat.html' },
-      { tool: 'Joterie', key: 'writingtools_joterie_snapshots_v1', path: 'Joterie.html' },
-      { tool: 'Wribbon', key: 'writingtools_wribbon_snapshots_v1', path: 'Wribbon.html' },
-      { tool: 'WitherNaught', key: 'writingtools_withernaught_snapshots_v1', path: 'WitherNaught.html' },
-      { tool: 'Courius', key: 'writingtools_courius_snapshots_v1', path: 'Courius.html' },
-      { tool: 'BeatHive', key: 'writingtools_beathive_snapshots_v1', path: 'BeatHive.html' },
-      { tool: 'PaperCut', key: 'writingtools_papercut_snapshots_v1', path: 'PaperCut.html' }
-    ];
+    const RECOVERY_SNAPSHOT_CONFIG = window.WTToolManifest && typeof window.WTToolManifest.listSnapshotEntries === 'function'
+      ? window.WTToolManifest.listSnapshotEntries().map((item) => ({
+          tool: item.label || item.id,
+          key: item.snapshotKey,
+          path: item.path
+        }))
+      : [
+          { tool: 'CharacterForge', key: 'writingtools_characterforge_snapshots_v1', path: 'CharacterForge.html' },
+          { tool: 'Synax', key: 'writingtools_synax_snapshots_v1', path: 'Synax.html' },
+          { tool: 'ThisButThat', key: 'writingtools_thisbutthat_snapshots_v1', path: 'ThisButThat.html' },
+          { tool: 'Joterie', key: 'writingtools_joterie_snapshots_v1', path: 'Joterie.html' },
+          { tool: 'Wribbon', key: 'writingtools_wribbon_snapshots_v1', path: 'Wribbon.html' },
+          { tool: 'WitherNaught', key: 'writingtools_withernaught_snapshots_v1', path: 'WitherNaught.html' },
+          { tool: 'Courius', key: 'writingtools_courius_snapshots_v1', path: 'Courius.html' },
+          { tool: 'BeatHive', key: 'writingtools_beathive_snapshots_v1', path: 'BeatHive.html' },
+          { tool: 'PaperCut', key: 'writingtools_papercut_snapshots_v1', path: 'PaperCut.html' }
+        ];
 
     function escapeHtml(value) {
       return String(value == null ? '' : value)
@@ -1575,7 +1446,6 @@
     document.addEventListener('DOMContentLoaded', () => {
       applyTheme(getTheme());
       initCollapsiblePanels();
-      initContextWorkspace();
       initRecentBrowser();
       renderRecentSessions();
       initExportHealth();
