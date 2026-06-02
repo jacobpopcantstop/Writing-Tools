@@ -159,6 +159,8 @@
         #page {
             background-color: var(--paper-color);
             color: var(--text-color);
+            font-size: var(--font-size);
+            line-height: var(--line-height);
             width: 8.5in;
             min-height: 11in; 
             padding: 1in 1in 1in 1.5in; 
@@ -287,6 +289,8 @@
             min-height: 1.1em; 
             position: relative; 
             overflow-wrap: break-word; 
+            font-size: inherit;
+            line-height: inherit;
         }
 
         #page .scene-heading { 
@@ -381,11 +385,12 @@
         @media print {
             html, body { height: auto; overflow: visible; }
             body { background: none; }
-            .floating-controls, #save-bar, .scene-nav, .help-modal { display: none !important; }
+            .floating-controls, #save-bar, .scene-nav, .help-modal, .imports-panel, .autocomplete-dropdown { display: none !important; }
             a[href="index.html"] { display: none !important; }
             .courius-import-marker, .snapshot-marker { display: none !important; }
             main { padding: 0; display: block; overflow: visible; height: auto; }
             #page { box-shadow: none; margin: 0; padding: 1in 1in 1in 1.5in !important; width: 100%; background-image: none; height: auto; overflow: visible; color: #000000 !important; caret-color: transparent !important; }
+            #page, #page div { font-size: 12pt !important; line-height: 1.15 !important; }
             #page div { opacity: 1 !important; }
             #page div[data-placeholder]::before { content: none !important; display: none !important; }
             .title-page-container { height: auto; min-height: 9in; margin-bottom: 0; border: none; }
@@ -825,6 +830,7 @@
     let dropdownBlock = null;
     let dropdownMatches = [];
     let dropdownActiveIndex = 0;
+    let suggestionsRefreshTimer = null;
     let localKnownRevision = 0;
     const COURIUS_TAB_ID = 'courius-' + Math.random().toString(36).slice(2, 10);
 
@@ -847,6 +853,12 @@
         const container = document.createElement('div');
         container.innerHTML = raw;
         container.querySelectorAll('script,iframe,object,embed,link,meta').forEach((node) => node.remove());
+        container.querySelectorAll('font').forEach((node) => {
+            const parent = node.parentNode;
+            if (!parent) return;
+            while (node.firstChild) parent.insertBefore(node.firstChild, node);
+            parent.removeChild(node);
+        });
         container.querySelectorAll('*').forEach((el) => {
             Array.from(el.attributes).forEach((attr) => {
                 const name = String(attr.name || '').toLowerCase();
@@ -857,6 +869,9 @@
                     return;
                 }
                 if ((name === 'href' || name === 'src') && /^\s*javascript:/i.test(value)) {
+                    el.removeAttribute(attr.name);
+                }
+                if (name === 'style') {
                     el.removeAttribute(attr.name);
                 }
             });
@@ -1181,25 +1196,9 @@
 
         const type = block.className;
         
-        if ((type === 'scene-heading' || type === 'character') && e.data) {
+        if ((type === 'scene-heading' || type === 'character') && e.inputType === 'insertText' && e.data) {
             e.preventDefault();
             document.execCommand('insertText', false, e.data.toUpperCase());
-        }
-
-        if (type === 'action') {
-            const text = getPureText(block);
-            if ((text.length === 0 || text.match(/[.!?]\s*$/)) && e.data && e.data.match(/[a-z]/)) {
-                e.preventDefault();
-                document.execCommand('insertText', false, e.data.toUpperCase());
-            }
-        }
-
-        if (type === 'dialogue') {
-            const text = getPureText(block);
-            if (text.length === 0 && e.data && e.data.match(/[a-z]/)) {
-                e.preventDefault();
-                document.execCommand('insertText', false, e.data.toUpperCase());
-            }
         }
     });
 
@@ -1287,9 +1286,12 @@
     });
 
     EDITOR.addEventListener('keyup', (e) => {
-        // Eagerly refresh suggestion sets so newly typed chars/headings are immediately available
-        updateSuggestions();
         const block = getBlock(window.getSelection().anchorNode);
+        if (block && (block.className === 'character' || block.className === 'scene-heading')) {
+            updateSuggestions();
+        } else {
+            queueSuggestionsRefresh();
+        }
         if (block && (block.className === 'character' || block.className === 'scene-heading')) {
             handleAutofill(block, block.className, e.key);
         } else {
@@ -1320,6 +1322,14 @@
              node = node.parentElement;
         }
         return node;
+    }
+
+    function queueSuggestionsRefresh() {
+        if (suggestionsRefreshTimer) clearTimeout(suggestionsRefreshTimer);
+        suggestionsRefreshTimer = setTimeout(() => {
+            updateSuggestions();
+            suggestionsRefreshTimer = null;
+        }, 120);
     }
 
     function setBlockType(div, type) {
