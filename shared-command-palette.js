@@ -10,25 +10,15 @@
   })();
 
   function openTool(path) {
-    var bus = window.WTContextBus;
-    if (bus && typeof bus.mergeContext === 'function') {
-      try { bus.mergeContext({ lastTool: TOOL_LABEL }); } catch (_) {}
-    }
     window.open(path, '_blank', 'noopener');
   }
 
   function saveContext() {
-    var bus = window.WTContextBus;
-    if (bus && typeof bus.mergeContext === 'function') {
-      try { bus.mergeContext({ lastTool: TOOL_LABEL }); } catch (_) {}
-    }
+    // no-op: context bus retired
   }
 
   function clearContext() {
-    var bus = window.WTContextBus;
-    if (bus && typeof bus.clearContext === 'function') {
-      try { bus.clearContext(); } catch (_) {}
-    }
+    // no-op: context bus retired
   }
 
   function toggleTheme() {
@@ -37,6 +27,13 @@
       var nextTheme = htmlTheme === 'dark' ? 'light' : 'dark';
       document.documentElement.setAttribute('data-wt-theme', nextTheme);
       try { localStorage.setItem('writingtools_theme', nextTheme); } catch (_) {}
+      return;
+    }
+    var rootTheme = document.documentElement && document.documentElement.getAttribute('data-theme');
+    if (rootTheme) {
+      var nextRootTheme = rootTheme === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', nextRootTheme);
+      try { localStorage.setItem('writingtools_theme', nextRootTheme); } catch (_) {}
       return;
     }
     if (document.body) document.body.classList.toggle('day-mode');
@@ -109,7 +106,7 @@
   function injectStyles() {
     var style = document.createElement('style');
     style.textContent = [
-      '.wtp-trigger{position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:1600;border:1px solid rgba(255,255,255,0.2);border-radius:999px;background:rgba(12,14,20,0.92);color:#fff;padding:10px 12px;font:600 11px/1.1 "IBM Plex Mono", monospace;letter-spacing:.06em;text-transform:uppercase;display:none;align-items:center;gap:6px;cursor:pointer;}',
+      '.wtp-trigger{position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:1600;border:1px solid rgba(255,255,255,0.2);border-radius:999px;background:rgba(12,14,20,0.92);color:#fff;padding:10px 12px;font:600 11px/1.1 "IBM Plex Mono", monospace;letter-spacing:.06em;text-transform:uppercase;display:inline-flex;align-items:center;gap:6px;cursor:pointer;}',
       '.wtp-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.52);z-index:1700;display:none;align-items:flex-start;justify-content:center;padding:8vh 12px 18px;}',
       '.wtp-overlay.open{display:flex;}',
       '.wtp-panel{width:min(700px,100%);background:rgba(16,20,29,0.97);color:#f3f5f8;border:1px solid rgba(255,255,255,0.14);border-radius:12px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,0.42);}',
@@ -122,8 +119,7 @@
       '.wtp-item span{font:500 13px/1.3 "Space Grotesk", sans-serif;opacity:.75;}',
       '.wtp-item.active,.wtp-item:hover{background:rgba(255,255,255,0.09);}',
       '.wtp-empty{padding:14px;color:rgba(255,255,255,0.7);font:500 13px/1.3 "Space Grotesk", sans-serif;}',
-      '.wtp-foot{padding:8px 12px;border-top:1px solid rgba(255,255,255,0.1);font:600 10px/1.2 "IBM Plex Mono", monospace;letter-spacing:.08em;text-transform:uppercase;opacity:.7;}',
-      '@media (max-width: 1024px){.wtp-trigger{display:inline-flex;}}'
+      '.wtp-foot{padding:8px 12px;border-top:1px solid rgba(255,255,255,0.1);font:600 10px/1.2 "IBM Plex Mono", monospace;letter-spacing:.08em;text-transform:uppercase;opacity:.7;}'
     ].join('');
     document.head.appendChild(style);
   }
