@@ -12,9 +12,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,300;8..60,400;8..60,500&display=swap" rel="stylesheet">
-    <script src="shared-context.js"></script>
+    <script src="shared-toast.js"></script>
+    <script src="shared-courius.js"></script>
     <script src="shared-pwa.js"></script>
     <script src="shared-export.js"></script>
+    <script src="shared-tool-manifest.js"></script>
     <script src="shared-recent-sessions.js"></script>
     <script src="shared-commands.js"></script>
     <script src="shared-command-palette.js"></script>
@@ -698,7 +700,6 @@
         <div id="word-stats" title="Word Count / Goal">
             <span id="word-current">0</span> / <span id="word-target">0</span>
         </div>
-        <div id="context-status" style="font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.45; font-weight: 700;">Context · idle</div>
         <div id="timer-stats" style="display:none; display: flex; align-items: center; gap: 15px;">
             <div class="timer-separator"></div>
             <span id="timer-display" title="Time Remaining">00:00</span>
@@ -779,7 +780,6 @@
                 focusMode: false,
                 ambientPlaying: false,
                 ambientAudio: null,
-                sharedContext: { topic: '', updatedAt: '', lastTool: '', constraints: '' },
                 localKnownRevision: 0,
                 lastPersistedText: '',
                 tabId: 'wribbon-' + Math.random().toString(36).slice(2, 10)
@@ -792,7 +792,6 @@
                 targetCount: document.getElementById('word-target'),
                 timerStats: document.getElementById('timer-stats'),
                 timerDisplay: document.getElementById('timer-display'),
-                contextStatus: document.getElementById('context-status'),
                 modal: document.getElementById('modal-overlay'),
                 goalInput: document.getElementById('goal-input'),
                 timerInput: document.getElementById('timer-input'),
@@ -804,11 +803,10 @@
 
             init() {
                 this.loadState();
-                this.syncContext();
                 this.buildProgressBar();
                 this.setupEventListeners();
                 this.updateUI();
-                
+
                 // Show modal on first visit or empty state
                 if (!this.state.text && !localStorage.getItem('writingtools_wribbon_visited')) {
                     this.openModal();
@@ -816,25 +814,6 @@
                     this.dom.editor.focus();
                 }
                 localStorage.setItem('writingtools_wribbon_visited', 'true');
-
-                if (window.WTContextBus && typeof window.WTContextBus.subscribe === 'function') {
-                    window.WTContextBus.subscribe(() => {
-                        this.syncContext();
-                        this.updateUI();
-                    });
-                }
-            },
-
-            syncContext() {
-                const bus = window.WTContextBus;
-                if (!bus) return;
-                const ctx = bus.getContext();
-                this.state.sharedContext = {
-                    topic: ctx.topic || '',
-                    updatedAt: ctx.updatedAt || '',
-                    lastTool: ctx.lastTool || '',
-                    constraints: ctx.constraints || ''
-                };
             },
 
             loadState() {
@@ -907,9 +886,8 @@
             },
 
             notifyReliability(message, level = 'info') {
-                const bus = window.WTContextBus;
-                if (bus && typeof bus.notify === 'function') {
-                    bus.notify(message, level);
+                if (window.WTToast && typeof window.WTToast.notify === 'function') {
+                    window.WTToast.notify(message, level);
                 }
             },
 
@@ -1059,13 +1037,6 @@
                     else seg.classList.remove('active');
                 }
 
-                if (this.dom.contextStatus) {
-                    const stamp = this.state.sharedContext.updatedAt
-                        ? new Date(this.state.sharedContext.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                        : 'idle';
-                    this.dom.contextStatus.innerText = `Context · ${stamp}`;
-                    this.dom.contextStatus.title = this.state.sharedContext.topic || 'No shared topic';
-                }
                 this.updateCouriusModeUI();
             },
 
@@ -1196,16 +1167,7 @@
 
             sendToCourius() {
                 if (!this.state.text.trim()) return;
-                const bus = window.WTContextBus;
                 const mode = this.state.couriusMode === 'overwrite' ? 'overwrite' : 'append';
-                if (bus) {
-                    bus.mergeContext({
-                        topic: this.state.sharedContext.topic || this.state.text.trim().split(/\s+/).slice(0, 8).join(' '),
-                        constraints: `Wribbon draft: ${this.state.text.match(/\S+/g)?.length || 0} words`,
-                        lastTool: 'Wribbon'
-                    });
-                    this.syncContext();
-                }
 
                 const lines = this.state.text.split('\n');
                 const html = lines.map((line) => {
@@ -1217,26 +1179,16 @@
                 }).join('');
                 let transferOk = false;
                 try {
-                    if (bus && typeof bus.transferToCourius === 'function') {
-                        transferOk = !!bus.transferToCourius(html, 'Wribbon', mode);
-                    } else if (bus && mode === 'overwrite' && typeof bus.overwriteCourius === 'function') {
-                        transferOk = !!bus.overwriteCourius(html, 'Wribbon');
-                    } else if (bus && typeof bus.appendToCourius === 'function') {
-                        transferOk = !!bus.appendToCourius(html, 'Wribbon');
-                    } else {
-                        const key = 'writingtools_courius_storage';
-                        const existing = localStorage.getItem(key) || '';
+                    if (window.WTCourius) {
                         if (mode === 'overwrite') {
-                            localStorage.setItem(key, html);
+                            transferOk = !!window.WTCourius.overwrite(html, 'Wribbon');
                         } else {
-                            const divider = existing && existing.trim() ? '<div class="action"><br></div><div class="action">--- WRIBBON ---</div>' : '';
-                            localStorage.setItem(key, `${existing}${divider}${html}`);
+                            transferOk = !!window.WTCourius.append(html, 'Wribbon');
                         }
-                        transferOk = true;
                     }
                 } catch (_) {}
-                if (bus && typeof bus.notify === 'function') {
-                    bus.notify(
+                if (window.WTToast && typeof window.WTToast.notify === 'function') {
+                    window.WTToast.notify(
                         transferOk
                             ? `Sent to Courius (${mode === 'overwrite' ? 'replace' : 'append'})`
                             : 'Courius transfer failed',
