@@ -7,8 +7,10 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5' fill='%23fd19c8'/><polygon points='50,20 80,37.5 80,62.5 50,80 20,62.5 20,37.5' fill='%23da70d6' opacity='0.6'/></svg>">
     <link rel="manifest" href="manifest.webmanifest">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="shared-context.js"></script>
+    <script src="shared-toast.js"></script>
+    <script src="shared-courius.js"></script>
     <script src="shared-pwa.js"></script>
+    <script src="shared-tool-manifest.js"></script>
     <script src="shared-recent-sessions.js"></script>
     <script src="shared-commands.js"></script>
     <script src="shared-command-palette.js"></script>
@@ -213,7 +215,6 @@
         const BEATHIVE_SNAPSHOTS_KEY = 'writingtools_beathive_snapshots_v1';
         const BEATHIVE_HANDOFF_KEY = 'writingtools_beathive_handoff_v1';
         const MAX_BEATHIVE_CELLS = 600;
-        const getContextBus = () => window.WTContextBus || null;
 
         function normalizeBeatHiveCells(list) {
             if (!Array.isArray(list)) return [];
@@ -528,7 +529,6 @@
             const [isCreating, setIsCreating] = useState(false);
             const [saveStatus, setSaveStatus] = useState('ready');
             const [showImmersionTips, setShowImmersionTips] = useState(() => !readBeatHiveStateFromStorage().immersiveSeen);
-            const [sharedContext, setSharedContext] = useState({ topic: '', constraints: '', lastTool: '', updatedAt: '' });
             const [couriusMode, setCouriusMode] = useState(() => readBeatHiveStateFromStorage().couriusMode);
 
             // Refs
@@ -560,19 +560,6 @@
                 document.body.className = theme === 'dark' ? 'dark-theme' : 'light-theme';
                 localStorage.setItem('writingtools_theme', theme);
             }, [theme]);
-            useEffect(() => {
-                const bus = getContextBus();
-                if (!bus) return;
-                const sync = (ctx) => setSharedContext(ctx || bus.getContext());
-                sync(bus.getContext());
-                const unsub = bus.subscribe(sync);
-                return () => { if (typeof unsub === 'function') unsub(); };
-            }, []);
-            useEffect(() => {
-                if (!sketchName && sharedContext.topic) {
-                    setSketchName(sharedContext.topic);
-                }
-            }, [sharedContext.topic]);
             const getLocalPersistedState = useCallback((override = {}) => ({
                 sketches: normalizeBeatHiveSketches(override.sketches || sketchesRef.current),
                 couriusMode: override.couriusMode || couriusMode,
@@ -876,24 +863,7 @@
 
                 const nextTopic = String(payload.topic || '').trim();
                 const nextConstraints = String(payload.constraints || '').trim();
-                const source = String(payload.source || 'tool').trim() || 'tool';
                 if (!nextTopic && !nextConstraints) return;
-
-                const bus = getContextBus();
-                if (bus && typeof bus.mergeContext === 'function') {
-                    const patch = { lastTool: source };
-                    if (nextTopic) patch.topic = nextTopic;
-                    if (nextConstraints) patch.constraints = nextConstraints;
-                    try { bus.mergeContext(patch); } catch (_) {}
-                }
-
-                setSharedContext((prev) => ({
-                    ...prev,
-                    topic: nextTopic || prev.topic,
-                    constraints: nextConstraints || prev.constraints,
-                    lastTool: source,
-                    updatedAt: String(payload.createdAt || new Date().toISOString())
-                }));
 
                 const currentName = String(nameRef.current || '').trim();
                 const shouldAdoptTopic = !!nextTopic && (
@@ -1217,22 +1187,7 @@
                     storyBeats: withContent.filter(c => c.type !== 'note').length
                 };
             }, [cells, getCellContentText]);
-            const pullContextToMap = useCallback(() => {
-                if (!sharedContext.topic) return;
-                setSketchName(sharedContext.topic);
-                save(null, sharedContext.topic);
-            }, [sharedContext.topic, save]);
-            const pushMapToContext = useCallback(() => {
-                const bus = getContextBus();
-                if (!bus) return;
-                bus.mergeContext({
-                    topic: (sketchName || sharedContext.topic || '').trim(),
-                    constraints: `BeatHive beats: ${mapStats.storyBeats}`,
-                    lastTool: 'BeatHive'
-                });
-            }, [sketchName, sharedContext.topic, mapStats.storyBeats]);
             const sendMapToCourius = useCallback(() => {
-                const bus = getContextBus();
                 const storyCells = cells
                     .filter((c) => getCellContentText(c).length > 0)
                     .slice(0, 80);
@@ -1258,41 +1213,25 @@
 
                 const mode = couriusMode === 'overwrite' ? 'overwrite' : 'append';
                 let transferOk = false;
-
-                if (bus) {
-                    bus.mergeContext({
-                        topic: (sketchName || sharedContext.topic || '').trim(),
-                        constraints: `BeatHive export: ${storyCells.length} beats`,
-                        lastTool: 'BeatHive'
-                    });
-                    if (typeof bus.transferToCourius === 'function') {
-                        transferOk = !!bus.transferToCourius(html, 'BeatHive', mode);
-                    } else if (mode === 'overwrite' && typeof bus.overwriteCourius === 'function') {
-                        transferOk = !!bus.overwriteCourius(html, 'BeatHive');
-                    } else if (typeof bus.appendToCourius === 'function') {
-                        transferOk = !!bus.appendToCourius(html, 'BeatHive');
-                    } else {
-                        const key = 'writingtools_courius_storage';
-                        const existing = localStorage.getItem(key) || '';
+                try {
+                    if (window.WTCourius) {
                         if (mode === 'overwrite') {
-                            localStorage.setItem(key, html);
+                            transferOk = !!window.WTCourius.overwrite(html, 'BeatHive');
                         } else {
-                            const divider = existing && existing.trim() ? '<div class="action"><br></div><div class="action">--- BEATHIVE ---</div>' : '';
-                            localStorage.setItem(key, `${existing}${divider}${html}`);
+                            transferOk = !!window.WTCourius.append(html, 'BeatHive');
                         }
-                        transferOk = true;
                     }
-                    if (typeof bus.notify === 'function') {
-                        bus.notify(
-                            transferOk
-                                ? `Sent to Courius (${mode === 'overwrite' ? 'replace' : 'append'})`
-                                : 'Courius transfer failed',
-                            transferOk ? 'success' : 'error'
-                        );
-                    }
+                } catch (_) {}
+                if (window.WTToast && typeof window.WTToast.notify === 'function') {
+                    window.WTToast.notify(
+                        transferOk
+                            ? `Sent to Courius (${mode === 'overwrite' ? 'replace' : 'append'})`
+                            : 'Courius transfer failed',
+                        transferOk ? 'success' : 'error'
+                    );
                 }
                 window.open('Courius.html', '_blank', 'noopener');
-            }, [cells, getCellContentText, sketchName, sharedContext.topic, couriusMode]);
+            }, [cells, getCellContentText, couriusMode]);
             useEffect(() => {
                 window.WTToolActions = {
                     exportPrimary: () => sendMapToCourius(),
@@ -1354,9 +1293,6 @@
                             <button onClick={() => setLibOpen(!libOpen)} aria-label="Toggle Library" className={`p-2 rounded-lg transition-all ${libOpen ? 'bg-indigo-600 text-white shadow-lg' : 'hover:bg-black/10 opacity-60'}`}><Icon name="folder" size={18}/></button>
                             <div className="flex flex-col">
                                 <input value={sketchName} onChange={(e) => { setSketchName(e.target.value); save(null, e.target.value); }} aria-label="Project Name" className="bg-transparent font-display font-bold text-lg outline-none w-48 sm:w-64" placeholder="Untitled Hive" />
-                                <span className="text-[9px] uppercase tracking-[0.16em] opacity-45">
-                                    Context {sharedContext.updatedAt ? `· ${new Date(sharedContext.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : '· idle'}
-                                </span>
                             </div>
                         </div>
                         <div className="flex items-center gap-4">
@@ -1405,15 +1341,6 @@
                                             <button id="beathive-restore-snapshot-btn" onClick={restoreLatestBeatHiveSnapshot} className="px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-current/10 hover:bg-current/15 transition-colors" disabled={getLocalSnapshots().length < 1}>Restore</button>
                                             <button id="beathive-clear-snapshots-btn" onClick={clearBeatHiveSnapshots} className="px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-current/10 hover:bg-current/15 transition-colors" disabled={getLocalSnapshots().length < 1}>Clear</button>
                                         </div>
-                                    </div>
-                                </div>
-                                <div className={`rounded-2xl p-4 border ${theme === 'dark' ? 'border-white/10 bg-white/5' : 'border-[#432818]/15 bg-white/50'}`}>
-                                    <div className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-2">Context Bus</div>
-                                    <div className="text-xs font-semibold truncate">{sharedContext.topic || 'No topic set'}</div>
-                                    <div className="text-[10px] opacity-50 mt-1 line-clamp-2">{sharedContext.constraints || 'No constraints yet'}</div>
-                                    <div className="grid grid-cols-2 gap-2 mt-3">
-                                        <button onClick={pullContextToMap} className="py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-current/10 hover:bg-current/15 transition-colors">Pull</button>
-                                        <button onClick={pushMapToContext} className="py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-indigo-600 text-white hover:bg-indigo-500 transition-colors">Push</button>
                                     </div>
                                 </div>
                                 <div className="flex-1 overflow-y-auto space-y-2 no-scrollbar pr-2">
