@@ -11,8 +11,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Fraunces:opsz,wght@9..144,500;9..144,700&family=IBM+Plex+Mono:wght@500;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@0.263.1"></script>
-  <script src="shared-context.js"></script>
+  <script src="shared-toast.js"></script>
+  <script src="shared-courius.js"></script>
   <script src="shared-pwa.js"></script>
+  <script src="shared-tool-manifest.js"></script>
   <script src="shared-recent-sessions.js"></script>
   <script src="shared-commands.js"></script>
   <script src="shared-command-palette.js"></script>
@@ -1080,6 +1082,29 @@
         });
       }
 
+      function hasRecoverableState(candidateState) {
+        var normalized = normalizeState(candidateState);
+        return !!(
+          normalized.batch.length ||
+          normalized.favorites.length ||
+          FIELD_ORDER.some(function (field) { return normalized.draft[field]; })
+        );
+      }
+
+      function snapshotPayloadFor(sourceState) {
+        var payload = normalizeState(sourceState);
+        payload.snapshots = [];
+        return payload;
+      }
+
+      function buildSnapshot(label, sourceState) {
+        return normalizeSnapshot({
+          label: label,
+          createdAt: nowIso(),
+          state: snapshotPayloadFor(sourceState)
+        });
+      }
+
       function loadState() {
         try {
           var raw = localStorage.getItem(STORAGE_KEY);
@@ -1126,16 +1151,13 @@
         return state;
       }
 
-      function saveSnapshot(label) {
+      function saveSnapshot(label, sourceState) {
         syncSnapshotsFromStorage();
-        if (!state.batch.length && !state.favorites.length && !FIELD_ORDER.some(function (field) { return state.draft[field]; })) {
+        var candidateState = sourceState || state;
+        if (!hasRecoverableState(candidateState)) {
           return;
         }
-        var snapshot = normalizeSnapshot({
-          label: label,
-          createdAt: nowIso(),
-          state: state
-        });
+        var snapshot = buildSnapshot(label, candidateState);
         var nextSnapshots = [snapshot].concat(state.snapshots).slice(0, MAX_SNAPSHOTS);
         writeSnapshots(nextSnapshots);
       }
@@ -1367,29 +1389,14 @@
         render();
       }
 
-      function useCardInContext(card) {
-        var bus = window.WTContextBus;
-        if (!bus || typeof bus.mergeContext !== 'function') {
-          notify('Context bus unavailable.', 'error');
-          return;
-        }
-        try {
-          bus.mergeContext(inferContext(card));
-          notify('Context bus updated.');
-        } catch (_) {
-          notify('Could not update context.', 'error');
-        }
-      }
-
       function sendCardToCourius(card) {
-        var bus = window.WTContextBus;
-        if (!bus || typeof bus.appendToCourius !== 'function') {
+        if (!window.WTCourius) {
           notify('Courius handoff unavailable.', 'error');
           return;
         }
         var appended = false;
         try {
-          appended = !!bus.appendToCourius(buildCardHtml(card), 'CharacterForge');
+          appended = !!window.WTCourius.append(buildCardHtml(card), 'CharacterForge');
         } catch (_) {
           appended = false;
         }
@@ -1397,12 +1404,7 @@
           notify('Courius handoff failed.', 'error');
           return;
         }
-        try {
-          if (typeof bus.mergeContext === 'function') bus.mergeContext(inferContext(card));
-          notify('Sent to Courius.');
-        } catch (_) {
-          notify('Sent to Courius, but context update failed.', 'error');
-        }
+        notify('Sent to Courius.');
       }
 
       function restoreLatestSnapshot() {
@@ -1412,16 +1414,20 @@
           notify('No snapshot available.', 'error');
           return;
         }
-        var remainingSnapshots = state.snapshots.slice(1);
+        if (!window.confirm('Restore the latest CharacterForge snapshot and replace the current character state?')) {
+          return;
+        }
+        saveSnapshot('manual-restore-backup', state);
         state = normalizeState(snapshot.state);
-        state.snapshots = remainingSnapshots;
-        writeSnapshots(remainingSnapshots);
         persistState(state, 'restored');
         render();
         notify('Latest snapshot restored.');
       }
 
       function clearSnapshots() {
+        if (!window.confirm('Clear all CharacterForge recovery snapshots?')) {
+          return;
+        }
         writeSnapshots([]);
         persistState(state, 'cleared-snapshots');
         render();
@@ -1475,7 +1481,6 @@
           '<div class="card-block"><span class="mini-label">Voice Cue</span><p>' + escapeHtml(card.voice) + '</p></div>' +
           '<div class="card-actions">' +
             '<button class="mini-btn" type="button" data-card-action="copy" data-card-id="' + escapeHtml(card.id) + '">Copy</button>' +
-            '<button class="mini-btn" type="button" data-card-action="context" data-card-id="' + escapeHtml(card.id) + '">Use Context</button>' +
             '<button class="mini-btn" type="button" data-card-action="send" data-card-id="' + escapeHtml(card.id) + '">Send</button>' +
           '</div>' +
         '</article>';
@@ -1519,9 +1524,8 @@
       }
 
       function notify(message, type) {
-        var bus = window.WTContextBus;
-        if (bus && typeof bus.notify === 'function') {
-          bus.notify(message, type || 'info');
+        if (window.WTToast && typeof window.WTToast.notify === 'function') {
+          window.WTToast.notify(message, type || 'info');
           return;
         }
         window.alert(message);
@@ -1531,7 +1535,6 @@
         var card = findCard(cardId);
         if (!card) return;
         if (action === 'copy') copyText(cardToText(card), 'Character copied.');
-        if (action === 'context') useCardInContext(card);
         if (action === 'send') sendCardToCourius(card);
       }
 
