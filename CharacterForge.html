@@ -13,6 +13,8 @@
   <script src="https://unpkg.com/lucide@0.263.1"></script>
   <script src="shared-toast.js"></script>
   <script src="shared-courius.js"></script>
+  <script src="characterforge-questions.js"></script>
+  <script src="characterforge-engine.js"></script>
   <script src="shared-pwa.js"></script>
   <script src="shared-tool-manifest.js"></script>
   <script src="shared-recent-sessions.js"></script>
@@ -63,13 +65,14 @@
     }
 
     a { color: inherit; }
-    button, input {
+    button, input, textarea {
       font: inherit;
     }
 
     a:focus-visible,
     button:focus-visible,
-    input:focus-visible {
+    input:focus-visible,
+    textarea:focus-visible {
       outline: 2px solid color-mix(in srgb, var(--accent) 78%, #fff 22%);
       outline-offset: 2px;
     }
@@ -116,19 +119,13 @@
     }
 
     .ghost-link,
-    .theme-btn,
-    .btn,
-    .mini-btn {
+    .theme-btn {
       border: 1px solid var(--line);
       color: var(--text);
       background: color-mix(in srgb, var(--panel-strong) 88%, transparent);
       border-radius: 12px;
       cursor: pointer;
       transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
-    }
-
-    .ghost-link,
-    .theme-btn {
       min-height: 42px;
       padding: 0 14px;
       text-decoration: none;
@@ -141,378 +138,210 @@
     .theme-btn { width: 42px; padding: 0; }
 
     .ghost-link:hover,
-    .theme-btn:hover,
-    .btn:hover,
-    .mini-btn:hover {
+    .theme-btn:hover {
       transform: translateY(-1px);
       background: color-mix(in srgb, var(--bg-soft) 84%, transparent);
       border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
     }
 
-    .panel,
-    .card,
-    .saved-card {
-      border: 1px solid var(--line);
-      background: var(--panel);
-      border-radius: 16px;
-      box-shadow: none;
-      backdrop-filter: blur(14px);
+    /* ── CharacterForge Socratic interview ── */
+
+    #cf-app {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 2rem 1rem;
     }
 
-    .page-title,
-    .section-label,
-    .metric-label,
-    .card-tag,
-    .mini-label {
-      font-family: "IBM Plex Mono", monospace;
+    .cf-progress {
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
-      letter-spacing: 0.12em;
-      font-size: 11px;
+      opacity: 0.6;
+      font-family: "IBM Plex Mono", monospace;
     }
 
-    .page-title {
-      color: var(--accent);
-      margin-bottom: 10px;
-    }
-
-    h1 {
-      margin: 0 0 4px;
-      font-family: "Fraunces", serif;
-      font-size: clamp(1.55rem, 2.6vw, 2rem);
-      line-height: 1;
-      letter-spacing: -0.03em;
-      max-width: none;
-    }
-
-    .page-copy {
-      max-width: 52ch;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.5;
-      margin: 0 0 16px;
-    }
-
-    .chip-row,
-    .suggestions,
-    .flavor-row,
-    .status-row,
-    .card-meta,
-    .card-actions,
-    .saved-actions,
-    .recovery-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    .hero-pill,
-    .chip,
-    .status-pill,
-    .flavor-chip {
-      border-radius: 999px;
-      border: 1px solid color-mix(in srgb, var(--line) 88%, transparent);
-      padding: 8px 12px;
-      font-size: 12px;
-      color: var(--muted);
-      background: color-mix(in srgb, var(--bg-soft) 54%, transparent);
-    }
-
-    .workspace {
-      display: grid;
-      grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
-      gap: 18px;
-      align-items: start;
-    }
-
-    .panel {
-      padding: 18px;
-      position: static;
-    }
-
-    .section-label {
-      color: var(--accent);
-      margin-bottom: 12px;
-    }
-
-    .section-title {
-      margin: 0 0 6px;
-      font-size: 1.6rem;
-      font-family: "Fraunces", serif;
-      letter-spacing: -0.03em;
-    }
-
-    .section-copy {
-      margin: 0 0 16px;
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.5;
-    }
-
-    .tool-header {
-      margin-bottom: 14px;
-    }
-
-    .field-grid {
-      display: grid;
-      gap: 14px;
-    }
-
-    .field {
-      border: 1px solid var(--line);
-      background: color-mix(in srgb, var(--bg-soft) 58%, transparent);
-      border-radius: 14px;
-      padding: 12px;
-    }
-
-    .field-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-
-    .field label {
-      font-weight: 700;
-      letter-spacing: -0.02em;
-    }
-
-    .mini-btn {
-      min-height: 34px;
-      padding: 0 10px;
-      font-size: 11px;
+    .cf-theme-label {
+      font-size: 1rem;
+      opacity: 0.7;
+      margin: 0.5rem 0;
       font-family: "IBM Plex Mono", monospace;
       text-transform: uppercase;
       letter-spacing: 0.08em;
+      color: var(--accent);
     }
 
-    .field input {
+    .cf-question {
+      font-size: 1.4rem;
+      line-height: 1.4;
+      margin: 0.5rem 0 1rem;
+      font-family: "Fraunces", serif;
+      letter-spacing: -0.02em;
+    }
+
+    .cf-answer-input {
       width: 100%;
-      min-height: 48px;
-      border-radius: 14px;
+      font: inherit;
+      padding: 0.75rem;
       border: 1px solid var(--line);
+      border-radius: 12px;
       background: color-mix(in srgb, var(--panel-strong) 92%, transparent);
       color: var(--text);
-      padding: 0 14px;
+      resize: vertical;
       outline: none;
+      transition: border-color 160ms ease;
     }
 
-    .field input::placeholder {
+    .cf-answer-input:focus {
+      border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+    }
+
+    .cf-answer-input::placeholder {
       color: color-mix(in srgb, var(--muted) 84%, transparent);
     }
 
-    .suggestions {
-      margin-top: 10px;
+    .cf-nav {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
     }
 
-    .chip,
-    .flavor-chip {
-      cursor: pointer;
+    .cf-nav button,
+    .cf-actions button {
       border: 1px solid var(--line);
-      color: var(--text);
       background: color-mix(in srgb, var(--panel-strong) 88%, transparent);
-      transition: transform 160ms ease, border-color 160ms ease, color 160ms ease;
+      color: var(--text);
+      border-radius: 12px;
+      cursor: pointer;
+      padding: 0 1.25rem;
+      min-height: 44px;
+      font-weight: 600;
+      transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
     }
 
-    .chip:hover,
-    .flavor-chip:hover {
+    .cf-nav button:hover,
+    .cf-actions button:hover {
       transform: translateY(-1px);
-      border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+      background: color-mix(in srgb, var(--bg-soft) 84%, transparent);
+      border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
     }
 
-    .flavor-chip.active {
-      border-color: color-mix(in srgb, var(--accent-3) 50%, var(--line));
-      color: var(--accent-3);
+    .cf-nav button:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      transform: none;
     }
 
-    .btn-row {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-      margin-top: 16px;
-    }
-
-    .btn {
-      min-height: 48px;
-      padding: 0 16px;
-      font-weight: 700;
-    }
-
-    .btn.primary {
+    #cf-next {
       background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 88%, #fff 12%), color-mix(in srgb, var(--accent-2) 70%, #000 30%));
       color: #140f0d;
       border-color: transparent;
     }
 
-    .btn.secondary {
-      background: color-mix(in srgb, var(--panel-strong) 92%, transparent);
+    #cf-next:hover {
+      background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 95%, #fff 5%), color-mix(in srgb, var(--accent-2) 75%, #000 25%));
+      border-color: transparent;
     }
 
-    .status-row {
-      margin-top: 16px;
+    .cf-sheet {
+      margin-top: 2rem;
+      padding: 1.5rem;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--panel);
+      backdrop-filter: blur(14px);
     }
 
-    .status-pill strong {
-      color: var(--text);
+    .cf-sheet .cf-theme {
+      margin-top: 1.5rem;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
     }
 
-    .results-stack {
-      display: grid;
-      gap: 18px;
+    .cf-sheet .cf-theme:first-child {
+      margin-top: 0;
     }
 
-    .results-header,
-    .saved-header,
-    .recovery-head {
+    .cf-sheet .cf-answer {
+      white-space: pre-wrap;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+      margin: 0.4rem 0 0.8rem;
+    }
+
+    .cf-actions {
       display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 14px;
-      margin-bottom: 14px;
-    }
-
-    .results-toolbar {
-      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
       flex-wrap: wrap;
-      gap: 8px;
-      justify-content: flex-end;
     }
 
-    .results-grid,
-    .saved-grid {
+    .cf-library {
+      margin-top: 2.5rem;
+      border-top: 1px solid var(--line);
+      padding-top: 1.5rem;
+    }
+
+    .cf-library h2 {
+      font-size: 0.75rem;
+      font-family: "IBM Plex Mono", monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      margin: 0 0 0.75rem;
+    }
+
+    #cf-library-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
       display: grid;
-      grid-template-columns: 1fr;
-      gap: 12px;
+      gap: 0.5rem;
     }
 
-    .card,
-    .saved-card {
-      padding: 16px;
-      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
-    }
-
-    .card.selected,
-    .saved-card.selected {
-      border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
-      background: color-mix(in srgb, var(--panel) 86%, var(--accent) 14%);
-      transform: translateY(-2px);
-    }
-
-    .card-topline {
+    #cf-library-list li {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 12px;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      padding: 0.6rem 0.75rem;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: color-mix(in srgb, var(--panel) 80%, transparent);
     }
 
-    .card-tag {
-      color: var(--accent-2);
-    }
-
-    .card-title {
-      margin: 0;
-      font-size: 1.45rem;
-      line-height: 1;
-      letter-spacing: -0.04em;
-      font-family: "Fraunces", serif;
-    }
-
-    .card-role {
-      margin-top: 6px;
-      color: var(--text);
+    .cf-lib-name {
+      flex: 1 1 120px;
       font-weight: 600;
       font-size: 14px;
     }
 
-    .card-meta {
-      margin: 12px 0;
-    }
-
-    .mini-label {
-      color: var(--muted);
-      display: block;
-      margin-bottom: 6px;
-    }
-
-    .card-block {
-      margin-bottom: 12px;
-    }
-
-    .card-block p,
-    .saved-card p,
-    .recovery-copy {
-      margin: 0;
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.55;
-    }
-
-    .card-block strong,
-    .saved-card strong {
-      color: var(--text);
-    }
-
-    .card-actions .mini-btn,
-    .saved-actions .mini-btn {
-      flex: 1 1 140px;
-    }
-
-    .card-summary {
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.5;
-      margin-bottom: 12px;
-    }
-
-    .card:not(.selected) .card-block.secondary {
-      display: none;
-    }
-
-    .saved-card .card-block.secondary {
-      display: none;
-    }
-
-    .empty {
-      padding: 28px;
-      border-radius: 22px;
-      border: 1px dashed color-mix(in srgb, var(--line) 92%, transparent);
-      color: var(--muted);
-      text-align: center;
-      background: color-mix(in srgb, var(--bg-soft) 64%, transparent);
-    }
-
-    .saved-card {
-      background: color-mix(in srgb, var(--panel) 88%, var(--accent-2) 12%);
-    }
-
-    .recovery-panel {
-      padding: 18px;
-      border-radius: 16px;
+    #cf-library-list button {
       border: 1px solid var(--line);
       background: color-mix(in srgb, var(--panel-strong) 88%, transparent);
+      color: var(--text);
+      border-radius: 8px;
+      cursor: pointer;
+      padding: 0 0.6rem;
+      min-height: 30px;
+      font-size: 11px;
+      font-family: "IBM Plex Mono", monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      transition: border-color 160ms ease, background 160ms ease;
     }
 
-    .recovery-actions {
-      margin-top: 16px;
+    #cf-library-list button:hover {
+      border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+      background: color-mix(in srgb, var(--bg-soft) 80%, transparent);
     }
 
-    .mini-btn.danger {
+    #cf-library-list button[data-act="del"] {
       color: var(--danger);
       border-color: color-mix(in srgb, var(--danger) 32%, var(--line));
-    }
-
-    .footer-note {
-      margin-top: 16px;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.55;
-    }
-
-    @media (max-width: 1080px) {
-      .workspace {
-        grid-template-columns: 1fr;
-      }
     }
 
     @media (max-width: 720px) {
@@ -525,38 +354,17 @@
         padding-top: 18px;
       }
 
-      .panel,
-      .card,
-      .saved-card,
-      .recovery-panel {
-        border-radius: 14px;
-      }
-
-      .results-grid,
-      .saved-grid,
-      .btn-row {
-        grid-template-columns: 1fr;
-      }
-
-      .topbar,
-      .results-header,
-      .saved-header,
-      .recovery-head {
+      .topbar {
         flex-direction: column;
         align-items: stretch;
       }
 
-      .top-actions,
-      .results-toolbar {
+      .top-actions {
         justify-content: flex-start;
       }
 
       .ghost-link,
-      .theme-btn,
-      .btn,
-      .mini-btn,
-      .chip,
-      .flavor-chip {
+      .theme-btn {
         min-height: 44px;
       }
 
@@ -593,573 +401,152 @@
       </div>
     </header>
 
-    <main class="workspace">
-      <aside class="panel" aria-label="Character inputs">
-        <div class="tool-header">
-          <div class="page-title">Character Builder</div>
-          <h1>Build a character</h1>
-          <p class="page-copy">Enter any combination of name, role, trait, and goal. Leave blanks if you want the tool to fill them in.</p>
-        </div>
-
-        <div class="field-grid">
-          <section class="field">
-            <div class="field-head">
-              <label for="field-name">Name</label>
-            </div>
-            <input id="field-name" data-field="name" type="text" placeholder="Iris Vale, Mateo, June Holloway..." autocomplete="off">
-            <div id="suggestions-name" class="suggestions"></div>
-          </section>
-
-          <section class="field">
-            <div class="field-head">
-              <label for="field-role">Role</label>
-            </div>
-            <input id="field-role" data-field="role" type="text" placeholder="disgraced archivist, stunt lawyer, runaway prince..." autocomplete="off">
-            <div id="suggestions-role" class="suggestions"></div>
-          </section>
-
-          <section class="field">
-            <div class="field-head">
-              <label for="field-adjective">Trait</label>
-            </div>
-            <input id="field-adjective" data-field="adjective" type="text" placeholder="ruthless, grieving, magnetic, evasive..." autocomplete="off">
-            <div id="suggestions-adjective" class="suggestions"></div>
-          </section>
-
-          <section class="field">
-            <div class="field-head">
-              <label for="field-goal">Goal</label>
-            </div>
-            <input id="field-goal" data-field="goal" type="text" placeholder="win back her sister, clear his name, steal one perfect night..." autocomplete="off">
-            <div id="suggestions-goal" class="suggestions"></div>
-          </section>
-        </div>
-
-        <div style="margin-top:16px;">
-          <span class="mini-label">Flavor</span>
-          <div id="flavor-row" class="flavor-row"></div>
-        </div>
-
-        <div class="btn-row">
-          <button id="generate-btn" class="btn primary" type="button">Build Character</button>
-          <button id="randomize-all-btn" class="btn secondary" type="button">Randomize</button>
-          <button id="clear-draft-btn" class="btn secondary" type="button">Clear</button>
-        </div>
-
-        <div class="status-row">
-          <span class="status-pill">Selected: <strong id="selected-name">None</strong></span>
-          <span class="status-pill">Flavor: <strong id="selected-flavor">General</strong></span>
-          <span class="status-pill"><strong id="metric-batch">No character yet</strong></span>
-          <span class="status-pill"><strong id="metric-snapshots">0 snapshots</strong></span>
-        </div>
-        <p id="status-copy" class="footer-note">Build one character or randomize the inputs.</p>
+    <main id="cf-app">
+      <div id="cf-progress" class="cf-progress"></div>
+      <h1 id="cf-theme-label" class="cf-theme-label"></h1>
+      <p id="cf-question" class="cf-question"></p>
+      <textarea id="cf-answer" class="cf-answer-input" rows="6" placeholder="Write in your own words…"></textarea>
+      <div class="cf-nav">
+        <button id="cf-back" type="button">Back</button>
+        <button id="cf-next" type="button">Next</button>
+      </div>
+      <div id="cf-sheet" class="cf-sheet" hidden></div>
+      <div class="cf-actions" hidden id="cf-finish-actions">
+        <button id="cf-save" type="button">Save character</button>
+        <button id="cf-to-courius" type="button">Send to Courius</button>
+      </div>
+      <aside id="cf-library" class="cf-library">
+        <h2>Saved characters</h2>
+        <ul id="cf-library-list"></ul>
       </aside>
-
-      <section class="results-stack" aria-label="Character results">
-        <section class="panel" style="position:static;">
-          <div class="results-header">
-            <div>
-              <div class="section-label">Character</div>
-              <h2 class="section-title">Current build</h2>
-              <p class="section-copy">One clean character card built from the inputs.</p>
-            </div>
-            <div class="results-toolbar">
-              <button id="copy-selected-btn" class="mini-btn" type="button">Copy Character</button>
-              <button id="send-selected-btn" class="mini-btn" type="button">Send to Courius</button>
-            </div>
-          </div>
-          <div id="results-grid" class="results-grid"></div>
-        </section>
-
-        <section class="recovery-panel" aria-label="Recovery snapshots">
-          <div class="recovery-head">
-            <div>
-              <div class="section-label">Recovery</div>
-              <h2 class="section-title">Snapshots</h2>
-              <p class="recovery-copy">Recent character builds are kept here before resets.</p>
-            </div>
-            <div class="recovery-actions">
-              <button id="restore-snapshot-btn" class="mini-btn" type="button">Restore Latest</button>
-              <button id="clear-snapshots-btn" class="mini-btn danger" type="button">Clear Snapshots</button>
-            </div>
-          </div>
-          <div id="snapshot-summary" class="footer-note"></div>
-        </section>
-      </section>
     </main>
   </div>
 
   <script>
     (function () {
       'use strict';
-
-      var STORAGE_KEY = 'writingtools_characterforge_state_v1';
-      var REVISION_KEY = 'writingtools_characterforge_revision_v1';
-      var SNAPSHOTS_KEY = 'writingtools_characterforge_snapshots_v1';
-      var UPDATED_AT_KEY = 'writingtools_characterforge_updated_at';
+      var BANK = window.WTCharacterQuestions;
+      var Engine = window.WTCharacterEngine;
+      var LIB_KEY = 'writingtools_characterforge_v2';
       var THEME_KEY = 'writingtools_theme';
-      var MAX_SNAPSHOTS = 12;
-      var BATCH_SIZE = 1;
 
-      var FIELD_ORDER = ['name', 'role', 'adjective', 'goal'];
-      var FLAVOR_TAGS = ['General', 'Noir', 'Romance', 'Fantasy', 'Thriller', 'Comedy', 'Sci-Fi', 'Literary'];
+      var state = { queue: Engine.buildQueue(BANK), index: 0, answers: {}, inserted: {} };
 
-      function flattenBatches(batches) {
-        return (Array.isArray(batches) ? batches : []).reduce(function (out, batch) {
-          return out.concat(Array.isArray(batch) ? batch : []);
-        }, []);
-      }
-
-      var SUGGESTION_BATCHES = {
-        name: [
-          [
-            'Iris Vale', 'Mateo Flint', 'June Holloway', 'Cass Mercer', 'Nadia Bloom', 'Elias Wren',
-            'Mira Sol', 'Tobin Graves', 'Anika Cross', 'Levi March', 'Sana Voss', 'Dorian Pike'
-          ],
-          [
-            'Opal Reyes', 'Julian Thorne', 'Keira Moss', 'Noah Sloane', 'Avery Quinn', 'Bianca Vale',
-            'Roman Mercer', 'Esme Calder', 'Theo Harlan', 'Lena Pike', 'Arlo Wynne', 'Selah Frost'
-          ],
-          [
-            'Willa Hart', 'Gideon Shaw', 'Freya Bell', 'Nico Rowan', 'Talia Vane', 'Miles Carver',
-            'Elara North', 'Jonah Vale', 'Maeve Carden', 'Lucian West', 'Nina Bloom', 'Rowan Pike'
-          ],
-          [
-            'Ada Mercer', 'Finn Holloway', 'Sloane Wilder', 'Rhea Quinn', 'Silas Voss', 'Isla Wren',
-            'Callum Frost', 'Piper Vale', 'Daphne Cross', 'Micah Haze', 'Eva Thorn', 'Jasper Cade'
-          ],
-          [
-            'Marin Locke', 'Owen Hart', 'Celeste Wynn', 'Declan Ash', 'Sabine Moore', 'Hugo Vale',
-            'Liora Pike', 'Maren Wilde', 'Bennett Snow', 'Cleo March', 'Damon Keene', 'Ayla North'
-          ],
-          [
-            'Imogen Reed', 'Rafael Knox', 'Nora Blythe', 'Kieran Vale', 'Zara Hollow', 'August Crane',
-            'Phoebe Drift', 'Xavier Thorn', 'Lila Mercer', 'Graham West', 'Veda Pike', 'Orion Lake'
-          ],
-          [
-            'Ember Sloane', 'Caleb Frost', 'Naomi Voss', 'Everett Quinn', 'Zadie Hart', 'Malcolm Wren',
-            'Tessa Rowan', 'Adrian Pike', 'Ivy North', 'Felix Calder', 'Mina Vale', 'Sebastian Haze'
-          ],
-          [
-            'Carmen Vale', 'Ronan Bell', 'Josie Mercer', 'Eamon Wilde', 'Skye Holloway', 'Victor Snow',
-            'Laine Cross', 'Bridget Pike', 'Darius West', 'Gia Lockwood', 'Nolan Frost', 'Helena March'
-          ],
-          [
-            'Poppy Wren', 'Damian Graves', 'Sage Carver', 'Cora Ash', 'Zane Hollow', 'Elise Thorne',
-            'Milo Carden', 'Delia Quinn', 'Cassian Reed', 'Louisa Vane', 'Remy North', 'Harper Vale'
-          ],
-          [
-            'Alma Pike', 'Ezekiel Moss', 'Vivian Hart', 'Beau Mercer', 'Indira Bloom', 'Tristan Wren',
-            'Greer Holloway', 'Leon Vale', 'Nessa Wilde', 'Corbin Frost', 'Ruby Calder', 'Atticus Shaw'
-          ]
-        ],
-        role: [
-          [
-            'disgraced archivist', 'small-town mayor', 'runaway prince', 'debt collector', 'private chef',
-            'retired getaway driver', 'museum conservator', 'ghostwriter', 'cult escapee', 'crisis negotiator',
-            'wedding planner', 'salvage diver', 'paramedic', 'conspiracy podcaster', 'night janitor'
-          ],
-          [
-            'undercover labor organizer', 'failed child prodigy', 'celebrity fixer', 'bank security auditor',
-            'storm chaser', 'community college professor', 'funeral director', 'auction-house appraiser',
-            'submarine mechanic', 'disaster relief coordinator', 'bounty hunter', 'houseboat bookseller',
-            'night-shift radio host', 'trial consultant', 'former teen idol'
-          ],
-          [
-            'whistleblower accountant', 'rogue botanist', 'burned-out therapist', 'hotel heir', 'divorce mediator',
-            'pawn shop owner', 'freelance translator', 'stolen art broker', 'public defender', 'travel nurse',
-            'ballroom instructor', 'urban beekeeper', 'election strategist', 'cemetery groundskeeper', 'marine biologist'
-          ],
-          [
-            'field producer', 'back-alley surgeon', 'mountain rescue ranger', 'copyright lawyer', 'luxury train steward',
-            'demolition foreman', 'church organist', 'crime scene cleaner', 'high school principal', 'offshore welder',
-            'suspended detective', 'vintage toy restorer', 'professional mourner', 'weather anchor', 'board game designer'
-          ],
-          [
-            'reality show editor', 'horse trainer', 'cat burglar', 'aquarium curator', 'forensic linguist',
-            'state senator\'s aide', 'ruined socialite', 'court stenographer', 'elite dog handler', 'ship captain',
-            'mall magician', 'family therapist', 'bridge inspector', 'prison librarian', 'tabloid reporter'
-          ],
-          [
-            'satellite engineer', 'theme park designer', 'widowed florist', 'estate sale scout', 'private investigator',
-            'ghost tour guide', 'rehab counselor', 'chess hustler', 'military historian', 'casino pit boss',
-            'fire lookout', 'stunt coordinator', 'political speechwriter', 'perfumer', 'documentary editor'
-          ],
-          [
-            'yacht broker', 'glassblower', 'escape room owner', 'opera understudy', 'seafloor cartographer',
-            'startup founder on the brink', 'park ranger', 'cybercrime analyst', 'reformed cult recruiter',
-            'taxidermist', 'rare book thief', 'language coach', 'exorcist-for-hire', 'district attorney', 'tattoo artist'
-          ],
-          [
-            'cold case blogger', 'royal bodyguard', 'antique dealer', 'court-appointed guardian', 'competitive fencer',
-            'black market medic', 'ice road trucker', 'relationship columnist', 'sports agent', 'wine importer',
-            'disbarred lawyer', 'war photographer', 'funeral singer', 'mayoral candidate', 'museum thief'
-          ],
-          [
-            'harbor pilot', 'fixer for a pop star', 'retired spy', 'disaster insurance adjuster', 'puppet maker',
-            'deep-sea miner', 'arson investigator', 'small-town pastor', 'architectural drafter', 'runaway bride turned planner',
-            'theme hotel concierge', 'air traffic controller', 'language preservation activist', 'grift instructor', 'bike courier'
-          ],
-          [
-            'union organizer', 'survival instructor', 'court magician', 'family office accountant', 'luxury matchmaker',
-            'screenwriting teacher', 'artifact smuggler', 'street muralist', 'hostage negotiator', 'palace librarian',
-            'ethical hacker', 'boatyard owner', 'travel vlogger in hiding', 'secretary to a dangerous family', 'seasonal lighthouse keeper'
-          ]
-        ],
-        adjective: [
-          [
-            'ruthless', 'grieving', 'magnetic', 'evasive', 'tender', 'paranoid',
-            'restless', 'charismatic', 'reckless', 'methodical', 'secretive', 'burned-out'
-          ],
-          [
-            'superstitious', 'obsessive', 'wry', 'brilliant', 'unforgiving', 'hopeful',
-            'guarded', 'volatile', 'merciful', 'elegant', 'blunt', 'haunted'
-          ],
-          [
-            'impatient', 'calculating', 'joyless', 'ferocious', 'wistful', 'abrasive',
-            'disciplined', 'vain', 'awkward', 'soft-spoken', 'devout', 'bitter'
-          ],
-          [
-            'cynical', 'playful', 'hypervigilant', 'generous', 'isolated', 'suspicious',
-            'radiant', 'fatalistic', 'driven', 'fragile', 'acid-tongued', 'stoic'
-          ],
-          [
-            'showy', 'withholding', 'forgiving', 'pious', 'self-destructive', 'delicate',
-            'resourceful', 'resentful', 'careful', 'hungry', 'aloof', 'possessive'
-          ],
-          [
-            'overprepared', 'defiant', 'tactical', 'lonely', 'wounded', 'flirtatious',
-            'sharp-witted', 'fatalistic', 'idealistic', 'mercenary', 'luminous', 'grim'
-          ],
-          [
-            'guilty', 'mischievous', 'severe', 'euphoric', 'repressed', 'vengeful',
-            'fervent', 'practical', 'dreamy', 'caustic', 'evasive', 'dogged'
-          ],
-          [
-            'romantic', 'shameless', 'discouraged', 'incisive', 'unstable', 'fierce',
-            'measured', 'terrified', 'earnest', 'coiled', 'ornery', 'numb'
-          ],
-          [
-            'volatile', 'dutiful', 'mournful', 'improvisational', 'vain', 'humble',
-            'disillusioned', 'predatory', 'watchful', 'self-mocking', 'protective', 'unruly'
-          ],
-          [
-            'serene', 'combative', 'grandiose', 'hesitant', 'relentless', 'bewitched',
-            'streetwise', 'neurotic', 'seductive', 'hollow', 'daring', 'brittle'
-          ]
-        ],
-        goal: [
-          [
-            'clear their name', 'win back an estranged sibling', 'pull off one last clean job', 'protect a dangerous secret',
-            'earn a place they were denied', 'save a failing family business', 'undo a public humiliation',
-            'expose the person pulling the strings', 'escape the role everyone assigned them', 'steal one impossible victory'
-          ],
-          [
-            'bury a scandal before sunrise', 'reclaim custody of a child', 'find the missing witness', 'inherit a house without selling their soul',
-            'survive a political betrayal', 'make one honest confession', 'break a family curse', 'solve a decades-old disappearance',
-            'stop a wedding', 'rescue the person they once abandoned'
-          ],
-          [
-            'destroy the ledger that can ruin them', 'keep a promise to a dead friend', 'win an election they should lose',
-            'smuggle someone to safety', 'expose a counterfeit saint', 'find proof of sabotage', 'pay back an impossible debt',
-            'avoid becoming exactly like a parent', 'undo the theft that made them rich', 'outlast a blackmailer'
-          ],
-          [
-            'survive one final season in public view', 'build a life under a false name', 'save their town from a quiet collapse',
-            'convince the wrong person to trust them', 'bring down a protected predator', 'get home before their lie catches up',
-            'prevent a murder they can already see coming', 'earn forgiveness they do not deserve', 'keep their crew from splintering', 'steal evidence from an ally'
-          ],
-          [
-            'take back the company they built', 'prove a miracle was staged', 'save a sibling from prison', 'break into a private archive',
-            'survive an inheritance war', 'stop their own wedding', 'outmaneuver a former mentor', 'free a hostage without bloodshed',
-            'recover the recording that can destroy a dynasty', 'make it through one night without being recognized'
-          ],
-          [
-            'win custody of a family secret', 'pull a confession out of a coward', 'keep a witness alive long enough to speak',
-            'get out of town with one clean conscience', 'return a stolen heirloom', 'discredit a beloved fraud', 'save a doomed neighborhood',
-            'uncover who is selling them out', 'stop an empire from swallowing their home', 'protect the person who hates them'
-          ],
-          [
-            'find the body before the press does', 'destroy the tape everyone wants', 'earn enough money to disappear',
-            'force the truth into daylight', 'reverse a terrible bargain', 'leave the church they built their life around',
-            'beat a rival to a hidden vault', 'rescue a child marked for someone else\'s war', 'survive a week under surveillance', 'make one impossible rescue'
-          ],
-          [
-            'get the last word against a dead enemy', 'stop a citywide panic', 'keep their lover from making the same mistake',
-            'protect a fragile peace', 'drag a protected name into court', 'become irreplaceable before dawn', 'find who forged the evidence',
-            'get elected without becoming hollow', 'save their ship from mutiny', 'prove the haunting is real'
-          ],
-          [
-            'break someone out of protective custody', 'turn a public failure into leverage', 'keep a family member off the front page',
-            'rescue their reputation from a lie', 'find the hidden room no one talks about', 'win back control of their own story',
-            'make amends before the funeral', 'stop a land grab in time', 'preserve the one witness they can trust', 'reach the border before the rumor does'
-          ],
-          [
-            'rebuild a shattered alliance', 'cross a city without being caught', 'pull off a perfect substitution', 'unmask the person imitating them',
-            'save their protégé from becoming dangerous', 'walk away from the family business alive', 'inherit power without being owned by it',
-            'smuggle the truth into the room', 'find the missing map before an execution', 'be the first to forgive and the last to bend'
-          ]
-        ]
+      var els = {
+        progress: document.getElementById('cf-progress'),
+        themeLabel: document.getElementById('cf-theme-label'),
+        question: document.getElementById('cf-question'),
+        answer: document.getElementById('cf-answer'),
+        back: document.getElementById('cf-back'),
+        next: document.getElementById('cf-next'),
+        sheet: document.getElementById('cf-sheet'),
+        finishActions: document.getElementById('cf-finish-actions'),
+        save: document.getElementById('cf-save'),
+        toCourius: document.getElementById('cf-to-courius')
       };
 
-      var SUGGESTIONS = {
-        name: flattenBatches(SUGGESTION_BATCHES.name),
-        role: flattenBatches(SUGGESTION_BATCHES.role),
-        adjective: flattenBatches(SUGGESTION_BATCHES.adjective),
-        goal: flattenBatches(SUGGESTION_BATCHES.goal)
-      };
+      function current() { return state.queue[state.index]; }
+      function readLib() { try { return JSON.parse(localStorage.getItem(LIB_KEY) || '{}') || {}; } catch (_) { return {}; } }
+      function writeLib(lib) { try { localStorage.setItem(LIB_KEY, JSON.stringify(lib)); } catch (_) {} }
 
-      var GOAL_COSTS = [
-        'the proof they need is in the hands of someone they once betrayed',
-        'succeeding would destroy the one relationship they still trust',
-        'the version of the truth they need is also the one they fear most',
-        'their plan only works if they become the kind of person they hate',
-        'every step forward puts an innocent bystander under more pressure',
-        'the easiest route would confirm the rumor that ruined them before'
-      ];
+      function render() {
+        var q = current();
+        if (!q) { return finish(); }
+        var themeNum = BANK.themes.findIndex(function (t) { return t.id === q.themeId; }) + 1;
+        els.progress.textContent = 'Theme ' + themeNum + ' of ' + BANK.themes.length;
+        els.themeLabel.textContent = q.themeLabel || '';
+        els.question.textContent = q.prompt;
+        els.answer.value = state.answers[q.id] || '';
+        els.back.disabled = state.index === 0;
+        els.next.textContent = state.index === state.queue.length - 1 ? 'Finish' : 'Next';
+      }
 
-      var CONTRADICTIONS = [
-        'projects total control but privately improvises in panic',
-        'is known for mercy yet keeps a vindictive ledger',
-        'talks like a cynic but still arranges impossible acts of care',
-        'craves invisibility while choosing the loudest possible tactics',
-        'reads everyone else cleanly but misreads their own motives',
-        'wants intimacy but turns every confession into a performance',
-        'sells certainty while quietly living on borrowed faith',
-        'acts invincible but organizes life around one old wound'
-      ];
-
-      var INTERNAL_TENSIONS = [
-        'Their best instinct and their stated goal keep pulling in opposite directions.',
-        'They can get what they want only by betraying the image they built to survive.',
-        'The quality that makes them effective is also the quality most likely to isolate them.',
-        'They keep mistaking motion for progress because stopping would force a real confession.',
-        'They know exactly what the right choice is and still resent having to become that person.'
-      ];
-
-      var VOICE_NOTES = [
-        'speaks in crisp verdicts until emotion slips through',
-        'uses humor as misdirection whenever the stakes turn personal',
-        'makes every sentence sound like a negotiated ceasefire',
-        'cuts to the truth too quickly for polite rooms',
-        'narrates chaos with eerie calm'
-      ];
-
-      var HOOK_TEMPLATES = [
-        function (seed, flavor, cost) {
-          return seed.name + ', a ' + seed.adjective + ' ' + seed.role + ', wants to ' + seed.goal + ', but ' + cost + '.';
-        },
-        function (seed, flavor, cost) {
-          return 'To ' + seed.goal + ', ' + seed.name + ' has to weaponize life as a ' + seed.role + ', and that means ' + cost + '.';
-        },
-        function (seed, flavor, cost) {
-          return 'Everyone thinks ' + seed.name + ' is just a ' + seed.role + ', until their ' + seed.adjective + ' streak turns the pursuit to ' + seed.goal + ' into a public problem.';
-        },
-        function (seed, flavor, cost) {
-          return 'In a ' + flavor.toLowerCase() + '-leaning story, ' + seed.name + ' chases a chance to ' + seed.goal + ' while their life as a ' + seed.role + ' keeps reopening the same wound.';
+      function saveAnswer() {
+        var q = current();
+        if (!q) return;
+        state.answers[q.id] = els.answer.value;
+        if (!state.inserted[q.id]) {
+          var ups = Engine.evalFollowUps(q, els.answer.value);
+          if (ups.length) {
+            var injected = ups.map(function (f, i) {
+              return { themeId: q.themeId, themeLabel: q.themeLabel, id: q.id + '-fu' + i, prompt: f.prompt, followUps: [] };
+            });
+            state.queue.splice.apply(state.queue, [state.index + 1, 0].concat(injected));
+            state.inserted[q.id] = true;
+          }
         }
-      ];
-
-      var state = loadState();
-
-      function nowIso() {
-        return new Date().toISOString();
       }
 
-      function safeId() {
-        if (window.crypto && typeof window.crypto.randomUUID === 'function') {
-          return window.crypto.randomUUID();
-        }
-        return 'cfg_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+      function finish() {
+        var sheet = Engine.buildSheet(BANK, state.answers);
+        els.sheet.innerHTML = sheet || '<p>No answers yet.</p>';
+        els.sheet.hidden = false;
+        els.finishActions.hidden = false;
+        els.themeLabel.textContent = 'Your character';
+        els.question.textContent = '';
+        els.answer.hidden = true;
+        els.next.hidden = true;
+        els.back.hidden = true;
       }
 
-      function sample(list, used) {
-        var pool = Array.isArray(list) ? list.slice() : [];
-        if (!pool.length) return '';
-        var denied = used && typeof used === 'object' ? used : null;
-        if (denied) {
-          var filtered = pool.filter(function (item) { return !denied[item]; });
-          if (filtered.length) pool = filtered;
-        }
-        return pool[Math.floor(Math.random() * pool.length)];
-      }
+      els.next.addEventListener('click', function () {
+        saveAnswer();
+        if (state.index < state.queue.length - 1) { state.index += 1; render(); }
+        else finish();
+      });
+      els.back.addEventListener('click', function () {
+        saveAnswer();
+        if (state.index > 0) { state.index -= 1; render(); }
+      });
+      els.save.addEventListener('click', function () {
+        var name = prompt('Name this character:');
+        if (!name) return;
+        var lib = readLib();
+        lib[Date.now()] = { name: name, answers: state.answers, createdAt: new Date().toISOString() };
+        writeLib(lib);
+        window.WTToast && window.WTToast.notify('Character saved.');
+        renderLibrary();
+      });
+      els.toCourius.addEventListener('click', function () {
+        var html = Engine.buildSheet(BANK, state.answers);
+        var ok = window.WTCourius && window.WTCourius.append(html, 'CharacterForge');
+        window.WTToast && window.WTToast.notify(ok ? 'Sent to Courius.' : 'Could not send.', ok ? 'info' : 'error');
+      });
 
-      function clean(value) {
-        return String(value || '').replace(/\s+/g, ' ').trim();
-      }
-
-      function titleCase(value) {
-        return clean(value).replace(/\b([a-z])/g, function (_, ch) {
-          return ch.toUpperCase();
+      function renderLibrary() {
+        var lib = readLib();
+        var list = document.getElementById('cf-library-list');
+        list.innerHTML = '';
+        Object.keys(lib).sort().reverse().forEach(function (key) {
+          var entry = lib[key];
+          var li = document.createElement('li');
+          li.innerHTML =
+            '<span class="cf-lib-name"></span> ' +
+            '<button data-act="open">Open</button>' +
+            '<button data-act="rename">Rename</button>' +
+            '<button data-act="dup">Duplicate</button>' +
+            '<button data-act="del">Delete</button>';
+          li.querySelector('.cf-lib-name').textContent = entry.name;
+          li.querySelector('[data-act=open]').onclick = function () {
+            state.answers = Object.assign({}, entry.answers); state.index = 0;
+            state.queue = Engine.buildQueue(BANK); state.inserted = {};
+            els.answer.hidden = false; els.next.hidden = false; els.back.hidden = false;
+            els.sheet.hidden = true; els.finishActions.hidden = true; render();
+          };
+          li.querySelector('[data-act=rename]').onclick = function () {
+            var n = prompt('New name:', entry.name); if (!n) return;
+            lib[key].name = n; writeLib(lib); renderLibrary();
+          };
+          li.querySelector('[data-act=dup]').onclick = function () {
+            var copy = JSON.parse(JSON.stringify(entry)); copy.name = entry.name + ' (copy)';
+            lib[Date.now()] = copy; writeLib(lib); renderLibrary();
+          };
+          li.querySelector('[data-act=del]').onclick = function () {
+            if (!confirm('Delete "' + entry.name + '"?')) return;
+            delete lib[key]; writeLib(lib); renderLibrary();
+          };
+          list.appendChild(li);
         });
-      }
-
-      function toSentence(value) {
-        var text = clean(value);
-        if (!text) return '';
-        return text.charAt(0).toUpperCase() + text.slice(1);
-      }
-
-      function normalizeDraft(input) {
-        var base = input && typeof input === 'object' ? input : {};
-        return {
-          name: clean(base.name),
-          role: clean(base.role),
-          adjective: clean(base.adjective),
-          goal: clean(base.goal),
-          flavor: FLAVOR_TAGS.indexOf(String(base.flavor || '')) >= 0 ? String(base.flavor) : 'General'
-        };
-      }
-
-      function normalizeCard(input) {
-        var base = input && typeof input === 'object' ? input : {};
-        return {
-          id: clean(base.id) || safeId(),
-          name: titleCase(base.name),
-          role: clean(base.role),
-          adjective: clean(base.adjective),
-          goal: clean(base.goal),
-          hook: clean(base.hook),
-          conflict: clean(base.conflict),
-          contradiction: clean(base.contradiction),
-          voice: clean(base.voice),
-          flavor: FLAVOR_TAGS.indexOf(String(base.flavor || '')) >= 0 ? String(base.flavor) : 'General',
-          sourceInputs: normalizeDraft(base.sourceInputs),
-          createdAt: clean(base.createdAt) || nowIso(),
-          isFavorite: !!base.isFavorite
-        };
-      }
-
-      function normalizeSnapshot(input) {
-        var base = input && typeof input === 'object' ? input : {};
-        return {
-          id: clean(base.id) || safeId(),
-          label: clean(base.label) || 'snapshot',
-          createdAt: clean(base.createdAt) || nowIso(),
-          state: normalizeState(base.state)
-        };
-      }
-
-      function normalizeState(input) {
-        var base = input && typeof input === 'object' ? input : {};
-        var batch = Array.isArray(base.batch) ? base.batch.map(normalizeCard) : [];
-        var favorites = Array.isArray(base.favorites) ? base.favorites.map(function (item) {
-          var card = normalizeCard(item);
-          card.isFavorite = true;
-          return card;
-        }) : [];
-        var snapshots = Array.isArray(base.snapshots) ? base.snapshots.map(normalizeSnapshot).slice(0, MAX_SNAPSHOTS) : [];
-        var selectedId = clean(base.selectedId);
-        if (selectedId && !batch.some(function (card) { return card.id === selectedId; }) && !favorites.some(function (card) { return card.id === selectedId; })) {
-          selectedId = batch[0] ? batch[0].id : (favorites[0] ? favorites[0].id : '');
-        }
-        return {
-          draft: normalizeDraft(base.draft),
-          batch: batch,
-          favorites: favorites,
-          selectedId: selectedId || (batch[0] ? batch[0].id : (favorites[0] ? favorites[0].id : '')),
-          snapshots: snapshots,
-          updatedAt: clean(base.updatedAt) || '',
-          lastAction: clean(base.lastAction) || ''
-        };
-      }
-
-      function defaultState() {
-        return normalizeState({
-          draft: {
-            name: '',
-            role: '',
-            adjective: '',
-            goal: '',
-            flavor: 'General'
-          },
-          batch: [],
-          favorites: [],
-          selectedId: '',
-          snapshots: [],
-          updatedAt: '',
-          lastAction: ''
-        });
-      }
-
-      function hasRecoverableState(candidateState) {
-        var normalized = normalizeState(candidateState);
-        return !!(
-          normalized.batch.length ||
-          normalized.favorites.length ||
-          FIELD_ORDER.some(function (field) { return normalized.draft[field]; })
-        );
-      }
-
-      function snapshotPayloadFor(sourceState) {
-        var payload = normalizeState(sourceState);
-        payload.snapshots = [];
-        return payload;
-      }
-
-      function buildSnapshot(label, sourceState) {
-        return normalizeSnapshot({
-          label: label,
-          createdAt: nowIso(),
-          state: snapshotPayloadFor(sourceState)
-        });
-      }
-
-      function loadState() {
-        try {
-          var raw = localStorage.getItem(STORAGE_KEY);
-          return raw ? normalizeState(JSON.parse(raw)) : defaultState();
-        } catch (_) {
-          return defaultState();
-        }
-      }
-
-      function loadSnapshots() {
-        try {
-          var raw = localStorage.getItem(SNAPSHOTS_KEY);
-          var parsed = raw ? JSON.parse(raw) : [];
-          return Array.isArray(parsed) ? parsed.map(normalizeSnapshot).slice(0, MAX_SNAPSHOTS) : [];
-        } catch (_) {
-          return [];
-        }
-      }
-
-      function syncSnapshotsFromStorage() {
-        state.snapshots = loadSnapshots();
-      }
-
-      function writeSnapshots(snapshots) {
-        state.snapshots = Array.isArray(snapshots) ? snapshots.slice(0, MAX_SNAPSHOTS) : [];
-        try {
-          localStorage.setItem(SNAPSHOTS_KEY, JSON.stringify(state.snapshots));
-        } catch (_) {}
-        return state.snapshots;
-      }
-
-      function persistState(nextState, actionLabel) {
-        state = normalizeState(nextState);
-        state.updatedAt = nowIso();
-        state.lastAction = clean(actionLabel) || state.lastAction;
-        var nextRevision = 1;
-        try {
-          var currentRevision = parseInt(localStorage.getItem(REVISION_KEY) || '0', 10) || 0;
-          nextRevision = currentRevision + 1;
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-          localStorage.setItem(REVISION_KEY, String(nextRevision));
-          localStorage.setItem(UPDATED_AT_KEY, String(Date.now()));
-        } catch (_) {}
-        return state;
-      }
-
-      function saveSnapshot(label, sourceState) {
-        syncSnapshotsFromStorage();
-        var candidateState = sourceState || state;
-        if (!hasRecoverableState(candidateState)) {
-          return;
-        }
-        var snapshot = buildSnapshot(label, candidateState);
-        var nextSnapshots = [snapshot].concat(state.snapshots).slice(0, MAX_SNAPSHOTS);
-        writeSnapshots(nextSnapshots);
       }
 
       function setTheme(theme) {
@@ -1175,478 +562,16 @@
         setTheme(current === 'dark' ? 'light' : 'dark');
       }
 
-      function hydrateTheme() {
-        try {
-          setTheme(localStorage.getItem(THEME_KEY) || 'dark');
-        } catch (_) {
-          setTheme('dark');
-        }
+      document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+
+      try { setTheme(localStorage.getItem(THEME_KEY) || 'dark'); } catch (_) { setTheme('dark'); }
+
+      if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
       }
 
-      function inferContext(card) {
-        return {
-          topic: card.name + ' | ' + card.role,
-          tone: card.adjective,
-          audience: card.flavor === 'General' ? '' : card.flavor + ' fiction',
-          constraints: 'Goal: ' + card.goal + ' | Conflict: ' + card.conflict,
-          lastTool: 'CharacterForge'
-        };
-      }
-
-      function escapeHtml(value) {
-        return String(value == null ? '' : value)
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#39;');
-      }
-
-      function buildCardHtml(card) {
-        return '<div class="action"><h2>' + escapeHtml(card.name) + '</h2>' +
-          '<p><strong>' + escapeHtml(card.adjective) + ' ' + escapeHtml(card.role) + '</strong></p>' +
-          '<p><strong>Goal:</strong> ' + escapeHtml(toSentence(card.goal)) + '</p>' +
-          '<p><strong>Hook:</strong> ' + escapeHtml(card.hook) + '</p>' +
-          '<p><strong>Conflict:</strong> ' + escapeHtml(card.conflict) + '</p>' +
-          '<p><strong>Contradiction:</strong> ' + escapeHtml(card.contradiction) + '</p></div>';
-      }
-
-      function cardToText(card) {
-        return [
-          card.name,
-          card.adjective + ' ' + card.role,
-          'Goal: ' + toSentence(card.goal),
-          'Hook: ' + card.hook,
-          'Conflict: ' + card.conflict,
-          'Contradiction: ' + card.contradiction,
-          'Voice cue: ' + card.voice,
-          'Flavor: ' + card.flavor
-        ].join('\n');
-      }
-
-      function batchToText(cards) {
-        return (cards || []).map(function (card, index) {
-          return 'Variant ' + (index + 1) + '\n' + cardToText(card);
-        }).join('\n\n---\n\n');
-      }
-
-      function copyText(text, successMessage) {
-        var value = String(text || '').trim();
-        if (!value) {
-          notify('Nothing to copy yet.', 'error');
-          return;
-        }
-        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-          navigator.clipboard.writeText(value).then(function () {
-            notify(successMessage || 'Copied.');
-          }).catch(function () {
-            fallbackCopy(value, successMessage);
-          });
-          return;
-        }
-        fallbackCopy(value, successMessage);
-      }
-
-      function fallbackCopy(text, successMessage) {
-        var area = document.createElement('textarea');
-        area.value = text;
-        area.setAttribute('readonly', '');
-        area.style.position = 'fixed';
-        area.style.opacity = '0';
-        document.body.appendChild(area);
-        area.select();
-        try {
-          document.execCommand('copy');
-          notify(successMessage || 'Copied.');
-        } catch (_) {
-          notify('Copy failed.', 'error');
-        }
-        document.body.removeChild(area);
-      }
-
-      function downloadText(filename, text) {
-        var blob = new Blob([String(text || '')], { type: 'text/plain;charset=utf-8' });
-        var url = URL.createObjectURL(blob);
-        var link = document.createElement('a');
-        link.href = url;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
-      }
-
-      function currentSelection() {
-        var allCards = state.batch.concat(state.favorites);
-        return allCards.find(function (card) { return card.id === state.selectedId; }) || state.batch[0] || state.favorites[0] || null;
-      }
-
-      function nextSeedDraft() {
-        var draft = normalizeDraft(state.draft);
-        return {
-          name: draft.name || titleCase(sample(SUGGESTIONS.name)),
-          role: draft.role || sample(SUGGESTIONS.role),
-          adjective: draft.adjective || sample(SUGGESTIONS.adjective),
-          goal: draft.goal || sample(SUGGESTIONS.goal),
-          flavor: draft.flavor || 'General'
-        };
-      }
-
-      function signatureFor(card) {
-        return [card.name, card.role, card.adjective, card.goal, card.hook, card.conflict, card.contradiction].join('|').toLowerCase();
-      }
-
-      function generateVariant(seed, usedSignatures) {
-        var flavor = seed.flavor || 'General';
-        var cost = sample(GOAL_COSTS);
-        var contradiction = sample(CONTRADICTIONS);
-        var internal = sample(INTERNAL_TENSIONS);
-        var voice = sample(VOICE_NOTES);
-        var hook = sample(HOOK_TEMPLATES)(seed, flavor, cost);
-        var card = normalizeCard({
-          name: seed.name,
-          role: seed.role,
-          adjective: seed.adjective,
-          goal: seed.goal,
-          hook: hook,
-          conflict: internal + ' Also, ' + toSentence(cost) + '.',
-          contradiction: seed.name + ' ' + contradiction + '.',
-          voice: seed.name + ' ' + voice + '.',
-          flavor: flavor,
-          sourceInputs: seed,
-          createdAt: nowIso(),
-          isFavorite: false
-        });
-        var signature = signatureFor(card);
-        if (usedSignatures[signature]) return null;
-        usedSignatures[signature] = true;
-        return card;
-      }
-
-      function generateBatch() {
-        var seed = nextSeedDraft();
-        var used = {};
-        var results = [];
-        var guard = 0;
-        while (results.length < BATCH_SIZE && guard < 60) {
-          guard += 1;
-          var card = generateVariant(seed, used);
-          if (card) results.push(card);
-        }
-        state.draft = normalizeDraft(seed);
-        state.batch = results;
-        state.selectedId = results[0] ? results[0].id : '';
-        persistState(state, 'generated');
-        render();
-      }
-
-      function clearDraft() {
-        saveSnapshot('before-clear-draft');
-        state.draft = normalizeDraft({ flavor: state.draft.flavor || 'General' });
-        FIELD_ORDER.forEach(function (field) {
-          state.draft[field] = '';
-        });
-        persistState(state, 'cleared-draft');
-        render();
-      }
-
-      function randomizeAllInputs() {
-        state.draft = normalizeDraft({
-          name: titleCase(sample(SUGGESTIONS.name)),
-          role: sample(SUGGESTIONS.role),
-          adjective: sample(SUGGESTIONS.adjective),
-          goal: sample(SUGGESTIONS.goal),
-          flavor: state.draft.flavor || 'General'
-        });
-        persistState(state, 'randomized-draft');
-        render();
-      }
-
-      function randomizeField(field) {
-        if (FIELD_ORDER.indexOf(field) < 0) return;
-        var value = field === 'name' ? titleCase(sample(SUGGESTIONS[field])) : sample(SUGGESTIONS[field]);
-        state.draft[field] = value;
-        persistState(state, 'randomized-' + field);
-        render();
-      }
-
-      function applySuggestion(field, value) {
-        if (FIELD_ORDER.indexOf(field) < 0) return;
-        state.draft[field] = field === 'name' ? titleCase(value) : value;
-        persistState(state, 'suggestion-' + field);
-        render();
-      }
-
-      function setFlavor(flavor) {
-        state.draft.flavor = FLAVOR_TAGS.indexOf(flavor) >= 0 ? flavor : 'General';
-        persistState(state, 'flavor');
-        render();
-      }
-
-      function selectCard(cardId) {
-        state.selectedId = clean(cardId);
-        persistState(state, 'selected');
-        render();
-      }
-
-      function sendCardToCourius(card) {
-        if (!window.WTCourius) {
-          notify('Courius handoff unavailable.', 'error');
-          return;
-        }
-        var appended = false;
-        try {
-          appended = !!window.WTCourius.append(buildCardHtml(card), 'CharacterForge');
-        } catch (_) {
-          appended = false;
-        }
-        if (!appended) {
-          notify('Courius handoff failed.', 'error');
-          return;
-        }
-        notify('Sent to Courius.');
-      }
-
-      function restoreLatestSnapshot() {
-        syncSnapshotsFromStorage();
-        var snapshot = state.snapshots[0];
-        if (!snapshot) {
-          notify('No snapshot available.', 'error');
-          return;
-        }
-        if (!window.confirm('Restore the latest CharacterForge snapshot and replace the current character state?')) {
-          return;
-        }
-        saveSnapshot('manual-restore-backup', state);
-        state = normalizeState(snapshot.state);
-        persistState(state, 'restored');
-        render();
-        notify('Latest snapshot restored.');
-      }
-
-      function clearSnapshots() {
-        if (!window.confirm('Clear all CharacterForge recovery snapshots?')) {
-          return;
-        }
-        writeSnapshots([]);
-        persistState(state, 'cleared-snapshots');
-        render();
-      }
-
-      function renderSuggestions() {
-        FIELD_ORDER.forEach(function (field) {
-          var holder = document.getElementById('suggestions-' + field);
-          if (!holder) return;
-          holder.innerHTML = SUGGESTIONS[field].slice(0, 3).map(function (item) {
-            return '<button class="chip" type="button" data-suggestion-field="' + field + '" data-suggestion-value="' + escapeHtml(item) + '">' + escapeHtml(item) + '</button>';
-          }).join('');
-        });
-      }
-
-      function renderFlavorChips() {
-        var row = document.getElementById('flavor-row');
-        if (!row) return;
-        row.innerHTML = FLAVOR_TAGS.map(function (tag) {
-          var active = tag === (state.draft.flavor || 'General') ? ' active' : '';
-          return '<button type="button" class="flavor-chip' + active + '" data-flavor="' + escapeHtml(tag) + '">' + escapeHtml(tag) + '</button>';
-        }).join('');
-      }
-
-      function renderDraft() {
-        FIELD_ORDER.forEach(function (field) {
-          var input = document.querySelector('[data-field="' + field + '"]');
-          if (input && input.value !== state.draft[field]) input.value = state.draft[field];
-        });
-        var selected = currentSelection();
-        document.getElementById('selected-name').textContent = selected ? selected.name : 'None';
-        document.getElementById('selected-flavor').textContent = (selected && selected.flavor) || state.draft.flavor || 'General';
-      }
-
-      function renderBatch() {
-        var grid = document.getElementById('results-grid');
-        if (!grid) return;
-        if (!state.batch.length) {
-          grid.innerHTML = '<div class="empty" style="grid-column:1 / -1;">No character yet. Fill the builder or hit randomize.</div>';
-          return;
-        }
-        var card = state.batch[0];
-        grid.innerHTML = '<article class="card selected" data-card-id="' + escapeHtml(card.id) + '">' +
-          '<div class="card-topline"><span class="card-tag">Character</span><span class="hero-pill">' + escapeHtml(card.flavor) + '</span></div>' +
-          '<h3 class="card-title">' + escapeHtml(card.name) + '</h3>' +
-          '<div class="card-role">' + escapeHtml(card.adjective) + ' ' + escapeHtml(card.role) + '</div>' +
-          '<div class="card-meta"><span class="hero-pill">Goal: ' + escapeHtml(toSentence(card.goal)) + '</span></div>' +
-          '<div class="card-block"><span class="mini-label">Hook</span><p>' + escapeHtml(card.hook) + '</p></div>' +
-          '<div class="card-block"><span class="mini-label">Conflict</span><p>' + escapeHtml(card.conflict) + '</p></div>' +
-          '<div class="card-block"><span class="mini-label">Contradiction</span><p>' + escapeHtml(card.contradiction) + '</p></div>' +
-          '<div class="card-block"><span class="mini-label">Voice Cue</span><p>' + escapeHtml(card.voice) + '</p></div>' +
-          '<div class="card-actions">' +
-            '<button class="mini-btn" type="button" data-card-action="copy" data-card-id="' + escapeHtml(card.id) + '">Copy</button>' +
-            '<button class="mini-btn" type="button" data-card-action="send" data-card-id="' + escapeHtml(card.id) + '">Send</button>' +
-          '</div>' +
-        '</article>';
-      }
-
-      function renderRecovery() {
-        syncSnapshotsFromStorage();
-        document.getElementById('snapshot-summary').textContent = state.snapshots.length
-          ? state.snapshots.length + ' snapshot' + (state.snapshots.length === 1 ? '' : 's') + ' available. Latest: ' + new Date(state.snapshots[0].createdAt).toLocaleString() + '.'
-          : 'No recovery snapshots yet. The first destructive change will create one.';
-      }
-
-      function renderMetrics() {
-        document.getElementById('metric-batch').textContent = state.batch.length ? 'Character ready' : 'No character yet';
-        document.getElementById('metric-snapshots').textContent = String(state.snapshots.length) + ' snapshot' + (state.snapshots.length === 1 ? '' : 's');
-      }
-
-      function renderStatus() {
-        var selected = currentSelection();
-        var copy = selected
-          ? selected.name + ' is ready. Copy it or send it forward.'
-          : 'Build one character or randomize the inputs.';
-        document.getElementById('status-copy').textContent = copy;
-      }
-
-      function render() {
-        renderSuggestions();
-        renderFlavorChips();
-        renderDraft();
-        renderBatch();
-        renderRecovery();
-        renderMetrics();
-        renderStatus();
-        if (window.lucide && typeof window.lucide.createIcons === 'function') {
-          window.lucide.createIcons();
-        }
-      }
-
-      function findCard(cardId) {
-        return state.batch.concat(state.favorites).find(function (card) { return card.id === cardId; }) || null;
-      }
-
-      function notify(message, type) {
-        if (window.WTToast && typeof window.WTToast.notify === 'function') {
-          window.WTToast.notify(message, type || 'info');
-          return;
-        }
-        window.alert(message);
-      }
-
-      function handleCardAction(action, cardId) {
-        var card = findCard(cardId);
-        if (!card) return;
-        if (action === 'copy') copyText(cardToText(card), 'Character copied.');
-        if (action === 'send') sendCardToCourius(card);
-      }
-
-      function wireEvents() {
-        document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
-
-        FIELD_ORDER.forEach(function (field) {
-          var input = document.querySelector('[data-field="' + field + '"]');
-          if (!input) return;
-          input.addEventListener('input', function () {
-            state.draft[field] = clean(input.value);
-            persistState(state, 'typing-' + field);
-          });
-        });
-
-        document.addEventListener('click', function (event) {
-          var suggestion = event.target.closest('[data-suggestion-field]');
-          if (suggestion) {
-            applySuggestion(
-              suggestion.getAttribute('data-suggestion-field'),
-              suggestion.getAttribute('data-suggestion-value') || ''
-            );
-            return;
-          }
-          var flavor = event.target.closest('[data-flavor]');
-          if (flavor) {
-            setFlavor(flavor.getAttribute('data-flavor') || 'General');
-            return;
-          }
-          var actionBtn = event.target.closest('[data-card-action]');
-          if (actionBtn) {
-            handleCardAction(actionBtn.getAttribute('data-card-action'), actionBtn.getAttribute('data-card-id'));
-            return;
-          }
-        });
-
-        document.getElementById('generate-btn').addEventListener('click', function () {
-          if (state.batch.length || state.favorites.length) saveSnapshot('before-generate');
-          generateBatch();
-          notify('Character built.');
-        });
-        document.getElementById('randomize-all-btn').addEventListener('click', randomizeAllInputs);
-        document.getElementById('clear-draft-btn').addEventListener('click', clearDraft);
-        document.getElementById('copy-selected-btn').addEventListener('click', function () {
-          var selected = currentSelection();
-          if (!selected) {
-            notify('No character to copy yet.', 'error');
-            return;
-          }
-          copyText(cardToText(selected), 'Character copied.');
-        });
-        document.getElementById('send-selected-btn').addEventListener('click', function () {
-          var selected = currentSelection();
-          if (!selected) {
-            notify('Nothing selected yet.', 'error');
-            return;
-          }
-          sendCardToCourius(selected);
-        });
-        document.getElementById('restore-snapshot-btn').addEventListener('click', restoreLatestSnapshot);
-        document.getElementById('clear-snapshots-btn').addEventListener('click', clearSnapshots);
-
-        window.addEventListener('storage', function (event) {
-          if (!event) return;
-          if (event.key === STORAGE_KEY) {
-            state = loadState();
-            syncSnapshotsFromStorage();
-            render();
-          }
-          if (event.key === SNAPSHOTS_KEY) {
-            syncSnapshotsFromStorage();
-            render();
-          }
-        });
-      }
-
-      function initToolActions() {
-        window.WTToolActions = {
-          exportPrimary: function () {
-            var selected = currentSelection();
-            if (selected) {
-              downloadText('character-' + selected.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.txt', cardToText(selected));
-              return;
-            }
-            notify('Nothing to export.', 'error');
-          },
-          handoffPrimary: function () {
-            var selected = currentSelection();
-            if (!selected) {
-              notify('Nothing selected yet.', 'error');
-              return;
-            }
-            sendCardToCourius(selected);
-          }
-        };
-      }
-
-      hydrateTheme();
-      state.snapshots = loadSnapshots();
-      if (!state.batch.length && !state.favorites.length && !FIELD_ORDER.some(function (field) { return state.draft[field]; })) {
-        state.draft = normalizeDraft({
-          name: 'Iris Vale',
-          role: 'disgraced archivist',
-          adjective: 'restless',
-          goal: 'clear her name',
-          flavor: 'General'
-        });
-        persistState(state, 'seeded');
-      }
-      initToolActions();
-      wireEvents();
       render();
+      renderLibrary();
     })();
   </script>
 </body>
