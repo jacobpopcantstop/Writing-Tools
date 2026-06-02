@@ -12,9 +12,10 @@
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="shared-context.js"></script>
+    <script src="shared-toast.js"></script>
     <script src="shared-pwa.js"></script>
     <script src="shared-export.js"></script>
+    <script src="shared-tool-manifest.js"></script>
     <script src="shared-recent-sessions.js"></script>
     <script src="shared-commands.js"></script>
     <script src="shared-command-palette.js"></script>
@@ -263,33 +264,6 @@
         const TBT_TAB_ID = 'tbt-' + Math.random().toString(36).slice(2, 10);
         let localKnownRevision = 0;
 
-        function getContextBus() {
-            return window.WTContextBus || null;
-        }
-
-        function refreshContextBadge() {
-            const badge = document.getElementById('ctx-badge');
-            if (!badge) return;
-            const bus = getContextBus();
-            if (!bus) {
-                badge.textContent = 'Context · n/a';
-                return;
-            }
-            const ctx = bus.getContext();
-            const stamp = ctx.updatedAt
-                ? new Date(ctx.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                : 'idle';
-            badge.textContent = `Context · ${stamp}`;
-            badge.title = ctx.topic || 'No topic set';
-        }
-
-        function getSeedTopicFromContext() {
-            const bus = getContextBus();
-            if (!bus) return '';
-            const ctx = bus.getContext();
-            return (ctx.topic || '').trim();
-        }
-
         function normalizeHistoryPayload(list) {
             if (!Array.isArray(list)) return [];
             return list.filter(entry => entry && entry.prompt && entry.prompt.text && Array.isArray(entry.twists));
@@ -358,9 +332,8 @@
                 toast.classList.remove('opacity-0');
                 setTimeout(() => toast.classList.add('opacity-0'), 2200);
             }
-            const bus = getContextBus();
-            if (bus && typeof bus.notify === 'function') {
-                bus.notify(String(message || ''), level);
+            if (window.WTToast && typeof window.WTToast.notify === 'function') {
+                window.WTToast.notify(String(message || ''), level);
             }
         }
 
@@ -427,23 +400,13 @@
             renderHistory();
         }
 
-        function publishTopicToContext(topicText) {
-            const bus = getContextBus();
-            if (!bus) return;
-            const topic = String(topicText || '').trim();
-            if (!topic) return;
-            bus.mergeContext({ topic, lastTool: 'ThisButThat' });
-        }
-
         // --- Init ---
         document.addEventListener('DOMContentLoaded', () => {
             localKnownRevision = parseInt(localStorage.getItem(TBT_REV_KEY) || '0', 10) || 0;
             loadHistory();
-            const seedTopic = getSeedTopicFromContext();
-            fetchTopics(seedTopic || null);
+            fetchTopics(null);
             setupInputListener();
             lucide.createIcons();
-            refreshContextBadge();
 
             // Load theme from suite-wide localStorage key
             const savedTheme = localStorage.getItem('writingtools_theme');
@@ -455,9 +418,6 @@
                 state.darkMode = true;
             }
             applyThemeState();
-
-            const bus = getContextBus();
-            if (bus) bus.subscribe(() => refreshContextBadge());
         });
 
         window.addEventListener('storage', (event) => {
@@ -676,9 +636,6 @@
                 state.twists = [];
                 state.selectedIndex = 0;
                 state.contextExpanded = false; // Reset expansion on new topics
-                if (state.topics[0] && state.topics[0].text) {
-                    publishTopicToContext(state.topics[0].text);
-                }
                 renderTopicGrid();
                 renderTwistList();
                 updateMedals();
@@ -940,7 +897,6 @@
                 state.twists = [];
                 state.contextExpanded = false; // Reset expansion when switching topics
                 const selected = state.topics[idx];
-                if (selected && selected.text) publishTopicToContext(selected.text);
                 renderTopicGrid();
                 renderTwistList();
                 updateMedals();
@@ -1103,13 +1059,6 @@
             const currentTopic = state.topics[state.selectedIndex];
             const twists = state.twists.map(t => String(t).trim()).filter(Boolean);
             if (!currentTopic && twists.length === 0) return;
-
-            const bus = getContextBus();
-            if (bus) {
-                const topic = currentTopic?.text || bus.getContext().topic || '';
-                const constraints = twists.length ? `ThisButThat twists: ${twists.slice(0, 8).join(' | ')}` : '';
-                bus.mergeContext({ topic, constraints, lastTool: 'ThisButThat' });
-            }
             window.open('BeatHive.html', '_blank', 'noopener');
         }
 
