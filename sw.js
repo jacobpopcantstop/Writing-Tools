@@ -1,4 +1,4 @@
-const WT_CACHE_NAME = 'writingtools-static-v2';
+const WT_CACHE_NAME = 'writingtools-static-v3';
 const WT_CORE_ASSETS = [
   './',
   './index.html',
@@ -11,9 +11,11 @@ const WT_CORE_ASSETS = [
   './WitherNaught.html',
   './Courius.html',
   './PaperCut.html',
-  './shared-context.js',
+  './shared-toast.js',
+  './shared-courius.js',
   './shared-export.js',
   './shared-recent-sessions.js',
+  './shared-tool-manifest.js',
   './shared-commands.js',
   './shared-command-palette.js',
   './shared-pwa.js',
@@ -40,6 +42,8 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   if (request.method !== 'GET') return;
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
 
   const accept = request.headers.get('accept') || '';
   const isNavigation = request.mode === 'navigate' || accept.includes('text/html');
