@@ -198,6 +198,40 @@
             z-index: 1400;
         }
 
+        #active-doc-name {
+            border: 1px solid transparent;
+            border-radius: 999px;
+            padding: 2px 9px;
+            font-family: var(--courier);
+            font-size: 11px;
+            letter-spacing: 0.03em;
+            color: var(--ui-text);
+            background: transparent;
+            cursor: pointer;
+            max-width: 160px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            transition: background 0.2s ease, border-color 0.2s ease;
+        }
+        #active-doc-name:hover {
+            border-color: var(--guide-color);
+            background: rgba(255,255,255,0.06);
+        }
+
+        .files-item-current {
+            border-color: var(--accent) !important;
+            box-shadow: 0 0 0 1px rgba(253, 25, 200, 0.25);
+        }
+        .files-item-title {
+            font-weight: 700;
+            font-size: 0.7rem;
+            cursor: pointer;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
         #writing-timer-btn {
             border: 1px solid transparent;
             border-radius: 999px;
@@ -719,8 +753,20 @@
     <div id="imports-list" class="imports-list"></div>
 </div>
 
+<div id="files-panel" class="imports-panel files-panel">
+    <div class="imports-header">
+        <span>Scripts</span>
+        <span style="display:flex; gap:6px;">
+            <button onclick="newDoc()">+ New</button>
+            <button onclick="toggleFilesPanel(false)">Close</button>
+        </span>
+    </div>
+    <div id="files-list" class="imports-list"></div>
+</div>
+
 <div class="floating-controls actions-bar">
     <div style="font-weight: 900; font-size: 0.5rem; text-align: center; margin-bottom: 4px; opacity: 0.5; color: var(--ui-text);">COURIUS</div>
+    <button class="side-btn" data-label="Scripts (F)" onclick="toggleFilesPanel()">📁</button>
     <button class="side-btn" data-label="Scenes (N)" onclick="toggleSceneNav()">📑</button>
     <button class="side-btn" data-label="Title Page" onclick="toggleTitlePage()">Title</button>
     <button class="side-btn" data-label="Import FDX" onclick="document.getElementById('file-input').click()">Imp</button>
@@ -745,6 +791,7 @@
     <div class="help-content">
         <h3>⌨️ Keyboard Shortcuts</h3>
         <div class="shortcut-row"><span>Toggle Theme</span><span class="shortcut-key">Ctrl+D</span></div>
+        <div class="shortcut-row"><span>Scripts Panel</span><span class="shortcut-key">F</span></div>
         <div class="shortcut-row"><span>Scene Navigator</span><span class="shortcut-key">Ctrl+N</span></div>
         <div class="shortcut-row"><span>Cycle Element Type</span><span class="shortcut-key">Tab</span></div>
         <div class="shortcut-row"><span>Reverse Cycle</span><span class="shortcut-key">Shift+Tab</span></div>
@@ -777,7 +824,8 @@
 </main>
 
 <div id="save-bar">
-    <span id="page-count">Pg 1</span> | <span id="save-status">Ready</span>
+    <button id="active-doc-name" type="button" title="Switch scripts" onclick="toggleFilesPanel()">Untitled Script</button>
+    | <span id="page-count">Pg 1</span> | <span id="save-status">Ready</span>
     | <button id="writing-timer-btn" type="button" title="Click to start or pause the alarm. Double-click to set minutes."><span id="writing-timer-label">Alarm</span> <span id="writing-timer">25:00</span></button>
 </div>
 
@@ -791,8 +839,15 @@
     const STORAGE_REV_KEY = 'writingtools_courius_revision_v1';
     const STORAGE_SNAPSHOTS_KEY = 'writingtools_courius_snapshots_v1';
     const IMPORTS_KEY = 'writingtools_courius_imports_v1';
+    // --- Multi-document keys ---
+    // The ACTIVE document always lives in STORAGE_KEY so imports, snapshots,
+    // cross-tab sync, and recent-sessions keep working unchanged. Inactive
+    // documents are parked under per-doc keys, indexed by DOCS_INDEX_KEY.
+    const DOCS_INDEX_KEY = 'writingtools_courius_docs_v1';
+    const ACTIVE_DOC_KEY = 'writingtools_courius_active_doc_v1';
+    const DOC_CONTENT_PREFIX = 'writingtools_courius_doc_';
     // NEW KEY to avoid conflict with previous Light Mode settings
-    const THEME_STORAGE_KEY = 'courius_theme_v2'; 
+    const THEME_STORAGE_KEY = 'courius_theme_v2';
     
     const ELEMENT_CYCLE = ['scene-heading', 'action', 'character', 'parenthetical', 'dialogue', 'transition'];
     const NEXT_ELEMENT = {
@@ -820,6 +875,7 @@
     let characterTurnPairs = new Map();
     let saveTimeout;
     let importHistory = [];
+    let filesPanelOpen = false;
     let writingTimerDuration = 25 * 60;
     let writingTimerLastStart = null;
     let writingTimerInterval = null;
@@ -1083,6 +1139,281 @@
         return true;
     }
 
+    // ===== Multi-document management =====
+
+    function getDocs() {
+        try {
+            const raw = localStorage.getItem(DOCS_INDEX_KEY);
+            const parsed = raw ? JSON.parse(raw) : [];
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (_) {
+            return [];
+        }
+    }
+
+    function saveDocs(docs) {
+        try {
+            localStorage.setItem(DOCS_INDEX_KEY, JSON.stringify(docs));
+        } catch (_) {}
+    }
+
+    function getActiveDocId() {
+        return localStorage.getItem(ACTIVE_DOC_KEY) || '';
+    }
+
+    function setActiveDocId(id) {
+        localStorage.setItem(ACTIVE_DOC_KEY, String(id || ''));
+    }
+
+    function newDocId() {
+        return 'doc_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+    }
+
+    function docContentKey(id) {
+        return DOC_CONTENT_PREFIX + id;
+    }
+
+    function getDocContent(id) {
+        try {
+            return localStorage.getItem(docContentKey(id)) || '';
+        } catch (_) {
+            return '';
+        }
+    }
+
+    function setDocContent(id, html) {
+        try {
+            localStorage.setItem(docContentKey(id), String(html || ''));
+        } catch (_) {}
+    }
+
+    function removeDocContent(id) {
+        try {
+            localStorage.removeItem(docContentKey(id));
+        } catch (_) {}
+    }
+
+    function deriveDocName() {
+        const tp = EDITOR.querySelector('.tp-title');
+        const title = tp ? tp.innerText.trim() : '';
+        if (title && title.toUpperCase() !== 'TITLE') return title.slice(0, 48);
+        const sh = EDITOR.querySelector('.scene-heading');
+        const head = sh ? getPureText(sh).trim() : '';
+        if (head) return head.slice(0, 48);
+        return 'Untitled Script';
+    }
+
+    function wordCountFromHtml(html) {
+        const text = String(html || '').replace(/<[^>]+>/g, ' ');
+        return (text.trim().match(/\S+/g) || []).length;
+    }
+
+    function ensureDocsInitialized() {
+        let docs = getDocs();
+        if (!docs.length) {
+            // Migrate the existing single buffer into the first document.
+            const id = newDocId();
+            docs = [{ id: id, name: deriveDocName(), auto: true, updatedAt: Date.now() }];
+            saveDocs(docs);
+            setActiveDocId(id);
+            return;
+        }
+        if (!docs.find((d) => d.id === getActiveDocId())) {
+            setActiveDocId(docs[0].id);
+        }
+    }
+
+    function updateActiveDocLabel() {
+        const label = document.getElementById('active-doc-name');
+        if (!label) return;
+        const docs = getDocs();
+        const active = docs.find((d) => d.id === getActiveDocId());
+        label.textContent = active ? active.name || 'Untitled Script' : 'Untitled Script';
+    }
+
+    // Update the active document's metadata after a successful save.
+    function touchActiveDoc() {
+        const docs = getDocs();
+        const active = docs.find((d) => d.id === getActiveDocId());
+        if (!active) return;
+        active.updatedAt = Date.now();
+        if (active.auto) active.name = deriveDocName();
+        saveDocs(docs);
+        updateActiveDocLabel();
+        if (filesPanelOpen) renderFilesList();
+    }
+
+    // Flush pending edits and copy the active buffer into its parked slot.
+    function stashActiveDoc() {
+        clearTimeout(saveTimeout);
+        const html = getEditorHtmlForStorage();
+        persistCouriusDocument(html, 'doc-switch');
+        setDocContent(getActiveDocId(), localStorage.getItem(STORAGE_KEY) || '');
+        touchActiveDoc();
+    }
+
+    // Point the active buffer at a different document and reload the editor.
+    function activateBuffer(html) {
+        localStorage.setItem(STORAGE_KEY, String(html || ''));
+        const nextRev = (parseInt(localStorage.getItem(STORAGE_REV_KEY) || '0', 10) || 0) + 1;
+        localStorage.setItem(STORAGE_REV_KEY, String(nextRev));
+        localStorage.setItem('writingtools_courius_updated_at', String(Date.now()));
+        localKnownRevision = nextRev;
+        loadEditorFromActiveBuffer();
+    }
+
+    function loadEditorFromActiveBuffer() {
+        const content = localStorage.getItem(STORAGE_KEY) || '';
+        EDITOR.innerHTML = sanitizeImportedHtml(content);
+        normalizeLegacyImportMarkers();
+        if (!EDITOR.innerHTML.trim() || EDITOR.children.length === 0) {
+            EDITOR.innerHTML = '';
+            createLine('scene-heading');
+        }
+        updateSuggestions();
+        updateSelectorUI();
+        updatePageCount();
+        hideDropdown();
+        STATUS.innerText = 'Saved';
+    }
+
+    function switchDoc(targetId) {
+        if (targetId === getActiveDocId()) {
+            toggleFilesPanel(false);
+            return;
+        }
+        const docs = getDocs();
+        if (!docs.find((d) => d.id === targetId)) return;
+        stashActiveDoc();
+        setActiveDocId(targetId);
+        activateBuffer(getDocContent(targetId));
+        removeDocContent(targetId); // active content now lives in STORAGE_KEY
+        updateActiveDocLabel();
+        renderFilesList();
+        toggleFilesPanel(false);
+        EDITOR.focus();
+    }
+
+    function newDoc() {
+        stashActiveDoc();
+        const id = newDocId();
+        const docs = getDocs();
+        docs.unshift({ id: id, name: 'Untitled Script', auto: true, updatedAt: Date.now() });
+        saveDocs(docs);
+        setActiveDocId(id);
+        activateBuffer('');
+        triggerSave();
+        updateActiveDocLabel();
+        renderFilesList();
+        EDITOR.focus();
+    }
+
+    function renameDoc(id) {
+        const docs = getDocs();
+        const target = docs.find((d) => d.id === id);
+        if (!target) return;
+        const next = window.prompt('Script name', target.name || 'Untitled Script');
+        if (next === null) return;
+        const trimmed = next.trim();
+        if (!trimmed) return;
+        target.name = trimmed.slice(0, 80);
+        target.auto = false;
+        saveDocs(docs);
+        updateActiveDocLabel();
+        renderFilesList();
+    }
+
+    function duplicateDoc(id) {
+        const docs = getDocs();
+        const source = docs.find((d) => d.id === id);
+        if (!source) return;
+        // The active document's live content is the editor itself; inactive
+        // documents are read from their parked slot.
+        const content = id === getActiveDocId()
+            ? getEditorHtmlForStorage()
+            : getDocContent(id);
+        const copyId = newDocId();
+        setDocContent(copyId, content);
+        const idx = docs.findIndex((d) => d.id === id);
+        docs.splice(idx + 1, 0, {
+            id: copyId,
+            name: (source.name || 'Untitled Script').slice(0, 70) + ' copy',
+            auto: false,
+            updatedAt: Date.now()
+        });
+        saveDocs(docs);
+        renderFilesList();
+    }
+
+    function deleteDoc(id) {
+        const docs = getDocs();
+        if (docs.length <= 1) {
+            alert('At least one script is required.');
+            return;
+        }
+        const target = docs.find((d) => d.id === id);
+        if (!target) return;
+        if (!confirm('Delete "' + (target.name || 'Untitled Script') + '"? This cannot be undone.')) return;
+        const wasActive = id === getActiveDocId();
+        const remaining = docs.filter((d) => d.id !== id);
+        saveDocs(remaining);
+        removeDocContent(id);
+        if (wasActive) {
+            const next = remaining[0];
+            setActiveDocId(next.id);
+            activateBuffer(getDocContent(next.id));
+            removeDocContent(next.id);
+        }
+        updateActiveDocLabel();
+        renderFilesList();
+    }
+
+    function renderFilesList() {
+        const list = document.getElementById('files-list');
+        if (!list) return;
+        const docs = getDocs().slice().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+        const activeId = getActiveDocId();
+        if (!docs.length) {
+            list.innerHTML = '<div class="imports-empty">No scripts yet.</div>';
+            return;
+        }
+        list.innerHTML = docs.map((doc) => {
+            const isActive = doc.id === activeId;
+            const html = isActive ? getEditorHtmlForStorage() : getDocContent(doc.id);
+            const words = wordCountFromHtml(html);
+            const stamp = doc.updatedAt ? new Date(doc.updatedAt).toLocaleString() : '';
+            const id = escapeHtml(String(doc.id));
+            const name = escapeHtml(String(doc.name || 'Untitled Script'));
+            return '<div class="imports-item' + (isActive ? ' files-item-current' : '') + '">' +
+                '<div class="imports-item-header">' +
+                    '<span class="files-item-title" onclick="switchDoc(\'' + id + '\')">' +
+                        (isActive ? '● ' : '') + name + '</span>' +
+                    '<span class="context-source-meta">' + words + ' words</span>' +
+                '</div>' +
+                '<div class="context-source-meta">' + escapeHtml(stamp) + '</div>' +
+                '<div class="imports-item-actions">' +
+                    (isActive ? '' : '<button onclick="switchDoc(\'' + id + '\')">Open</button>') +
+                    '<button onclick="renameDoc(\'' + id + '\')">Rename</button>' +
+                    '<button onclick="duplicateDoc(\'' + id + '\')">Duplicate</button>' +
+                    '<button onclick="deleteDoc(\'' + id + '\')">Delete</button>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+    }
+
+    function toggleFilesPanel(forceOpen) {
+        const panel = document.getElementById('files-panel');
+        if (!panel) return;
+        const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : !panel.classList.contains('open');
+        filesPanelOpen = shouldOpen;
+        if (shouldOpen) {
+            renderFilesList();
+            panel.classList.add('open');
+        } else {
+            panel.classList.remove('open');
+        }
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
         const content = localStorage.getItem(STORAGE_KEY);
         localKnownRevision = parseInt(localStorage.getItem(STORAGE_REV_KEY) || '0', 10) || 0;
@@ -1093,6 +1424,8 @@
             // Ensure at least one line if empty
             if (EDITOR.innerHTML.trim() === "") createLine('scene-heading');
         }
+        ensureDocsInitialized();
+        updateActiveDocLabel();
         updateSuggestions();
         
         // Theme Logic: Default is Dark (no class). Check local key first, then suite-wide key.
@@ -1129,6 +1462,8 @@
             updateSelectorUI();
             updatePageCount();
             STATUS.innerText = 'Synced from another tab; snapshot saved';
+            updateActiveDocLabel();
+            if (filesPanelOpen) renderFilesList();
         }
         localKnownRevision = incomingRev;
     });
@@ -1700,7 +2035,10 @@
         saveTimeout = setTimeout(() => {
             const html = getEditorHtmlForStorage();
             const ok = persistCouriusDocument(html, 'autosave');
-            if (ok) STATUS.innerText = 'Saved';
+            if (ok) {
+                STATUS.innerText = 'Saved';
+                touchActiveDoc();
+            }
             updateSuggestions();
         }, 1000);
     }
@@ -2127,6 +2465,12 @@
         if (e.key === 'Escape') {
             document.getElementById('help-modal').classList.remove('open');
             SCENE_NAV.classList.remove('open');
+            toggleFilesPanel(false);
+        }
+        // F to toggle the scripts panel (when not typing in editor)
+        if ((e.key === 'f' || e.key === 'F') && document.activeElement !== EDITOR && !e.ctrlKey && !e.metaKey) {
+            e.preventDefault();
+            toggleFilesPanel();
         }
         // Ctrl+D for theme
         if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
