@@ -1184,7 +1184,10 @@
     function setDocContent(id, html) {
         try {
             localStorage.setItem(docContentKey(id), String(html || ''));
-        } catch (_) {}
+            return true;
+        } catch (_) {
+            return false;
+        }
     }
 
     function removeDocContent(id) {
@@ -1193,6 +1196,8 @@
         } catch (_) {}
     }
 
+    // Returns a meaningful name from the title page or first scene heading,
+    // or '' when there is nothing to derive (so a default name can persist).
     function deriveDocName() {
         const tp = EDITOR.querySelector('.tp-title');
         const title = tp ? tp.innerText.trim() : '';
@@ -1200,7 +1205,16 @@
         const sh = EDITOR.querySelector('.scene-heading');
         const head = sh ? getPureText(sh).trim() : '';
         if (head) return head.slice(0, 48);
-        return 'Untitled Script';
+        return '';
+    }
+
+    function defaultDocName() {
+        const base = 'Untitled Script';
+        const taken = new Set(getDocs().map((d) => String(d.name || '').trim()));
+        if (!taken.has(base)) return base;
+        let n = 2;
+        while (taken.has(base + ' ' + n)) n += 1;
+        return base + ' ' + n;
     }
 
     function wordCountFromHtml(html) {
@@ -1213,7 +1227,7 @@
         if (!docs.length) {
             // Migrate the existing single buffer into the first document.
             const id = newDocId();
-            docs = [{ id: id, name: deriveDocName(), auto: true, updatedAt: Date.now() }];
+            docs = [{ id: id, name: deriveDocName() || 'Untitled Script', auto: true, updatedAt: Date.now() }];
             saveDocs(docs);
             setActiveDocId(id);
             return;
@@ -1237,19 +1251,31 @@
         const active = docs.find((d) => d.id === getActiveDocId());
         if (!active) return;
         active.updatedAt = Date.now();
-        if (active.auto) active.name = deriveDocName();
+        if (active.auto) {
+            const derived = deriveDocName();
+            if (derived) active.name = derived;
+        }
         saveDocs(docs);
         updateActiveDocLabel();
         if (filesPanelOpen) renderFilesList();
     }
 
-    // Flush pending edits and copy the active buffer into its parked slot.
+    // Flush pending edits and copy the live editor into the active doc's
+    // parked slot. Parks the editor HTML directly (not STORAGE_KEY) so a save
+    // conflict can never strand the current edits. Returns false if the parked
+    // copy could not be written (e.g. storage is full), so callers can abort.
     function stashActiveDoc() {
         clearTimeout(saveTimeout);
         const html = getEditorHtmlForStorage();
-        persistCouriusDocument(html, 'doc-switch');
-        setDocContent(getActiveDocId(), localStorage.getItem(STORAGE_KEY) || '');
+        // persistCouriusDocument writes localStorage without its own guard, so
+        // a quota overflow could throw here; swallow it and let the parked-copy
+        // result below decide whether the caller should abort.
+        try {
+            persistCouriusDocument(html, 'doc-switch');
+        } catch (_) {}
+        const ok = setDocContent(getActiveDocId(), html);
         touchActiveDoc();
+        return ok;
     }
 
     // Point the active buffer at a different document and reload the editor.
@@ -1284,7 +1310,10 @@
         }
         const docs = getDocs();
         if (!docs.find((d) => d.id === targetId)) return;
-        stashActiveDoc();
+        if (!stashActiveDoc()) {
+            alert('Could not save the current script (storage may be full). Switch cancelled.');
+            return;
+        }
         setActiveDocId(targetId);
         activateBuffer(getDocContent(targetId));
         removeDocContent(targetId); // active content now lives in STORAGE_KEY
@@ -1295,10 +1324,13 @@
     }
 
     function newDoc() {
-        stashActiveDoc();
+        if (!stashActiveDoc()) {
+            alert('Could not save the current script (storage may be full). New script cancelled.');
+            return;
+        }
         const id = newDocId();
         const docs = getDocs();
-        docs.unshift({ id: id, name: 'Untitled Script', auto: true, updatedAt: Date.now() });
+        docs.unshift({ id: id, name: defaultDocName(), auto: true, updatedAt: Date.now() });
         saveDocs(docs);
         setActiveDocId(id);
         activateBuffer('');
@@ -1333,7 +1365,10 @@
             ? getEditorHtmlForStorage()
             : getDocContent(id);
         const copyId = newDocId();
-        setDocContent(copyId, content);
+        if (!setDocContent(copyId, content)) {
+            alert('Could not duplicate the script (storage may be full).');
+            return;
+        }
         const idx = docs.findIndex((d) => d.id === id);
         docs.splice(idx + 1, 0, {
             id: copyId,
