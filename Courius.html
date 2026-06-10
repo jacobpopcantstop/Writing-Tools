@@ -776,7 +776,7 @@
     <button class="side-btn" data-label="Export FDX" onclick="downloadFDX()">FDX</button>
     <button class="side-btn" data-label="Export RTF" onclick="downloadRTF()">RTF</button>
     <button class="side-btn" data-label="Print/PDF" onclick="window.print()">PDF</button>
-    <button class="side-btn" style="color: #fca5a5;" data-label="Clear All" onclick="resetScript()">🗑️</button>
+    <button class="side-btn" style="color: #fca5a5;" data-label="Clear Script" onclick="resetScript()">🗑️</button>
 </div>
 
 <div id="scene-nav" class="scene-nav">
@@ -1394,7 +1394,8 @@
         saveDocs(remaining);
         removeDocContent(id);
         if (wasActive) {
-            const next = remaining[0];
+            // Land on the most-recently-edited script (matches the panel order).
+            const next = remaining.slice().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))[0];
             setActiveDocId(next.id);
             activateBuffer(getDocContent(next.id));
             removeDocContent(next.id);
@@ -2502,8 +2503,10 @@
             SCENE_NAV.classList.remove('open');
             toggleFilesPanel(false);
         }
-        // F to toggle the scripts panel (when not typing in editor)
-        if ((e.key === 'f' || e.key === 'F') && document.activeElement !== EDITOR && !e.ctrlKey && !e.metaKey) {
+        // F to toggle the scripts panel (when not typing in any editable field)
+        const ae = document.activeElement;
+        const isTyping = !!(ae && (ae.isContentEditable || ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA'));
+        if ((e.key === 'f' || e.key === 'F') && !isTyping && !e.ctrlKey && !e.metaKey && !e.altKey) {
             e.preventDefault();
             toggleFilesPanel();
         }
