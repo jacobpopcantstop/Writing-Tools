@@ -1,4 +1,4 @@
-const WT_CACHE_NAME = 'writingtools-static-v3';
+const WT_CACHE_NAME = 'writingtools-static-v4';
 const WT_CORE_ASSETS = [
   './',
   './index.html',
@@ -20,6 +20,7 @@ const WT_CORE_ASSETS = [
   './shared-command-palette.js',
   './shared-pwa.js',
   './shared-design.css',
+  './shared-polish.css',
   './manifest.webmanifest',
   './icon-192.svg',
   './icon-512.svg'
