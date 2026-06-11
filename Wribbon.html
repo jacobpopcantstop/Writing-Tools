@@ -728,7 +728,7 @@
             <div class="shortcut-row"><span>Ambient Sound</span><span class="shortcut-key">Ctrl+M</span></div>
             <div class="shortcut-row"><span>Settings</span><span class="shortcut-key">Ctrl+,</span></div>
             <div class="shortcut-row"><span>Export</span><span class="shortcut-key">Ctrl+S</span></div>
-            <div class="shortcut-row"><span>Show Help</span><span class="shortcut-key">?</span></div>
+            <div class="shortcut-row"><span>Show Help (when not typing)</span><span class="shortcut-key">?</span></div>
             <div style="margin-top: 20px; text-align: center;">
                 <button onclick="app.closeHelp()" class="modal-btn" style="padding: 10px 30px;">Got it</button>
             </div>
@@ -1308,8 +1308,15 @@
 
                 // Keyboard Shortcuts
                 window.addEventListener('keydown', (e) => {
-                    // ? for help
-                    if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+                    const target = e.target;
+                    const isTypingTarget = target && (
+                        target === this.dom.editor ||
+                        target.isContentEditable ||
+                        ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)
+                    );
+
+                    // ? for help, unless the user is typing into an editable field
+                    if (e.key === '?' && !e.ctrlKey && !e.metaKey && !isTypingTarget) {
                         e.preventDefault();
                         this.showHelp();
                     }

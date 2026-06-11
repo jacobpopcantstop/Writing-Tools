@@ -797,7 +797,7 @@
         <div class="shortcut-row"><span>Cycle Element Type</span><span class="shortcut-key">Tab</span></div>
         <div class="shortcut-row"><span>Reverse Cycle</span><span class="shortcut-key">Shift+Tab</span></div>
         <div class="shortcut-row"><span>New Line</span><span class="shortcut-key">Enter</span></div>
-        <div class="shortcut-row"><span>Show Help</span><span class="shortcut-key">?</span></div>
+        <div class="shortcut-row"><span>Show Help (when not typing)</span><span class="shortcut-key">?</span></div>
         <div style="margin-top:12px; padding-top:12px; border-top: 1px solid rgba(0,0,0,0.1); font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; opacity:0.5;">Autocomplete</div>
         <div class="shortcut-row"><span>Accept suggestion</span><span class="shortcut-key">Tab / ↵</span></div>
         <div class="shortcut-row"><span>Navigate matches</span><span class="shortcut-key">↑ ↓</span></div>
@@ -2487,14 +2487,22 @@
         document.getElementById('help-modal').classList.toggle('open');
     }
 
+    function isEditableShortcutTarget(target) {
+        return !!(target && (
+            target === EDITOR ||
+            target.isContentEditable ||
+            ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)
+        ));
+    }
+
     window.WTToolActions = {
         exportPrimary: downloadFDX
     };
 
     // --- Keyboard Shortcuts ---
     window.addEventListener('keydown', (e) => {
-        // ? for help (when not typing in editor)
-        if (e.key === '?' && document.activeElement !== EDITOR) {
+        // ? for help, unless the user is typing into an editable field
+        if (e.key === '?' && !isEditableShortcutTarget(e.target)) {
             e.preventDefault();
             toggleHelp();
         }
