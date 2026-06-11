@@ -767,20 +767,20 @@
 
 <div class="floating-controls actions-bar">
     <div style="font-weight: 900; font-size: 0.5rem; text-align: center; margin-bottom: 4px; opacity: 0.5; color: var(--ui-text);">COURIUS</div>
-    <button class="side-btn" data-label="Scripts (F)" onclick="toggleFilesPanel()">📁</button>
-    <button class="side-btn" data-label="Scenes (N)" onclick="toggleSceneNav()">📑</button>
-    <button class="side-btn" data-label="Title Page" onclick="toggleTitlePage()">Title</button>
-    <button class="side-btn" data-label="Import FDX" onclick="document.getElementById('file-input').click()">Imp</button>
-    <button class="side-btn" data-label="Theme (D)" onclick="toggleTheme()">🌓</button>
-    <button class="side-btn" data-label="Help (?)" onclick="toggleHelp()">❓</button>
-    <button class="side-btn" data-label="Import History" onclick="toggleImportsPanel()">↺</button>
-    <button class="side-btn" data-label="Export FDX" onclick="downloadFDX()">FDX</button>
-    <button class="side-btn" data-label="Export RTF" onclick="downloadRTF()">RTF</button>
-    <button class="side-btn" data-label="Print/PDF" onclick="window.print()">PDF</button>
-    <button class="side-btn" style="color: #fca5a5;" data-label="Clear Script" onclick="resetScript()">🗑️</button>
+    <button class="side-btn" data-label="Scripts (F)" aria-label="Scripts (F)" onclick="toggleFilesPanel()">📁</button>
+    <button class="side-btn" data-label="Scenes (N)" aria-label="Scenes (N)" onclick="toggleSceneNav()">📑</button>
+    <button class="side-btn" data-label="Title Page" aria-label="Title Page" onclick="toggleTitlePage()">Title</button>
+    <button class="side-btn" data-label="Import FDX" aria-label="Import FDX" onclick="document.getElementById('file-input').click()">Imp</button>
+    <button class="side-btn" data-label="Theme (D)" aria-label="Theme (D)" onclick="toggleTheme()">🌓</button>
+    <button class="side-btn" data-label="Help (?)" aria-label="Help (?)" onclick="toggleHelp()">❓</button>
+    <button class="side-btn" data-label="Import History" aria-label="Import History" onclick="toggleImportsPanel()">↺</button>
+    <button class="side-btn" data-label="Export FDX" aria-label="Export FDX" onclick="downloadFDX()">FDX</button>
+    <button class="side-btn" data-label="Export RTF" aria-label="Export RTF" onclick="downloadRTF()">RTF</button>
+    <button class="side-btn" data-label="Print/PDF" aria-label="Print/PDF" onclick="window.print()">PDF</button>
+    <button class="side-btn" style="color: #fca5a5;" data-label="Clear Script" aria-label="Clear Script" onclick="resetScript()">🗑️</button>
 </div>
 
-<div id="scene-nav" class="scene-nav">
+<div id="scene-nav" class="scene-nav" role="navigation" aria-label="Scene navigator">
     <div class="scene-nav-header">
         <span>Scenes</span>
         <span id="scene-count">0</span>
@@ -809,19 +809,19 @@
 </div>
 
 <div class="floating-controls element-bar">
-    <button class="side-btn" data-type="scene-heading" data-label="Scene Heading" onclick="changeElementType('scene-heading')">EXT.</button>
-    <button class="side-btn" data-type="action" data-label="Action" onclick="changeElementType('action')">ACT</button>
-    <button class="side-btn" data-type="character" data-label="Character" onclick="changeElementType('character')">NAME</button>
-    <button class="side-btn" data-type="parenthetical" data-label="Parenthetical" onclick="changeElementType('parenthetical')">( )</button>
-    <button class="side-btn" data-type="dialogue" data-label="Dialogue" onclick="changeElementType('dialogue')">TALK</button>
-    <button class="side-btn" data-type="transition" data-label="Transition" onclick="changeElementType('transition')">CUT</button>
+    <button class="side-btn" data-type="scene-heading" data-label="Scene Heading" aria-label="Scene Heading" onclick="changeElementType('scene-heading')">EXT.</button>
+    <button class="side-btn" data-type="action" data-label="Action" aria-label="Action" onclick="changeElementType('action')">ACT</button>
+    <button class="side-btn" data-type="character" data-label="Character" aria-label="Character" onclick="changeElementType('character')">NAME</button>
+    <button class="side-btn" data-type="parenthetical" data-label="Parenthetical" aria-label="Parenthetical" onclick="changeElementType('parenthetical')">( )</button>
+    <button class="side-btn" data-type="dialogue" data-label="Dialogue" aria-label="Dialogue" onclick="changeElementType('dialogue')">TALK</button>
+    <button class="side-btn" data-type="transition" data-label="Transition" aria-label="Transition" onclick="changeElementType('transition')">CUT</button>
 </div>
 
 <input type="file" id="file-input" accept=".fdx" style="display: none;" onchange="importFDX(this)">
 <div id="autocomplete-dropdown" class="autocomplete-dropdown"></div>
 
 <main id="editor-container" onclick="focusEditor(event)" onscroll="updatePageCount()">
-    <div id="page" contenteditable="true" spellcheck="true" autocorrect="on"></div>
+    <div id="page" contenteditable="true" spellcheck="true" autocorrect="on" role="textbox" aria-multiline="true" aria-label="Screenplay editor"></div>
 </main>
 
 <div id="save-bar">

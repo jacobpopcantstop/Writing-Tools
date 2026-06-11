@@ -406,7 +406,7 @@
       <div id="cf-progress" class="cf-progress"></div>
       <h1 id="cf-theme-label" class="cf-theme-label"></h1>
       <p id="cf-question" class="cf-question"></p>
-      <textarea id="cf-answer" class="cf-answer-input" rows="6" placeholder="Write in your own words…"></textarea>
+      <textarea id="cf-answer" class="cf-answer-input" rows="6" placeholder="Write in your own words…" aria-label="Your answer"></textarea>
       <div class="cf-nav">
         <button id="cf-back" type="button">Back</button>
         <button id="cf-next" type="button">Next</button>
@@ -457,6 +457,7 @@
         els.progress.textContent = 'Theme ' + themeNum + ' of ' + BANK.themes.length;
         els.themeLabel.textContent = q.themeLabel || '';
         els.question.textContent = q.prompt;
+        els.answer.setAttribute('aria-label', 'Your answer: ' + q.prompt);
         els.answer.value = state.answers[q.id] || '';
         els.back.disabled = state.index === 0;
         els.next.textContent = state.index === state.queue.length - 1 ? 'Finish' : 'Next';

@@ -196,9 +196,9 @@
 
         /* Annotations */
         .annotation-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-        .annotation-layer.active { pointer-events: auto; cursor: crosshair; }
+        .annotation-layer.active { pointer-events: auto; cursor: crosshair; touch-action: none; }
         
-        .annotation { position: absolute; pointer-events: auto; cursor: pointer; transition: box-shadow 0.1s; }
+        .annotation { position: absolute; pointer-events: auto; cursor: pointer; transition: box-shadow 0.1s; touch-action: none; }
         .annotation:hover { outline: 1px dashed var(--wt-primary); }
         .annotation.selected { outline: 2px solid var(--selection-border); z-index: 10; cursor: move; }
         
@@ -295,9 +295,9 @@
             <span class="logo-text">PaperCut</span>
         </a>
         <div class="header-actions">
-            <button class="icon-btn" id="sidebar-toggle" title="Toggle Pages"><i data-lucide="panel-left" style="width: 20px; height: 20px;"></i></button>
-            <button class="icon-btn" id="right-panel-toggle" title="Toggle Properties"><i data-lucide="panel-right" style="width: 20px; height: 20px;"></i></button>
-            <button class="icon-btn" id="theme-toggle" title="Toggle Theme"><i data-lucide="sun" id="theme-icon" style="width: 20px; height: 20px;"></i></button>
+            <button class="icon-btn" id="sidebar-toggle" title="Toggle Pages" aria-label="Toggle Pages"><i data-lucide="panel-left" style="width: 20px; height: 20px;"></i></button>
+            <button class="icon-btn" id="right-panel-toggle" title="Toggle Properties" aria-label="Toggle Properties"><i data-lucide="panel-right" style="width: 20px; height: 20px;"></i></button>
+            <button class="icon-btn" id="theme-toggle" title="Toggle Theme" aria-label="Toggle Theme"><i data-lucide="sun" id="theme-icon" style="width: 20px; height: 20px;"></i></button>
         </div>
     </header>
 
@@ -306,8 +306,8 @@
             <div class="sidebar-header">
                 <span>Files</span>
                 <div style="display: flex; gap: 4px;">
-                    <button class="icon-btn" id="merge-all-btn" title="Merge All & Download" style="padding: 2px;"><i data-lucide="file-stack" style="width: 14px; height: 14px;"></i></button>
-                    <button class="icon-btn" id="add-file-small" title="Add File" style="padding: 2px;"><i data-lucide="plus" style="width: 14px; height: 14px;"></i></button>
+                    <button class="icon-btn" id="merge-all-btn" title="Merge All & Download" aria-label="Merge All & Download" style="padding: 2px;"><i data-lucide="file-stack" style="width: 14px; height: 14px;"></i></button>
+                    <button class="icon-btn" id="add-file-small" title="Add File" aria-label="Add File" style="padding: 2px;"><i data-lucide="plus" style="width: 14px; height: 14px;"></i></button>
                 </div>
             </div>
             <div class="file-list" id="file-list">
@@ -375,9 +375,9 @@
         </main>
 
         <aside class="right-panel" id="right-panel">
-            <div class="panel-tabs">
-                <button class="panel-tab active" data-tab="properties">Properties</button>
-                <button class="panel-tab" data-tab="annotations">Annotations</button>
+            <div class="panel-tabs" role="tablist" aria-label="Panel tabs">
+                <button class="panel-tab active" data-tab="properties" role="tab" aria-selected="true">Properties</button>
+                <button class="panel-tab" data-tab="annotations" role="tab" aria-selected="false">Annotations</button>
             </div>
             <div class="panel-content" id="panel-content">
                 <div id="tab-properties">
@@ -737,8 +737,9 @@
 
             document.querySelectorAll('.panel-tab').forEach(tab => {
                 tab.addEventListener('click', () => {
-                    document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.panel-tab').forEach(t => { t.classList.remove('active'); t.setAttribute('aria-selected', 'false'); });
                     tab.classList.add('active');
+                    tab.setAttribute('aria-selected', 'true');
                     const tabName = tab.dataset.tab;
                     document.getElementById('tab-properties').style.display = tabName === 'properties' ? 'block' : 'none';
                     document.getElementById('tab-annotations').style.display = tabName === 'annotations' ? 'block' : 'none';
@@ -756,9 +757,9 @@
             document.getElementById('clear-annotations-btn').addEventListener('click', clearAnnotations);
 
             // Canvas Interaction
-            dom.annotationLayer.addEventListener('mousedown', handleLayerMouseDown);
-            window.addEventListener('mousemove', handleGlobalMouseMove);
-            window.addEventListener('mouseup', handleGlobalMouseUp);
+            dom.annotationLayer.addEventListener('pointerdown', handleLayerMouseDown);
+            window.addEventListener('pointermove', handleGlobalMouseMove);
+            window.addEventListener('pointerup', handleGlobalMouseUp);
 
             document.addEventListener('keydown', handleKeyboard);
         }
@@ -1102,6 +1103,9 @@
         function handleLayerMouseDown(e) {
             if (state.currentTool === 'select') return;
 
+            if (e.pointerId !== undefined && dom.annotationLayer.setPointerCapture) {
+                try { dom.annotationLayer.setPointerCapture(e.pointerId); } catch (_) {}
+            }
             const rect = dom.annotationLayer.getBoundingClientRect();
             state.isDrawing = true;
             state.drawStart = {
@@ -1179,7 +1183,10 @@
         function startDragging(e, annId) {
             if (state.currentTool !== 'select') return;
             e.stopPropagation();
-            
+            if (e.pointerId !== undefined && dom.annotationLayer.setPointerCapture) {
+                try { dom.annotationLayer.setPointerCapture(e.pointerId); } catch (_) {}
+            }
+
             state.selectedAnnotationId = annId;
             renderAnnotations();
 
@@ -1280,7 +1287,7 @@
                 if (ann.type === 'highlight') el.style.background = ann.color;
                 if (ann.type === 'censor') el.style.background = '#000000';
 
-                el.addEventListener('mousedown', (e) => startDragging(e, ann.id));
+                el.addEventListener('pointerdown', (e) => startDragging(e, ann.id));
                 el.addEventListener('click', (e) => selectAnnotation(e, ann.id));
 
                 dom.annotationLayer.appendChild(el);

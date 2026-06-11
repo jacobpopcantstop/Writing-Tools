@@ -666,10 +666,10 @@
     <!-- Controls -->
     <div class="controls ui-layer">
         <div class="control-group">
-            <button class="icon-btn" onclick="app.toggleExportMenu()" title="Export Options" aria-label="Export Menu" id="export-btn">
+            <button class="icon-btn" onclick="app.toggleExportMenu()" title="Export Options" aria-label="Export Menu" aria-haspopup="menu" id="export-btn">
                 <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
             </button>
-            <div id="export-menu" class="export-menu">
+            <div id="export-menu" class="export-menu" role="menu" aria-label="Export options">
                 <button onclick="app.copyToClipboard()">Copy to Clipboard</button>
                 <button onclick="app.download('txt')">Text File (.txt)</button>
                 <button onclick="app.download('doc')">MS Word (.doc)</button>

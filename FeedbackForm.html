@@ -227,10 +227,14 @@
         </form>
     </div>
 
+    <script src="shared-toast.js"></script>
     <script>
+        const STORAGE_KEY = 'writingtools_feedbackform_v1';
+        const fields = document.querySelectorAll('#feedbackForm input, #feedbackForm textarea');
+
         // Auto-resize textareas
         const textareas = document.querySelectorAll('textarea');
-        
+
         function resizeTextarea(textarea) {
             textarea.style.height = 'auto';
             textarea.style.height = (textarea.scrollHeight) + 'px';
@@ -242,22 +246,65 @@
             });
         });
 
-        // Clear form and reset textarea heights
-        function clearForm() {
-            if(confirm("Are you sure you want to clear all feedback?")) {
-                document.getElementById('feedbackForm').reset();
-                textareas.forEach(textarea => {
-                    textarea.style.height = 'auto'; // Reset to default rows attribute height
-                });
-                
-                // Set date to today automatically when cleared
-                document.getElementById('feedbackDate').valueAsDate = new Date();
+        function saveForm() {
+            const data = {};
+            fields.forEach(field => { data[field.id] = field.value; });
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            } catch (err) {
+                if (window.WTToast) WTToast.notify('Storage full — feedback could not be saved', 'error');
             }
         }
 
-        // Set initial date on load
+        function restoreForm() {
+            let data = null;
+            try {
+                data = JSON.parse(localStorage.getItem(STORAGE_KEY));
+            } catch (err) {
+                try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+            }
+            if (!data || typeof data !== 'object') return false;
+            let restored = false;
+            fields.forEach(field => {
+                if (typeof data[field.id] === 'string' && data[field.id] !== '') {
+                    field.value = data[field.id];
+                    restored = true;
+                }
+            });
+            textareas.forEach(resizeTextarea);
+            return restored;
+        }
+
+        let saveTimer = null;
+        fields.forEach(field => {
+            field.addEventListener('input', () => {
+                clearTimeout(saveTimer);
+                saveTimer = setTimeout(saveForm, 400);
+            });
+        });
+
+        // Clear form, saved draft, and reset textarea heights
+        function clearForm() {
+            if(confirm("Are you sure you want to clear all feedback?")) {
+                document.getElementById('feedbackForm').reset();
+                try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+                textareas.forEach(textarea => {
+                    textarea.style.height = 'auto'; // Reset to default rows attribute height
+                });
+
+                // Set date to today automatically when cleared
+                document.getElementById('feedbackDate').valueAsDate = new Date();
+                if (window.WTToast) WTToast.notify('Form cleared');
+            }
+        }
+
+        // Restore saved draft on load; default the date when starting fresh
         window.onload = function() {
-            document.getElementById('feedbackDate').valueAsDate = new Date();
+            const restored = restoreForm();
+            if (!document.getElementById('feedbackDate').value) {
+                document.getElementById('feedbackDate').valueAsDate = new Date();
+            }
+            if (restored && window.WTToast) WTToast.notify('Draft restored');
         };
     </script>
 </body>

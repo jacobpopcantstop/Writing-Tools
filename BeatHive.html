@@ -346,7 +346,7 @@
                 )
             };
             return (
-                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className} style={style}>
+                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className} style={style} aria-hidden="true">
                     {icons[name] || <circle cx="12" cy="12" r="10" />}
                 </svg>
             );
@@ -560,6 +560,7 @@
             useEffect(() => { sketchesRef.current = sketches; }, [sketches]);
             useEffect(() => {
                 document.body.className = theme === 'dark' ? 'dark-theme' : 'light-theme';
+                document.documentElement.setAttribute('data-wt-theme', theme === 'dark' ? 'dark' : 'light');
                 localStorage.setItem('writingtools_theme', theme);
             }, [theme]);
             const getLocalPersistedState = useCallback((override = {}) => ({
@@ -901,6 +902,12 @@
                     return;
                 }
 
+                const escapeHtml = (value) => String(value)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;');
+
                 const qValues = usedCells.map(c => c.q);
                 const rValues = usedCells.map(c => c.r);
                 const minQ = Math.min(...qValues) - 1;
@@ -971,12 +978,12 @@
                         lines.forEach((line, i) => {
                             const maxChars = Math.max(14, Math.floor(hexSize / 4));
                             const truncated = line.length > maxChars ? line.substring(0, maxChars - 3) + '...' : line;
-                            svgContent += `<text x="${x}" y="${startY + i * lineHeight}" text-anchor="middle" font-size="${Math.max(9, Math.floor(hexSize * 0.14))}" font-family="Inter, sans-serif" fill="#000">${truncated}</text>`;
+                            svgContent += `<text x="${x}" y="${startY + i * lineHeight}" text-anchor="middle" font-size="${Math.max(9, Math.floor(hexSize * 0.14))}" font-family="Inter, sans-serif" fill="#000">${escapeHtml(truncated)}</text>`;
                         });
                     }
 
                     // Add beat type label
-                    svgContent += `<text x="${x}" y="${y + hexSize - Math.max(14, Math.floor(hexSize * 0.18))}" text-anchor="middle" font-size="${Math.max(8, Math.floor(hexSize * 0.1))}" font-family="Inter, sans-serif" fill="${strokeColor}" font-weight="bold">${beatType.label.toUpperCase()}</text>`;
+                    svgContent += `<text x="${x}" y="${y + hexSize - Math.max(14, Math.floor(hexSize * 0.18))}" text-anchor="middle" font-size="${Math.max(8, Math.floor(hexSize * 0.1))}" font-family="Inter, sans-serif" fill="${strokeColor}" font-weight="bold">${escapeHtml(beatType.label.toUpperCase())}</text>`;
                 });
 
                 svgContent += '</svg>';
@@ -991,7 +998,7 @@
                     <html>
                     <head>
                         <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5' fill='%23fd19c8'/><polygon points='50,20 80,37.5 80,62.5 50,80 20,62.5 20,37.5' fill='%23da70d6' opacity='0.6'/></svg>">
-                        <title>BeatHive - ${sketchName || 'Untitled'}</title>
+                        <title>BeatHive - ${escapeHtml(sketchName || 'Untitled')}</title>
                         <style>
                             body { margin: 0; padding: 20px; }
                             svg { display: block; max-width: 100%; height: auto; margin: 0 auto; }
@@ -1001,7 +1008,7 @@
                         </style>
                     </head>
                     <body>
-                        <h1 style="text-align: center; font-family: sans-serif; margin-bottom: 20px;">${sketchName || 'Untitled Beat Map'}</h1>
+                        <h1 style="text-align: center; font-family: sans-serif; margin-bottom: 20px;">${escapeHtml(sketchName || 'Untitled Beat Map')}</h1>
                         ${scaledSvg}
                     </body>
                     </html>
@@ -1039,6 +1046,7 @@
 
             const handleDeleteMap = async (id, e) => {
                 e.stopPropagation();
+                if (!window.confirm("Delete this sketch? This can't be undone.")) return;
                 if (user?.uid === 'local-user') {
                     const localData = loadLocalSketches();
                     const filtered = localData.filter(s => s.id !== id);
@@ -1424,7 +1432,7 @@
                                     setPan({ x: -snappedX * zoom, y: -snappedY * zoom });
                                     panRef.current = { x: -snappedX * zoom, y: -snappedY * zoom };
                                 }}>
-                                    <svg width="150" height="120" style={{ display: 'block' }}>
+                                    <svg width="150" height="120" style={{ display: 'block' }} aria-hidden="true">
                                         {(() => {
                                             const points = cells.map(c => ({
                                                 q: c.q,
@@ -1483,6 +1491,7 @@
                                                         className={`p-2 rounded-xl transition-all ${isActive ? 'scale-110 shadow-lg' : 'opacity-40 hover:opacity-100'}`}
                                                         style={{ backgroundColor: isActive ? s.color + '30' : 'transparent' }}
                                                         title={s.label}
+                                                        aria-label={s.label}
                                                     >
                                                         <Icon name={s.icon} size={16} style={{ color: s.color }} />
                                                     </button>
@@ -1520,6 +1529,7 @@
                                                         className={`p-1.5 rounded-lg transition-all ${isActive ? 'scale-110' : 'opacity-30 hover:opacity-100'}`}
                                                         style={{ backgroundColor: isActive ? s.color + '30' : 'transparent' }}
                                                         title={s.label}
+                                                        aria-label={s.label}
                                                     >
                                                         <Icon name={s.icon} size={14} style={{ color: s.color }} />
                                                     </button>

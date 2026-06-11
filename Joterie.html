@@ -137,7 +137,7 @@
         
         <!-- Header -->
         <header class="w-full max-w-5xl flex justify-between items-center mb-6 shrink-0 z-50">
-            <div id="logo-container" class="flex items-center gap-2 cursor-pointer group">
+            <div id="logo-container" role="button" tabindex="0" aria-label="Joterie home" class="flex items-center gap-2 cursor-pointer group">
                 <i data-lucide="zap" class="w-5 h-5 transition-transform group-hover:scale-110" style="fill: var(--text-color)"></i>
                 <h1 class="text-sm font-black tracking-[0.5em]">JOTERIE</h1>
             </div>
@@ -150,10 +150,10 @@
                         <span id="timer-display" class="font-mono font-bold">1:00</span>
                     </div>
                 </div>
-                <button id="history-btn" class="p-2 opacity-40 hover:opacity-100 transition-opacity">
+                <button id="history-btn" aria-label="View session history" class="p-2 opacity-40 hover:opacity-100 transition-opacity">
                     <i data-lucide="history" class="w-4 h-4"></i>
                 </button>
-                <button id="theme-toggle" class="p-2 opacity-40 hover:opacity-100 transition-opacity">
+                <button id="theme-toggle" aria-label="Toggle dark mode" class="p-2 opacity-40 hover:opacity-100 transition-opacity">
                     <i data-lucide="moon" id="theme-icon" class="w-4 h-4"></i>
                 </button>
             </div>
@@ -356,7 +356,18 @@
                 return false;
             }
             const nextRev = Math.max(remoteRev, localKnownRevision) + 1;
-            localStorage.setItem(JOTERIE_ARCHIVES_KEY, JSON.stringify(candidate));
+            const capped = Array.isArray(candidate) ? candidate.slice(0, 200) : candidate;
+            try {
+                localStorage.setItem(JOTERIE_ARCHIVES_KEY, JSON.stringify(capped));
+            } catch (err) {
+                // Quota exceeded: trim aggressively and retry before giving up
+                try {
+                    localStorage.setItem(JOTERIE_ARCHIVES_KEY, JSON.stringify(Array.isArray(capped) ? capped.slice(0, 50) : capped));
+                } catch (err2) {
+                    if (window.WTToast) window.WTToast.notify('Storage full — could not save archive', 'error');
+                    return false;
+                }
+            }
             localStorage.setItem(JOTERIE_REV_KEY, String(nextRev));
             localKnownRevision = nextRev;
             return true;
@@ -437,6 +448,7 @@
         }
 
         function applyTheme() {
+            document.documentElement.setAttribute('data-wt-theme', state.isDarkMode ? 'dark' : 'light');
             if (state.isDarkMode) {
                 elements.html.classList.add('dark');
                 elements.themeIcon.setAttribute('data-lucide', 'sun');

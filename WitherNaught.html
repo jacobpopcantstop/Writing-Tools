@@ -1041,12 +1041,12 @@ const THEMES = {
         <div class="min-h-screen transition-colors duration-1000 selection-${state.theme} flex flex-col items-center p-6 md:p-12 lg:p-16 overflow-hidden relative" style="color: ${t.text};">
           
           <!-- Ambient background glow -->
-          <div class="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] pointer-events-none opacity-30 animate-breathe animate-ambient-drift" 
+          <div aria-hidden="true" class="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] pointer-events-none opacity-30 animate-breathe animate-ambient-drift"
             style="background: radial-gradient(ellipse at center, ${t.sparkColor} 0%, transparent 70%); filter: blur(60px);">
           </div>
 
           <!-- Spark particles -->
-          <div id="sparks-container" class="fixed top-0 left-0 w-full h-[50vh] pointer-events-none z-0 overflow-hidden" 
+          <div id="sparks-container" aria-hidden="true" class="fixed top-0 left-0 w-full h-[50vh] pointer-events-none z-0 overflow-hidden"
             style="mask-image: linear-gradient(to bottom, black 30%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, black 30%, transparent 100%);">
             ${renderSparks(t)}
           </div>
@@ -1072,13 +1072,13 @@ const THEMES = {
               ` : ''}
 
               <!-- Stats -->
-              <button onclick="WitherNaught.openStats()" class="p-2.5 rounded-xl opacity-50 hover:opacity-100 transition-all hover:scale-105" style="background: ${t.accentLight};" title="View stats">
+              <button onclick="WitherNaught.openStats()" aria-label="View stats" class="p-2.5 rounded-xl opacity-50 hover:opacity-100 transition-all hover:scale-105" style="background: ${t.accentLight};" title="View stats">
                 ${icons.barChart}
               </button>
 
               <!-- Pause -->
               ${state.gameState === 'writing' ? `
-                <button onclick="WitherNaught.togglePause()" class="p-2.5 rounded-xl opacity-50 hover:opacity-100 transition-all hover:scale-105" style="background: ${t.accentLight};" title="Pause">
+                <button onclick="WitherNaught.togglePause()" aria-label="Pause session" class="p-2.5 rounded-xl opacity-50 hover:opacity-100 transition-all hover:scale-105" style="background: ${t.accentLight};" title="Pause">
                   ${icons.pause}
                 </button>
               ` : ''}
@@ -1099,7 +1099,8 @@ const THEMES = {
 
               <!-- Mobile difficulty -->
               <div class="relative md:hidden">
-                <button onclick="WitherNaught.toggleMobileMenu()" 
+                <button onclick="WitherNaught.toggleMobileMenu()"
+                  aria-label="Choose difficulty" aria-haspopup="menu"
                   class="flex items-center gap-2 px-3 py-2 rounded-xl text-[10px] tracking-wider uppercase font-sans transition-all"
                   style="background: ${t.accentLight};"
                   ${state.gameState === 'writing' || state.gameState === 'paused' ? 'disabled' : ''}>
@@ -1120,7 +1121,7 @@ const THEMES = {
               </div>
 
               <!-- Theme -->
-              <button onclick="WitherNaught.toggleTheme()" class="p-2.5 rounded-xl opacity-50 hover:opacity-100 transition-all hover:scale-105 hover:rotate-12" style="background: ${t.accentLight};" title="Toggle theme">
+              <button onclick="WitherNaught.toggleTheme()" aria-label="Toggle theme" class="p-2.5 rounded-xl opacity-50 hover:opacity-100 transition-all hover:scale-105 hover:rotate-12" style="background: ${t.accentLight};" title="Toggle theme">
                 ${state.theme === 'warm' ? icons.moon : icons.sun}
               </button>
             </div>
@@ -1461,6 +1462,13 @@ const THEMES = {
 
     window.addEventListener('beforeunload', cleanup);
 
+    window.addEventListener('beforeunload', (e) => {
+      if (state.gameState === 'writing' && state.wordCount > 0) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    });
+
     // ===== PUBLIC API =====
     window.WitherNaught = {
       startNextRound(preserveText) {
@@ -1492,6 +1500,7 @@ const THEMES = {
 
       toggleTheme() {
         state.theme = state.theme === 'warm' ? 'cool' : 'warm';
+        document.documentElement.setAttribute('data-wt-theme', state.theme === 'warm' ? 'light' : 'dark');
         savePrefs();
         render();
       },
@@ -1550,6 +1559,7 @@ const THEMES = {
         }
       }
 
+      document.documentElement.setAttribute('data-wt-theme', state.theme === 'warm' ? 'light' : 'dark');
       render();
       animationId = requestAnimationFrame(animate);
 
