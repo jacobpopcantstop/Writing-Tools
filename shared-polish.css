@@ -1,0 +1,94 @@
+/**
+ * Writing Tools Suite - Shared Polish Layer
+ *
+ * Theme-agnostic finishing touches linked into every tool *before* the
+ * tool's own styles, so any tool-level rule can still override these.
+ * Keep everything in here low-specificity (`:where()`) and palette-neutral
+ * so it looks right on top of each tool's own visual identity.
+ */
+
+/* Rendering quality */
+:where(html) {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+:where(body) {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Kill the gray tap flash on mobile; tools provide their own pressed states */
+:where(a, button, [role="button"], input, label, select, summary, textarea) {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Brand selection color — readable on light and dark surfaces */
+::selection {
+  background: rgba(253, 25, 200, 0.32);
+  color: inherit;
+}
+
+/* Refined scrollbars that adapt to any surface */
+:where(html) {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(140, 140, 152, 0.45) transparent;
+}
+
+:where(*)::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+:where(*)::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+:where(*)::-webkit-scrollbar-thumb {
+  background: rgba(140, 140, 152, 0.38);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+:where(*)::-webkit-scrollbar-thumb:hover {
+  background: rgba(140, 140, 152, 0.6);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+:where(*)::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Accessible keyboard focus everywhere; tools with custom rings override */
+:where(a, button, [role="button"], input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid rgba(253, 25, 200, 0.75);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Never show the ring for pointer interactions */
+:where(a, button, [role="button"]):focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Smooth in-page anchor jumps */
+@media (prefers-reduced-motion: no-preference) {
+  :where(html) {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Respect reduced-motion globally */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
