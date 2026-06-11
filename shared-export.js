@@ -45,9 +45,35 @@
   }
 
   function tryCopy(text) {
+    var value = String(text || '');
     try {
-      if (!navigator.clipboard || typeof navigator.clipboard.writeText !== 'function') return;
-      navigator.clipboard.writeText(String(text || '')).catch(function () {});
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        navigator.clipboard.writeText(value).catch(function () { legacyCopy(value); });
+        return;
+      }
+    } catch (_) {}
+    legacyCopy(value);
+  }
+
+  function legacyCopy(value) {
+    try {
+      var area = document.createElement('textarea');
+      area.value = value;
+      area.setAttribute('readonly', '');
+      area.style.position = 'fixed';
+      area.style.left = '-9999px';
+      document.body.appendChild(area);
+      area.select();
+      document.execCommand('copy');
+      area.remove();
+    } catch (_) {}
+  }
+
+  function notifyTrimmed() {
+    try {
+      if (window.WTToast && typeof window.WTToast.notify === 'function') {
+        window.WTToast.notify('Long export: Gmail preview truncated — full text copied, paste it into the draft', 'info');
+      }
     } catch (_) {}
   }
 
@@ -84,11 +110,15 @@
     var trimmed = false;
     if (bodyForUrl.length > maxUrlBodyLength) {
       trimmed = true;
-      var head = Math.max(200, maxUrlBodyLength - 120);
-      bodyForUrl = bodyForUrl.slice(0, head) + '\n\n[Truncated for URL length. Full export copied to clipboard.]';
-      if (opts.copyFullBodyOnTrim) {
+      var head = Math.max(200, maxUrlBodyLength - 160);
+      bodyForUrl = bodyForUrl.slice(0, head) +
+        '\n\n[Preview truncated: Gmail links have a length limit. The complete text is on your clipboard — paste it here to replace this preview.]';
+      // Always preserve the full text on the clipboard when trimming,
+      // unless a caller explicitly opts out (it owns the copy itself).
+      if (opts.copyFullBodyOnTrim !== false) {
         tryCopy(fullBodyText);
       }
+      notifyTrimmed();
     }
 
     var gmailUrl = buildGmailUrl(subjectText, bodyForUrl);
