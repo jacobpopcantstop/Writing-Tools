@@ -55,6 +55,7 @@ Optional settings:
 You can also skip the API call entirely: copy the JSON prompt from `TextToFDX.html`, paste it into ChatGPT/Gemini/Claude, then paste the returned JSON into the Manual Structured JSON box.
 
 The tool checks `/api/health` on load and shows whether the local provider/model is reachable before formatting.
+On GitHub Pages, keep the local proxy running in a terminal and leave the tool's proxy URL set to `http://127.0.0.1:8787/api/format-fdx`. GitHub Pages cannot host the Gemini/OpenAI proxy itself.
 
 ## Smoke Run
 

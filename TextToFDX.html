@@ -181,6 +181,16 @@
       font-size: 13px;
     }
     .status.error { color: var(--danger); }
+    .notice {
+      border: 1px solid color-mix(in srgb, var(--accent-2) 45%, var(--line));
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--accent-2) 9%, var(--panel));
+      color: var(--muted);
+      padding: 10px 11px;
+      font-size: 13px;
+      line-height: 1.4;
+      display: none;
+    }
     .health {
       display: inline-flex;
       align-items: center;
@@ -339,6 +349,7 @@
             <label for="endpoint-input">Local Proxy URL</label>
             <input id="endpoint-input" type="url" autocomplete="off">
           </div>
+          <div id="hosted-note" class="notice">GitHub Pages is static. API formatting only works when the local proxy is running on this computer; otherwise use Manual JSON Import.</div>
           <div id="proxy-health" class="health">Checking local proxy...</div>
           <div class="row">
             <button id="format-btn" class="btn primary" type="button"><i data-lucide="wand-2"></i> Format Script</button>
@@ -402,6 +413,7 @@
       var titleInput = document.getElementById('title-input');
       var authorInput = document.getElementById('author-input');
       var endpointInput = document.getElementById('endpoint-input');
+      var hostedNote = document.getElementById('hosted-note');
       var proxyHealth = document.getElementById('proxy-health');
       var manualJson = document.getElementById('manual-json');
       var previewTitle = document.getElementById('preview-title');
@@ -437,6 +449,22 @@
         } catch (_) {
           return '';
         }
+      }
+
+      function isLocalPage() {
+        return ['localhost', '127.0.0.1', '0.0.0.0'].indexOf(window.location.hostname) !== -1;
+      }
+
+      function localProxyHelp() {
+        return 'Local proxy unavailable. Start it with GEMINI_API_KEY and keep this endpoint set to http://127.0.0.1:8787/api/format-fdx, or use Manual JSON Import.';
+      }
+
+      function explainFetchError(error) {
+        var message = String((error && error.message) || '');
+        if (message.toLowerCase().indexOf('failed to fetch') !== -1 || error instanceof TypeError) {
+          return localProxyHelp();
+        }
+        return message || 'Formatter request failed.';
       }
 
       function notify(message, type) {
@@ -504,7 +532,7 @@
           proxyHealth.textContent = data.provider + ' ready: ' + data.model + usageLabel(data.usage);
           proxyHealth.className = 'health ready';
         } catch (error) {
-          proxyHealth.textContent = error.message || 'Proxy unavailable';
+          proxyHealth.textContent = explainFetchError(error);
           proxyHealth.className = 'health error';
         }
       }
@@ -615,7 +643,7 @@
           checkProxyHealth();
           notify('Text formatted for FDX.', 'success');
         } catch (error) {
-          setStatus(error.message || 'Formatter request failed.', true);
+          setStatus(explainFetchError(error), true);
           notify('Text to FDX failed.', 'error');
         } finally {
           formatBtn.disabled = false;
@@ -734,6 +762,7 @@
 
       loadTheme();
       endpointInput.value = defaultEndpoint();
+      if (!isLocalPage()) hostedNote.style.display = 'block';
       updateButtons();
       updateCounts();
       updatePreviewSummary();
