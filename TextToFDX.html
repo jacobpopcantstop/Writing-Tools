@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en" data-wt-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Text to FDX</title>
+  <meta name="description" content="Format raw screenplay text into editable FDX output.">
+  <meta name="theme-color" content="#0b0c10">
+  <link rel="icon" type="image/svg+xml" href="icon-192.svg">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@0.263.1"></script>
+  <script src="shared-toast.js"></script>
+  <script src="courius-format.js"></script>
+  <script src="text-fdx-format.js"></script>
+  <script src="shared-pwa.js"></script>
+  <script src="shared-command-palette.js"></script>
+  <style>
+    :root {
+      --bg: #0b0c10;
+      --panel: #12161f;
+      --panel-2: #171d2a;
+      --text: #f2f3f5;
+      --muted: #a3adba;
+      --line: #262c39;
+      --accent: #ff6f61;
+      --accent-2: #f4d35e;
+      --danger: #ff8b8b;
+    }
+    [data-wt-theme="light"] {
+      --bg: #f7f3ea;
+      --panel: #fffdf8;
+      --panel-2: #efe7d6;
+      --text: #171717;
+      --muted: #575f66;
+      --line: #d4c8b2;
+      --accent: #d1495b;
+      --accent-2: #b88300;
+      --danger: #a43636;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      min-height: 100dvh;
+      font-family: "Space Grotesk", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(60vw 35vh at 80% -10%, color-mix(in srgb, var(--accent) 16%, transparent), transparent),
+        var(--bg);
+    }
+    button, input, textarea, select { font: inherit; }
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 24px 18px 48px; }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      font: 700 12px/1 "IBM Plex Mono", monospace;
+      letter-spacing: .11em;
+      text-transform: uppercase;
+    }
+    .brand-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    }
+    .top-actions { display: flex; gap: 8px; align-items: center; }
+    .icon-btn, .btn {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      border-radius: 8px;
+      min-height: 40px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+      transition: transform .15s ease, border-color .15s ease, background .15s ease;
+    }
+    .icon-btn { width: 40px; padding: 0; }
+    .btn { padding: 10px 13px; font-weight: 700; }
+    .btn.primary {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 10%, var(--panel));
+    }
+    .btn:hover, .icon-btn:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+    .btn:disabled { cursor: not-allowed; opacity: .55; transform: none; }
+    .hero {
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel) 92%, transparent);
+      border-radius: 12px;
+      padding: 22px;
+      margin-bottom: 16px;
+    }
+    .eyebrow {
+      margin-bottom: 10px;
+      color: var(--accent);
+      font: 700 11px/1 "IBM Plex Mono", monospace;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    h1 { margin: 0 0 8px; font-size: clamp(32px, 5vw, 52px); line-height: 1; letter-spacing: 0; }
+    .hero p { margin: 0; max-width: 70ch; color: var(--muted); }
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 430px) minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
+      overflow: hidden;
+    }
+    .panel-head {
+      padding: 13px 14px;
+      border-bottom: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel-2) 82%, transparent);
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+    }
+    .panel-title {
+      font: 700 12px/1 "IBM Plex Mono", monospace;
+      letter-spacing: .11em;
+      color: var(--accent);
+      text-transform: uppercase;
+    }
+    .panel-body { padding: 14px; display: grid; gap: 12px; }
+    .field { display: grid; gap: 6px; }
+    label {
+      color: var(--muted);
+      font: 700 11px/1 "IBM Plex Mono", monospace;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    input[type="text"], input[type="url"], textarea, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--bg) 70%, var(--panel));
+      color: var(--text);
+      padding: 10px 11px;
+      outline: none;
+    }
+    textarea {
+      min-height: 350px;
+      resize: vertical;
+      line-height: 1.45;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 13px;
+    }
+    textarea.compact {
+      min-height: 150px;
+    }
+    input:focus, textarea:focus, select:focus {
+      border-color: color-mix(in srgb, var(--accent) 60%, var(--line));
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 16%, transparent);
+    }
+    input[type="file"] { color: var(--muted); max-width: 100%; }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .status {
+      min-height: 20px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .status.error { color: var(--danger); }
+    .health {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .health::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--muted);
+      flex: 0 0 auto;
+    }
+    .health.ready::before { background: #5ed690; }
+    .health.error::before { background: var(--danger); }
+    .preview-empty {
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      color: var(--muted);
+      padding: 22px;
+      text-align: center;
+    }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .script-preview { display: grid; gap: 8px; }
+    .block {
+      display: grid;
+      grid-template-columns: 160px minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: stretch;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px;
+      background: color-mix(in srgb, var(--bg) 42%, var(--panel));
+    }
+    .block textarea {
+      min-height: 58px;
+      resize: vertical;
+      font-size: 13px;
+      padding: 8px;
+    }
+    .block-remove {
+      width: 36px;
+      height: 36px;
+      align-self: start;
+    }
+    .preview-actions {
+      position: sticky;
+      bottom: 0;
+      border-top: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel) 94%, transparent);
+      padding-top: 12px;
+      margin-top: 4px;
+    }
+    .notes {
+      color: var(--muted);
+      font-size: 13px;
+      border-left: 3px solid var(--accent-2);
+      padding-left: 10px;
+      display: none;
+    }
+    .hint {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    details.manual-panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--bg) 34%, var(--panel));
+      overflow: hidden;
+    }
+    details.manual-panel summary {
+      cursor: pointer;
+      padding: 11px;
+      color: var(--accent);
+      font: 700 11px/1 "IBM Plex Mono", monospace;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      list-style: none;
+    }
+    details.manual-panel summary::-webkit-details-marker { display: none; }
+    .manual-inner {
+      border-top: 1px solid var(--line);
+      padding: 11px;
+      display: grid;
+      gap: 10px;
+    }
+    .summary-strip {
+      display: none;
+      flex-wrap: wrap;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .summary-pill {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 6px 9px;
+      background: color-mix(in srgb, var(--bg) 42%, var(--panel));
+    }
+    @media (max-width: 860px) {
+      .grid { grid-template-columns: 1fr; }
+      .block { grid-template-columns: 1fr; }
+      .block-remove { width: 100%; }
+      .meta-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="topbar">
+      <a class="brand" href="index.html"><span class="brand-dot"></span> Writing Tools Suite</a>
+      <div class="top-actions">
+        <button id="theme-btn" class="icon-btn" type="button" aria-label="Toggle theme"><i data-lucide="sun"></i></button>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="eyebrow">Output Utility</div>
+      <h1>Text to FDX</h1>
+      <p>Paste rough script text or upload a `.txt` file. The local proxy asks an LLM to infer screenplay elements, then you can review, edit, export FDX, or send the draft to Courius.</p>
+    </section>
+
+    <main class="grid">
+      <section class="panel" aria-label="Source text">
+        <div class="panel-head">
+          <div class="panel-title">Source</div>
+          <span id="char-count" class="status">0 chars</span>
+        </div>
+        <div class="panel-body">
+          <div class="meta-grid">
+            <div class="field">
+              <label for="title-input">Title Hint</label>
+              <input id="title-input" type="text" autocomplete="off" placeholder="Optional">
+            </div>
+            <div class="field">
+              <label for="author-input">Author Hint</label>
+              <input id="author-input" type="text" autocomplete="off" placeholder="Optional">
+            </div>
+          </div>
+          <div class="field">
+            <label for="source-file">Upload Text</label>
+            <input id="source-file" type="file" accept=".txt,text/plain">
+          </div>
+          <div class="field">
+            <label for="source-text">Unformatted Text</label>
+            <textarea id="source-text" spellcheck="true" placeholder="Paste raw script text here..."></textarea>
+          </div>
+          <div class="field">
+            <label for="endpoint-input">Local Proxy URL</label>
+            <input id="endpoint-input" type="url" autocomplete="off">
+          </div>
+          <div id="proxy-health" class="health">Checking local proxy...</div>
+          <div class="row">
+            <button id="format-btn" class="btn primary" type="button"><i data-lucide="wand-2"></i> Format Script</button>
+            <button id="clear-btn" class="btn" type="button"><i data-lucide="trash-2"></i> Clear</button>
+          </div>
+          <div id="status" class="status" aria-live="polite"></div>
+          <details class="manual-panel">
+            <summary>Manual JSON Import</summary>
+            <div class="manual-inner">
+              <p class="hint">Use this when you format text in ChatGPT, Gemini, Claude, or another model yourself. Paste the returned JSON here and import it into the same preview/export flow.</p>
+              <textarea id="manual-json" class="compact" spellcheck="false" placeholder='{"title":"","author":"","notes":"","elements":[{"type":"scene-heading","text":"INT. ROOM - DAY"}]}'></textarea>
+              <div class="row">
+                <button id="copy-prompt-btn" class="btn" type="button"><i data-lucide="copy"></i> Copy JSON Prompt</button>
+                <button id="import-json-btn" class="btn" type="button"><i data-lucide="braces"></i> Import JSON</button>
+              </div>
+            </div>
+          </details>
+        </div>
+      </section>
+
+      <section class="panel" aria-label="Formatted preview">
+        <div class="panel-head">
+          <div class="panel-title">Preview</div>
+          <span id="block-count" class="status">0 blocks</span>
+        </div>
+        <div class="panel-body">
+          <div class="meta-grid">
+            <div class="field">
+              <label for="preview-title">Title</label>
+              <input id="preview-title" type="text" autocomplete="off">
+            </div>
+            <div class="field">
+              <label for="preview-author">Author</label>
+              <input id="preview-author" type="text" autocomplete="off">
+            </div>
+          </div>
+          <div id="notes" class="notes"></div>
+          <div id="preview-summary" class="summary-strip"></div>
+          <div id="preview" class="script-preview">
+            <div class="preview-empty">Formatted blocks will appear here.</div>
+          </div>
+          <div class="preview-actions">
+            <div class="row">
+              <button id="add-block-btn" class="btn" type="button" disabled><i data-lucide="plus"></i> Add Block</button>
+              <button id="download-btn" class="btn primary" type="button" disabled><i data-lucide="download"></i> Download FDX</button>
+              <button id="courius-btn" class="btn" type="button" disabled><i data-lucide="send"></i> Send to Courius</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      var formatter = window.WTTextFDX;
+      var sourceText = document.getElementById('source-text');
+      var sourceFile = document.getElementById('source-file');
+      var titleInput = document.getElementById('title-input');
+      var authorInput = document.getElementById('author-input');
+      var endpointInput = document.getElementById('endpoint-input');
+      var proxyHealth = document.getElementById('proxy-health');
+      var manualJson = document.getElementById('manual-json');
+      var previewTitle = document.getElementById('preview-title');
+      var previewAuthor = document.getElementById('preview-author');
+      var preview = document.getElementById('preview');
+      var notes = document.getElementById('notes');
+      var status = document.getElementById('status');
+      var charCount = document.getElementById('char-count');
+      var blockCount = document.getElementById('block-count');
+      var previewSummary = document.getElementById('preview-summary');
+      var formatBtn = document.getElementById('format-btn');
+      var clearBtn = document.getElementById('clear-btn');
+      var copyPromptBtn = document.getElementById('copy-prompt-btn');
+      var importJsonBtn = document.getElementById('import-json-btn');
+      var addBlockBtn = document.getElementById('add-block-btn');
+      var downloadBtn = document.getElementById('download-btn');
+      var couriusBtn = document.getElementById('courius-btn');
+      var themeBtn = document.getElementById('theme-btn');
+      var currentDoc = { title: '', author: '', notes: '', elements: [] };
+
+      function defaultEndpoint() {
+        if (window.location.port === '8787' || window.location.pathname.indexOf('/api/') === 0) {
+          return '/api/format-fdx';
+        }
+        return 'http://127.0.0.1:8787/api/format-fdx';
+      }
+
+      function healthUrl() {
+        try {
+          var endpoint = new URL(endpointInput.value.trim() || defaultEndpoint(), window.location.href);
+          endpoint.pathname = endpoint.pathname.replace(/\/api\/format-fdx$/, '/api/health');
+          return endpoint.toString();
+        } catch (_) {
+          return '';
+        }
+      }
+
+      function notify(message, type) {
+        if (window.WTToast && typeof window.WTToast.notify === 'function') {
+          window.WTToast.notify(message, { type: type || 'info' });
+        }
+      }
+
+      function setStatus(message, isError) {
+        status.textContent = message || '';
+        status.classList.toggle('error', !!isError);
+      }
+
+      function usageLabel(usage) {
+        if (!usage || !usage.limit) return '';
+        return ' - ' + usage.remaining + '/' + usage.limit + ' left today';
+      }
+
+      function updateCounts() {
+        charCount.textContent = String(sourceText.value.length).toLocaleString() + ' chars';
+        blockCount.textContent = String(currentDoc.elements.length).toLocaleString() + ' blocks';
+      }
+
+      function updatePreviewSummary() {
+        if (!currentDoc.elements.length) {
+          previewSummary.style.display = 'none';
+          previewSummary.innerHTML = '';
+          return;
+        }
+        var counts = currentDoc.elements.reduce(function (acc, element) {
+          acc[element.type] = (acc[element.type] || 0) + 1;
+          return acc;
+        }, {});
+        var labels = [
+          ['scene-heading', 'scenes'],
+          ['character', 'characters'],
+          ['dialogue', 'dialogue'],
+          ['action', 'action'],
+          ['transition', 'transitions'],
+          ['parenthetical', 'parentheticals']
+        ].filter(function (entry) {
+          return counts[entry[0]];
+        }).map(function (entry) {
+          return '<span class="summary-pill">' + counts[entry[0]] + ' ' + entry[1] + '</span>';
+        });
+        previewSummary.innerHTML = labels.join('');
+        previewSummary.style.display = 'flex';
+      }
+
+      async function checkProxyHealth() {
+        var url = healthUrl();
+        if (!url) {
+          proxyHealth.textContent = 'Proxy URL is invalid.';
+          proxyHealth.className = 'health error';
+          return;
+        }
+        proxyHealth.textContent = 'Checking local proxy...';
+        proxyHealth.className = 'health';
+        try {
+          var response = await fetch(url);
+          var data = await response.json();
+          if (!response.ok || !data.keyConfigured) {
+            throw new Error(data.keyConfigured === false ? 'API key missing' : 'Proxy unavailable');
+          }
+          proxyHealth.textContent = data.provider + ' ready: ' + data.model + usageLabel(data.usage);
+          proxyHealth.className = 'health ready';
+        } catch (error) {
+          proxyHealth.textContent = error.message || 'Proxy unavailable';
+          proxyHealth.className = 'health error';
+        }
+      }
+
+      function iconRefresh() {
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+          window.lucide.createIcons();
+        }
+      }
+
+      function typeOptions(selected) {
+        return formatter.KNOWN_TYPES.map(function (type) {
+          var label = type.replace('-', ' ');
+          return '<option value="' + type + '"' + (type === selected ? ' selected' : '') + '>' + label + '</option>';
+        }).join('');
+      }
+
+      function syncDocFromPreview() {
+        var rows = Array.from(preview.querySelectorAll('.block')).map(function (row) {
+          return {
+            type: row.querySelector('select').value,
+            text: row.querySelector('textarea').value
+          };
+        });
+        currentDoc = formatter.documentFromPreviewRows(rows, previewTitle.value, previewAuthor.value);
+        updateButtons();
+        updateCounts();
+        updatePreviewSummary();
+      }
+
+      function updateButtons() {
+        var hasBlocks = currentDoc.elements.length > 0;
+        addBlockBtn.disabled = false;
+        downloadBtn.disabled = !hasBlocks;
+        couriusBtn.disabled = !hasBlocks;
+      }
+
+      function renderPreview(doc) {
+        currentDoc = formatter.normalizeFormatterResult(doc);
+        previewTitle.value = currentDoc.title || titleInput.value.trim();
+        previewAuthor.value = currentDoc.author || authorInput.value.trim();
+        if (currentDoc.notes) {
+          notes.style.display = 'block';
+          notes.textContent = currentDoc.notes;
+        } else {
+          notes.style.display = 'none';
+          notes.textContent = '';
+        }
+        preview.innerHTML = '';
+        if (!currentDoc.elements.length) {
+          preview.innerHTML = '<div class="preview-empty">No screenplay blocks returned.</div>';
+        } else {
+          currentDoc.elements.forEach(function (element, index) {
+            addPreviewBlock(element, index);
+          });
+        }
+        syncDocFromPreview();
+        iconRefresh();
+      }
+
+      function addPreviewBlock(element) {
+        var item = element || { type: 'action', text: '' };
+        var row = document.createElement('div');
+        row.className = 'block';
+        row.innerHTML =
+          '<select aria-label="Block type">' + typeOptions(formatter.normalizeType(item.type)) + '</select>' +
+          '<textarea aria-label="Block text">' + formatter.escapeHtml(item.text || '') + '</textarea>' +
+          '<button class="icon-btn block-remove" type="button" aria-label="Remove block"><i data-lucide="x"></i></button>';
+        row.querySelector('select').addEventListener('change', syncDocFromPreview);
+        row.querySelector('textarea').addEventListener('input', syncDocFromPreview);
+        row.querySelector('.block-remove').addEventListener('click', function () {
+          row.remove();
+          if (!preview.querySelector('.block')) {
+            preview.innerHTML = '<div class="preview-empty">Formatted blocks will appear here.</div>';
+          }
+          syncDocFromPreview();
+          iconRefresh();
+        });
+        var empty = preview.querySelector('.preview-empty');
+        if (empty) empty.remove();
+        preview.appendChild(row);
+      }
+
+      async function formatScript() {
+        var validation = formatter.validateInputText(sourceText.value);
+        if (!validation.ok) {
+          setStatus(validation.message, true);
+          return;
+        }
+        setStatus('Formatting with local proxy...');
+        formatBtn.disabled = true;
+        try {
+          var response = await fetch(endpointInput.value.trim() || defaultEndpoint(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              text: validation.text,
+              titleHint: titleInput.value.trim(),
+              authorHint: authorInput.value.trim()
+            })
+          });
+          var payload = await response.json().catch(function () { return {}; });
+          if (!response.ok) {
+            throw new Error((payload.error || 'Formatter request failed.') + usageLabel(payload.usage));
+          }
+          renderPreview(payload.document || payload);
+          setStatus('Formatted. Review the blocks before exporting.' + usageLabel(payload.usage));
+          checkProxyHealth();
+          notify('Text formatted for FDX.', 'success');
+        } catch (error) {
+          setStatus(error.message || 'Formatter request failed.', true);
+          notify('Text to FDX failed.', 'error');
+        } finally {
+          formatBtn.disabled = false;
+        }
+      }
+
+      function importManualJson() {
+        try {
+          var doc = formatter.parseStructuredJson(manualJson.value);
+          if (!doc.elements.length) {
+            throw new Error('That JSON did not contain any screenplay blocks.');
+          }
+          renderPreview(doc);
+          setStatus('Imported structured JSON. Review the blocks before exporting.');
+          notify('Structured JSON imported.', 'success');
+        } catch (error) {
+          setStatus(error.message || 'Could not import that JSON.', true);
+          notify('JSON import failed.', 'error');
+        }
+      }
+
+      async function copyManualPrompt() {
+        var prompt = formatter.buildManualPrompt(sourceText.value, titleInput.value, authorInput.value);
+        try {
+          await navigator.clipboard.writeText(prompt);
+          setStatus('Copied a structured JSON prompt.');
+          notify('Prompt copied.', 'success');
+        } catch (_) {
+          manualJson.value = prompt;
+          setStatus('Clipboard unavailable. Prompt placed in the JSON box instead.');
+        }
+      }
+
+      function downloadFdx() {
+        syncDocFromPreview();
+        var xml = formatter.buildFdx(currentDoc, window.WTScreenplay);
+        var safeTitle = (currentDoc.title || 'script').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'script';
+        var blob = new Blob([xml], { type: 'text/xml' });
+        var link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = safeTitle + '.fdx';
+        link.click();
+        URL.revokeObjectURL(link.href);
+        notify('FDX downloaded.', 'success');
+      }
+
+      function sendToCourius() {
+        syncDocFromPreview();
+        formatter.saveToCourius(currentDoc);
+        notify('Sent to Courius.', 'success');
+        window.open('Courius.html', '_blank', 'noopener');
+      }
+
+      function clearAll() {
+        sourceText.value = '';
+        sourceFile.value = '';
+        manualJson.value = '';
+        titleInput.value = '';
+        authorInput.value = '';
+        previewTitle.value = '';
+        previewAuthor.value = '';
+        currentDoc = { title: '', author: '', notes: '', elements: [] };
+        preview.innerHTML = '<div class="preview-empty">Formatted blocks will appear here.</div>';
+        notes.style.display = 'none';
+        notes.textContent = '';
+        setStatus('');
+        updateCounts();
+        updateButtons();
+        updatePreviewSummary();
+      }
+
+      function loadTheme() {
+        var saved = localStorage.getItem('writingtools_theme') || 'dark';
+        document.documentElement.setAttribute('data-wt-theme', saved === 'light' ? 'light' : 'dark');
+      }
+
+      function toggleTheme() {
+        var next = document.documentElement.getAttribute('data-wt-theme') === 'light' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-wt-theme', next);
+        localStorage.setItem('writingtools_theme', next);
+      }
+
+      sourceText.addEventListener('input', updateCounts);
+      endpointInput.addEventListener('change', checkProxyHealth);
+      endpointInput.addEventListener('blur', checkProxyHealth);
+      sourceFile.addEventListener('change', function () {
+        var file = sourceFile.files && sourceFile.files[0];
+        if (!file) return;
+        file.text().then(function (text) {
+          sourceText.value = text;
+          if (!titleInput.value.trim()) titleInput.value = file.name.replace(/\.[^.]+$/, '');
+          updateCounts();
+        }).catch(function () {
+          setStatus('Could not read that file.', true);
+        });
+      });
+      formatBtn.addEventListener('click', formatScript);
+      clearBtn.addEventListener('click', clearAll);
+      copyPromptBtn.addEventListener('click', copyManualPrompt);
+      importJsonBtn.addEventListener('click', importManualJson);
+      addBlockBtn.addEventListener('click', function () {
+        addPreviewBlock({ type: 'action', text: '' });
+        syncDocFromPreview();
+        iconRefresh();
+      });
+      downloadBtn.addEventListener('click', downloadFdx);
+      couriusBtn.addEventListener('click', sendToCourius);
+      previewTitle.addEventListener('input', syncDocFromPreview);
+      previewAuthor.addEventListener('input', syncDocFromPreview);
+      themeBtn.addEventListener('click', toggleTheme);
+
+      window.WTToolActions = {
+        exportPrimary: downloadFdx,
+        primaryHandoff: sendToCourius
+      };
+
+      loadTheme();
+      endpointInput.value = defaultEndpoint();
+      updateButtons();
+      updateCounts();
+      updatePreviewSummary();
+      checkProxyHealth();
+      iconRefresh();
+    })();
+  </script>
+</body>
+</html>

@@ -75,6 +75,15 @@
       snapshotKey: 'writingtools_courius_snapshots_v1'
     },
     {
+      id: 'TextToFDX',
+      label: 'Text to FDX',
+      path: 'TextToFDX.html',
+      category: 'Output',
+      commandDesc: 'AI-assisted raw text to screenplay FDX',
+      commandKeys: 'fdx screenplay format ai import text',
+      snapshotKey: null
+    },
+    {
       id: 'PaperCut',
       label: 'PaperCut',
       path: 'PaperCut.html',
