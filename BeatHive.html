@@ -989,7 +989,16 @@
                 const width = (qRange + 2) * hexWidth + hexSize * 2;
                 const height = (rRange + 2) * vertSpacing + hexSize * 2;
 
-                let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`;
+                const escapeXml = (text) => String(text || '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;');
+
+                // viewBox-only sizing so the print scales to the paper; never set
+                // width/height attributes here (a past regex "fix" for that turned
+                // a hex's stroke-width="1" into stroke-width="100%").
+                let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" style="width:100%;height:auto;">`;
 
                 // Draw grid outline for all cells in bounds (dashed for empty)
                 for (let q = minQ; q <= maxQ; q++) {
@@ -1022,7 +1031,7 @@
                         lines.forEach((line, i) => {
                             const maxChars = Math.max(14, Math.floor(hexSize / 4));
                             const truncated = line.length > maxChars ? line.substring(0, maxChars - 3) + '...' : line;
-                            svgContent += `<text x="${x}" y="${startY + i * lineHeight}" text-anchor="middle" font-size="${Math.max(9, Math.floor(hexSize * 0.14))}" font-family="Inter, sans-serif" fill="#000">${truncated}</text>`;
+                            svgContent += `<text x="${x}" y="${startY + i * lineHeight}" text-anchor="middle" font-size="${Math.max(9, Math.floor(hexSize * 0.14))}" font-family="Inter, sans-serif" fill="#000">${escapeXml(truncated)}</text>`;
                         });
                     }
 
@@ -1032,28 +1041,27 @@
 
                 svgContent += '</svg>';
 
-                // Replace fixed pixel dimensions with viewBox-only so print scales properly
-                const scaledSvg = svgContent
-                    .replace(/width="\d+"/, `width="100%"`)
-                    .replace(/height="\d+"/, `height="auto"`);
-
                 printWindow.document.write(`
                     <!DOCTYPE html>
                     <html>
                     <head>
+                        <meta charset="utf-8">
                         <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5' fill='%23fd19c8'/><polygon points='50,20 80,37.5 80,62.5 50,80 20,62.5 20,37.5' fill='%23da70d6' opacity='0.6'/></svg>">
-                        <title>BeatHive - ${sketchName || 'Untitled'}</title>
+                        <title>BeatHive - ${escapeXml(sketchName || 'Untitled')}</title>
                         <style>
+                            /* Zero page margins suppress the browser's date/title/URL
+                               header and footer; body padding keeps a paper margin. */
+                            @page { margin: 0; }
                             body { margin: 0; padding: 20px; }
                             svg { display: block; max-width: 100%; height: auto; margin: 0 auto; }
                             @media print {
-                                body { padding: 0; }
+                                body { padding: 0.4in; }
                             }
                         </style>
                     </head>
                     <body>
-                        <h1 style="text-align: center; font-family: sans-serif; margin-bottom: 20px;">${sketchName || 'Untitled Beat Map'}</h1>
-                        ${scaledSvg}
+                        <h1 style="text-align: center; font-family: sans-serif; margin-bottom: 20px;">${escapeXml(sketchName || 'Untitled Beat Map')}</h1>
+                        ${svgContent}
                     </body>
                     </html>
                 `);

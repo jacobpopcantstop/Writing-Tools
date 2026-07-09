@@ -405,17 +405,10 @@
         .tp-contact { position: absolute; bottom: 0; left: 0; text-align: left; font-size: 10pt; width: 50%; outline: none; }
 
         @page {
-            @top-left { content: none; }
-            @top-center { content: none; }
-            @top-right { content: none; }
-            @bottom-left { content: none; }
-            @bottom-center { content: none; }
-            @bottom-right {
-                content: counter(page);
-                font-family: 'Courier Prime', 'Courier New', Courier, monospace;
-                font-size: 12pt;
-                color: #000000;
-            }
+            size: letter;
+            /* Zero page margins suppress the browser's date/title/URL header and
+               footer on printouts; the script's own 1in padding is the margin. */
+            margin: 0;
         }
 
         @media print {
@@ -799,6 +792,7 @@
         <div class="shortcut-row"><span>Set Element Type</span><span class="shortcut-key">Alt+1..6</span></div>
         <div class="shortcut-row"><span>Save Now</span><span class="shortcut-key">Ctrl+S</span></div>
         <div class="shortcut-row"><span>New Line</span><span class="shortcut-key">Enter</span></div>
+        <div class="shortcut-row"><span>Element Menu (on empty line)</span><span class="shortcut-key">Enter</span></div>
         <div class="shortcut-row"><span>Show Help (when not typing)</span><span class="shortcut-key">?</span></div>
         <div style="margin-top:12px; padding-top:12px; border-top: 1px solid rgba(0,0,0,0.1); font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; opacity:0.5;">Autocomplete</div>
         <div class="shortcut-row"><span>Accept suggestion</span><span class="shortcut-key">Tab / ↵</span></div>
@@ -890,6 +884,9 @@
     let dropdownBlock = null;
     let dropdownMatches = [];
     let dropdownActiveIndex = 0;
+    // 'autocomplete' completes names/headings; 'elements' is the element-type
+    // menu opened by pressing Enter on an empty line.
+    let dropdownMode = 'autocomplete';
     let suggestionsRefreshTimer = null;
     let localKnownRevision = 0;
     const COURIUS_TAB_ID = 'courius-' + Math.random().toString(36).slice(2, 10);
@@ -1602,9 +1599,19 @@
 
         const type = currentBlock.className;
 
+        const dropdownVisible = DROPDOWN.classList.contains('visible');
+        const elementMenuOpen = dropdownVisible && dropdownMode === 'elements';
+
+        // Typing any regular character while the element menu is open closes
+        // it and falls through to normal text input.
+        if (elementMenuOpen && !['Tab', 'Enter', 'ArrowUp', 'ArrowDown', 'Escape', 'Shift'].includes(e.key)) {
+            hideDropdown();
+        }
+
         if (e.key === 'ArrowDown' && DROPDOWN.classList.contains('visible')) {
             e.preventDefault();
             dropdownActiveIndex = Math.min(dropdownActiveIndex + 1, dropdownMatches.length - 1);
+            applyElementLive();
             renderDropdownItems();
             return;
         }
@@ -1612,6 +1619,7 @@
         if (e.key === 'ArrowUp' && DROPDOWN.classList.contains('visible')) {
             e.preventDefault();
             dropdownActiveIndex = Math.max(dropdownActiveIndex - 1, 0);
+            applyElementLive();
             renderDropdownItems();
             return;
         }
@@ -1624,13 +1632,24 @@
 
         if (e.key === 'Tab') {
             e.preventDefault();
-            if (DROPDOWN.classList.contains('visible')) {
+            if (elementMenuOpen) {
+                const count = dropdownMatches.length;
+                dropdownActiveIndex = e.shiftKey
+                    ? (dropdownActiveIndex - 1 + count) % count
+                    : (dropdownActiveIndex + 1) % count;
+                applyElementLive();
+                renderDropdownItems();
+            } else if (DROPDOWN.classList.contains('visible') && !e.shiftKey) {
                 acceptFromDropdown(dropdownBlock, dropdownMatches[dropdownActiveIndex]);
             } else {
                 const sugg = currentBlock.querySelector('.suggestion');
-                if (sugg) {
+                if (sugg && !e.shiftKey) {
                     acceptSuggestion(currentBlock, sugg);
                 } else {
+                    // Shift+Tab always reverse-cycles the element type, even
+                    // when a suggestion or dropdown is showing.
+                    if (sugg) sugg.remove();
+                    if (e.shiftKey) hideDropdown();
                     const currentIndex = ELEMENT_CYCLE.indexOf(type);
                     const nextIndex = e.shiftKey ?
                         (currentIndex - 1 + ELEMENT_CYCLE.length) % ELEMENT_CYCLE.length :
@@ -1643,6 +1662,12 @@
 
         if (e.key === 'Enter') {
             e.preventDefault();
+            if (elementMenuOpen) {
+                // Type was already applied live while navigating; just close.
+                hideDropdown();
+                updateSelectorUI();
+                return;
+            }
             if (DROPDOWN.classList.contains('visible')) {
                 acceptFromDropdown(dropdownBlock, dropdownMatches[dropdownActiveIndex]);
                 createLine(NEXT_ELEMENT[type] || 'action', currentBlock);
@@ -1651,9 +1676,17 @@
             }
             const sugg = currentBlock.querySelector('.suggestion');
             if (sugg) acceptSuggestion(currentBlock, sugg);
-            if (type === 'parenthetical') {
-                const text = getPureText(currentBlock).trim();
-                if (text === '()' || text === '(' || text === ')') currentBlock.innerHTML = '<br>';
+            let textNow = getPureText(currentBlock).trim();
+            if (type === 'parenthetical' && (textNow === '()' || textNow === '(' || textNow === ')')) {
+                currentBlock.innerHTML = '<br>';
+                textNow = '';
+            }
+            if (!textNow) {
+                // Enter on an empty line opens the element menu instead of
+                // stacking another guessed line.
+                showElementMenu(currentBlock);
+                updateSelectorUI();
+                return;
             }
             createLine(NEXT_ELEMENT[type] || 'action', currentBlock);
             updateSelectorUI();
@@ -1661,6 +1694,14 @@
     });
 
     EDITOR.addEventListener('keyup', (e) => {
+        // Keep the element menu open across the keyup of the Enter/Tab/Arrow
+        // press that is driving it.
+        if (dropdownMode === 'elements' && DROPDOWN.classList.contains('visible')) {
+            updateSelectorUI();
+            triggerSave();
+            updatePageCount();
+            return;
+        }
         const block = getBlock(window.getSelection().anchorNode);
         if (block && (block.className === 'character' || block.className === 'scene-heading')) {
             updateSuggestions();
@@ -2008,14 +2049,15 @@
     }
 
     function renderDropdownItems() {
+        const isElementMenu = dropdownMode === 'elements';
         DROPDOWN.innerHTML = '';
         dropdownMatches.forEach((match, i) => {
             const item = document.createElement('div');
             item.className = 'autocomplete-item' + (i === dropdownActiveIndex ? ' active' : '');
             const label = document.createElement('span');
-            label.textContent = match;
+            label.textContent = isElementMenu ? DISPLAY_NAMES[match] : match;
             item.appendChild(label);
-            if (i === 0) {
+            if (!isElementMenu && i === 0) {
                 const hint = document.createElement('span');
                 hint.className = 'autocomplete-item-hint';
                 hint.textContent = 'Tab ↵';
@@ -2024,14 +2066,22 @@
             item.onmousedown = (e) => {
                 e.preventDefault(); // don't blur editor
                 dropdownActiveIndex = i;
-                acceptFromDropdown(dropdownBlock, match);
+                if (isElementMenu) {
+                    applyElementLive();
+                    hideDropdown();
+                    updateSelectorUI();
+                } else {
+                    acceptFromDropdown(dropdownBlock, match);
+                }
             };
             DROPDOWN.appendChild(item);
         });
         if (dropdownMatches.length > 1) {
             const footer = document.createElement('div');
             footer.className = 'autocomplete-footer';
-            footer.textContent = '↑↓ navigate · Tab/↵ accept · Esc dismiss';
+            footer.textContent = isElementMenu
+                ? 'Tab/↑↓ change type · ↵ done · Esc close'
+                : '↑↓ navigate · Tab/↵ accept · Esc dismiss';
             DROPDOWN.appendChild(footer);
         }
         // Scroll active item into view
@@ -2044,6 +2094,27 @@
         dropdownMatches = [];
         dropdownBlock = null;
         dropdownActiveIndex = 0;
+        dropdownMode = 'autocomplete';
+    }
+
+    // Element menu: shown when Enter is pressed on an empty line so the writer
+    // picks the next element instead of the editor guessing for them.
+    function showElementMenu(block) {
+        dropdownMode = 'elements';
+        dropdownBlock = block;
+        dropdownMatches = ELEMENT_CYCLE.slice();
+        dropdownActiveIndex = Math.max(0, ELEMENT_CYCLE.indexOf(block.className));
+        showDropdown(block);
+    }
+
+    function applyElementLive() {
+        if (dropdownMode !== 'elements' || !dropdownBlock) return;
+        const choice = dropdownMatches[dropdownActiveIndex];
+        if (choice && dropdownBlock.className !== choice) {
+            setBlockType(dropdownBlock, choice);
+            updateSelectorUI();
+            triggerSave();
+        }
     }
 
     function acceptFromDropdown(block, value) {
@@ -2576,6 +2647,17 @@
             e.preventDefault();
             changeElementType(ELEMENT_CYCLE[Number(e.code.slice(5)) - 1]);
         }
+    });
+
+    // Print with the script's name as the document title so a saved PDF is
+    // named after the script instead of "Courius Screenwriter".
+    window.addEventListener('beforeprint', () => {
+        const tp = collectTitlePage();
+        const name = String(tp.title || '').trim() || deriveDocName();
+        if (name) document.title = name;
+    });
+    window.addEventListener('afterprint', () => {
+        document.title = 'Courius Screenwriter';
     });
 
     window.addEventListener('beforeunload', () => {
