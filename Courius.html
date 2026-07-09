@@ -796,6 +796,8 @@
         <div class="shortcut-row"><span>Scene Navigator</span><span class="shortcut-key">Ctrl+N</span></div>
         <div class="shortcut-row"><span>Cycle Element Type</span><span class="shortcut-key">Tab</span></div>
         <div class="shortcut-row"><span>Reverse Cycle</span><span class="shortcut-key">Shift+Tab</span></div>
+        <div class="shortcut-row"><span>Set Element Type</span><span class="shortcut-key">Alt+1..6</span></div>
+        <div class="shortcut-row"><span>Save Now</span><span class="shortcut-key">Ctrl+S</span></div>
         <div class="shortcut-row"><span>New Line</span><span class="shortcut-key">Enter</span></div>
         <div class="shortcut-row"><span>Show Help (when not typing)</span><span class="shortcut-key">?</span></div>
         <div style="margin-top:12px; padding-top:12px; border-top: 1px solid rgba(0,0,0,0.1); font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; opacity:0.5;">Autocomplete</div>
@@ -1839,7 +1841,14 @@
         if (!div.firstChild) return "";
         let text = div.firstChild.nodeType === 3 ? div.firstChild.textContent : div.innerText;
         const sugg = div.querySelector('.suggestion');
-        if (sugg) text = text.replace(sugg.textContent, '');
+        if (sugg && sugg.textContent) {
+            // The ghost suggestion is always rendered at the end of the block,
+            // so only strip a trailing match (a plain replace could eat typed text).
+            const trimmed = text.replace(/\n$/, '');
+            text = trimmed.endsWith(sugg.textContent)
+                ? trimmed.slice(0, trimmed.length - sugg.textContent.length)
+                : text.replace(sugg.textContent, '');
+        }
         return text.replace(/\n$/, '');
     }
 
@@ -2233,7 +2242,8 @@
     }
 
     function resetScript() {
-        if (confirm("Reset current script?")) {
+        if (confirm("Reset current script? A recovery snapshot will be saved first.")) {
+            saveRecoverySnapshot(getEditorHtmlForStorage(), 'pre-reset');
             EDITOR.innerHTML = '';
             createLine('scene-heading');
             triggerSave();
@@ -2242,21 +2252,35 @@
 
     function updatePageCount() {
         // Approximate: 11in page height = 1056px @ 96dpi
-        const pageHeight = 1056; 
+        const pageHeight = 1056;
         const scrollTop = document.getElementById('editor-container').scrollTop;
         const pageNum = Math.floor(scrollTop / pageHeight) + 1;
-        PAGE_COUNT.innerText = "Pg " + pageNum;
+        const totalPages = Math.max(1, Math.ceil(EDITOR.scrollHeight / pageHeight));
+        PAGE_COUNT.innerText = "Pg " + Math.min(pageNum, totalPages) + "/" + totalPages;
     }
 
     // --- FDX Import ---
     function importFDX(input) {
         const file = input.files[0];
+        input.value = ''; // allow re-importing the same file later
         if (!file) return;
+
+        const currentHtml = getEditorHtmlForStorage();
+        const hasContent = currentHtml.replace(/<[^>]+>/g, '').trim().length > 0;
+        if (hasContent) {
+            if (!confirm('Importing "' + file.name + '" replaces the current script. A recovery snapshot of the current draft will be saved first. Continue?')) return;
+            saveRecoverySnapshot(currentHtml, 'pre-fdx-import', { fileName: file.name });
+        }
 
         const reader = new FileReader();
         reader.onload = function(e) {
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(e.target.result, "text/xml");
+            if (xmlDoc.getElementsByTagName('parsererror').length || !xmlDoc.getElementsByTagName('Paragraph').length) {
+                STATUS.innerText = 'Could not read that FDX file';
+                alert('That file does not look like a valid FDX document. Nothing was changed.');
+                return;
+            }
 
             EDITOR.innerHTML = ''; // Clear existing
 
@@ -2386,6 +2410,14 @@
     }
 
     // --- FDX Export ---
+    function exportFileName(titlePageTitle, extension) {
+        const docs = getDocs();
+        const active = docs.find((d) => d.id === getActiveDocId());
+        const rawName = String(titlePageTitle || '').trim() || deriveDocName() || (active && active.name) || 'script';
+        const slug = rawName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'script';
+        return slug + '.' + extension;
+    }
+
     function downloadFDX() {
         var tp = collectTitlePage();
         var elements = WTScreenplay.extractElements(collectScriptElements());
@@ -2393,7 +2425,7 @@
         var blob = new Blob([xml], { type: 'text/xml' });
         var a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = 'script.fdx';
+        a.download = exportFileName(tp.title, 'fdx');
         a.click();
         URL.revokeObjectURL(a.href);
     }
@@ -2405,7 +2437,7 @@
         var blob = new Blob([rtf], { type: 'application/rtf' });
         var a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = 'script.rtf';
+        a.download = exportFileName(tp.title, 'rtf');
         a.click();
         URL.revokeObjectURL(a.href);
     }
@@ -2528,6 +2560,21 @@
         if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
             e.preventDefault();
             toggleSceneNav();
+        }
+        // Ctrl+S saves immediately instead of opening the browser dialog
+        if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+            e.preventDefault();
+            clearTimeout(saveTimeout);
+            const ok = persistCouriusDocument(getEditorHtmlForStorage(), 'manual-save');
+            if (ok) {
+                STATUS.innerText = 'Saved';
+                touchActiveDoc();
+            }
+        }
+        // Alt+1..6 sets the current element type (matches the bottom bar order)
+        if (e.altKey && !e.ctrlKey && !e.metaKey && /^Digit[1-6]$/.test(e.code)) {
+            e.preventDefault();
+            changeElementType(ELEMENT_CYCLE[Number(e.code.slice(5)) - 1]);
         }
     });
 

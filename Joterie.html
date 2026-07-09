@@ -11,7 +11,7 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2225%22 fill=%22%23000000%22/><path d=%22M54 15L24 55h28l-4 30 30-40H50l4-30z%22 fill=%22%23fd19c8%22 stroke=%22%23fd19c8%22 stroke-width=%224%22 stroke-linejoin=%22round%22/></svg>">
     <link rel="manifest" href="manifest.webmanifest">
 
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
     <script src="shared-toast.js"></script>
     <script src="shared-pwa.js"></script>
     <script src="shared-export.js"></script>
@@ -22,7 +22,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;900&family=Newsreader:ital,opsz,wght@1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/lucide@0.263.1"></script>
     <style>
 :root {
     /* Change these to Light Mode colors */
@@ -771,6 +771,7 @@
             a.href = url;
             a.download = `joterie-harvest-${Date.now()}.txt`;
             a.click();
+            URL.revokeObjectURL(url);
         }
 
         function exportEmail() {
@@ -798,6 +799,20 @@
         }
 
         function sendToBeatHive() {
+            const kept = state.sessionCards.filter(c => c.status === 'kept').map(c => String(c.text || '').trim()).filter(Boolean);
+            try {
+                localStorage.setItem('writingtools_beathive_handoff_v1', JSON.stringify({
+                    topic: state.focusPrompt || '',
+                    jots: kept,
+                    source: 'Joterie',
+                    createdAt: new Date().toISOString()
+                }));
+            } catch (_) {}
+            if (window.WTToast && typeof window.WTToast.notify === 'function') {
+                window.WTToast.notify(kept.length
+                    ? `Sending ${kept.length} jot${kept.length === 1 ? '' : 's'} to BeatHive`
+                    : 'Opening BeatHive (no kept jots to send)', kept.length ? 'success' : 'info');
+            }
             window.open('BeatHive.html', '_blank', 'noopener');
         }
 
