@@ -8,7 +8,7 @@
     <meta name="description" content="A hex-grid canvas for mapping story beats.">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5' fill='%23fd19c8'/><polygon points='50,20 80,37.5 80,62.5 50,80 20,62.5 20,37.5' fill='%23da70d6' opacity='0.6'/></svg>">
     <link rel="manifest" href="manifest.webmanifest">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
     <script src="shared-toast.js"></script>
     <script src="shared-courius.js"></script>
     <script src="shared-pwa.js"></script>
@@ -16,9 +16,9 @@
     <script src="shared-recent-sessions.js"></script>
     <script src="shared-commands.js"></script>
     <script src="shared-command-palette.js"></script>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=Space+Grotesk:wght@700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
         
@@ -197,11 +197,40 @@
     <div id="root"></div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, getDocs, collection, query, onSnapshot, addDoc, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        window.FirebaseLib = { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, getFirestore, doc, setDoc, getDoc, getDocs, collection, query, onSnapshot, addDoc, updateDoc, deleteDoc, serverTimestamp };
+        // The Firebase SDK is only needed in hosted environments that inject
+        // __firebase_config. Everywhere else (GitHub Pages, local files, offline)
+        // we skip the download entirely and BeatHive runs on localStorage.
+        const embeddedConfig = typeof __firebase_config !== 'undefined' && __firebase_config;
+        if (embeddedConfig) {
+            try {
+                const [appMod, authMod, storeMod] = await Promise.all([
+                    import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"),
+                    import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"),
+                    import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js")
+                ]);
+                window.FirebaseLib = {
+                    initializeApp: appMod.initializeApp,
+                    getAuth: authMod.getAuth,
+                    signInAnonymously: authMod.signInAnonymously,
+                    signInWithCustomToken: authMod.signInWithCustomToken,
+                    onAuthStateChanged: authMod.onAuthStateChanged,
+                    getFirestore: storeMod.getFirestore,
+                    doc: storeMod.doc,
+                    setDoc: storeMod.setDoc,
+                    getDoc: storeMod.getDoc,
+                    getDocs: storeMod.getDocs,
+                    collection: storeMod.collection,
+                    query: storeMod.query,
+                    onSnapshot: storeMod.onSnapshot,
+                    addDoc: storeMod.addDoc,
+                    updateDoc: storeMod.updateDoc,
+                    deleteDoc: storeMod.deleteDoc,
+                    serverTimestamp: storeMod.serverTimestamp
+                };
+            } catch (_) {
+                // SDK unreachable: the app falls back to local-storage mode.
+            }
+        }
     </script>
 
     <script type="text/babel">
@@ -700,10 +729,10 @@
 
                 if (container) container.addEventListener('wheel', handleWheel, { passive: false });
                 
-                const { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, getFirestore, getDocs, collection, addDoc, serverTimestamp } = window.FirebaseLib;
+                const { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, getFirestore, getDocs, collection, addDoc, serverTimestamp } = window.FirebaseLib || {};
                 const config = parseEmbeddedJson(typeof __firebase_config !== 'undefined' ? __firebase_config : null);
-                
-                if (config) {
+
+                if (config && window.FirebaseLib) {
                     const app = initializeApp(config);
                     firebase.current.auth = getAuth(app);
                     firebase.current.db = getFirestore(app);
@@ -865,7 +894,10 @@
 
                 const nextTopic = String(payload.topic || '').trim();
                 const nextConstraints = String(payload.constraints || '').trim();
-                if (!nextTopic && !nextConstraints) return;
+                const incomingJots = Array.isArray(payload.jots)
+                    ? payload.jots.map(j => String(j || '').trim()).filter(Boolean).slice(0, 60)
+                    : [];
+                if (!nextTopic && !nextConstraints && !incomingJots.length) return;
 
                 const currentName = String(nameRef.current || '').trim();
                 const shouldAdoptTopic = !!nextTopic && (
@@ -875,9 +907,28 @@
                     currentName === 'New Beat Map' ||
                     currentName === 'Untitled Hive'
                 );
-                if (shouldAdoptTopic) {
-                    if (currentIdRef.current) save(null, nextTopic);
-                    else setSketchName(nextTopic);
+
+                // Incoming jots (e.g. a Joterie harvest) land as note cells in a
+                // fresh column below the existing map, ready to drag into the spine.
+                let mergedCells = null;
+                if (incomingJots.length) {
+                    const existing = cellsRef.current || [];
+                    const baseR = existing.length ? Math.max(...existing.map(c => Number(c.r) || 0)) + 1 : 0;
+                    const jotCells = incomingJots.map((text, i) => ({ q: 0, r: baseR + i, type: 'note', content: text, tags: [] }));
+                    mergedCells = [...existing, ...jotCells];
+                    setCells(mergedCells);
+                    setSelection({ q: 0, r: baseR });
+                    if (window.WTToast && typeof window.WTToast.notify === 'function') {
+                        window.WTToast.notify(`Received ${incomingJots.length} idea${incomingJots.length === 1 ? '' : 's'} from ${String(payload.source || 'another tool')}`, 'success');
+                    }
+                }
+
+                if (currentIdRef.current) {
+                    if (mergedCells || shouldAdoptTopic) {
+                        save(mergedCells, shouldAdoptTopic ? nextTopic : undefined);
+                    }
+                } else if (shouldAdoptTopic) {
+                    setSketchName(nextTopic);
                 }
             }, [isInitialLoading, save, user]);
 
@@ -938,7 +989,16 @@
                 const width = (qRange + 2) * hexWidth + hexSize * 2;
                 const height = (rRange + 2) * vertSpacing + hexSize * 2;
 
-                let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`;
+                const escapeXml = (text) => String(text || '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;');
+
+                // viewBox-only sizing so the print scales to the paper; never set
+                // width/height attributes here (a past regex "fix" for that turned
+                // a hex's stroke-width="1" into stroke-width="100%").
+                let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" style="width:100%;height:auto;">`;
 
                 // Draw grid outline for all cells in bounds (dashed for empty)
                 for (let q = minQ; q <= maxQ; q++) {
@@ -971,7 +1031,7 @@
                         lines.forEach((line, i) => {
                             const maxChars = Math.max(14, Math.floor(hexSize / 4));
                             const truncated = line.length > maxChars ? line.substring(0, maxChars - 3) + '...' : line;
-                            svgContent += `<text x="${x}" y="${startY + i * lineHeight}" text-anchor="middle" font-size="${Math.max(9, Math.floor(hexSize * 0.14))}" font-family="Inter, sans-serif" fill="#000">${truncated}</text>`;
+                            svgContent += `<text x="${x}" y="${startY + i * lineHeight}" text-anchor="middle" font-size="${Math.max(9, Math.floor(hexSize * 0.14))}" font-family="Inter, sans-serif" fill="#000">${escapeXml(truncated)}</text>`;
                         });
                     }
 
@@ -981,28 +1041,27 @@
 
                 svgContent += '</svg>';
 
-                // Replace fixed pixel dimensions with viewBox-only so print scales properly
-                const scaledSvg = svgContent
-                    .replace(/width="\d+"/, `width="100%"`)
-                    .replace(/height="\d+"/, `height="auto"`);
-
                 printWindow.document.write(`
                     <!DOCTYPE html>
                     <html>
                     <head>
+                        <meta charset="utf-8">
                         <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5' fill='%23fd19c8'/><polygon points='50,20 80,37.5 80,62.5 50,80 20,62.5 20,37.5' fill='%23da70d6' opacity='0.6'/></svg>">
-                        <title>BeatHive - ${sketchName || 'Untitled'}</title>
+                        <title>BeatHive - ${escapeXml(sketchName || 'Untitled')}</title>
                         <style>
+                            /* Zero page margins suppress the browser's date/title/URL
+                               header and footer; body padding keeps a paper margin. */
+                            @page { margin: 0; }
                             body { margin: 0; padding: 20px; }
                             svg { display: block; max-width: 100%; height: auto; margin: 0 auto; }
                             @media print {
-                                body { padding: 0; }
+                                body { padding: 0.4in; }
                             }
                         </style>
                     </head>
                     <body>
-                        <h1 style="text-align: center; font-family: sans-serif; margin-bottom: 20px;">${sketchName || 'Untitled Beat Map'}</h1>
-                        ${scaledSvg}
+                        <h1 style="text-align: center; font-family: sans-serif; margin-bottom: 20px;">${escapeXml(sketchName || 'Untitled Beat Map')}</h1>
+                        ${svgContent}
                     </body>
                     </html>
                 `);
@@ -1039,6 +1098,10 @@
 
             const handleDeleteMap = async (id, e) => {
                 e.stopPropagation();
+                const target = sketchesRef.current.find(s => s.id === id);
+                const label = (target && target.name) ? `"${target.name}"` : 'this map';
+                if (!window.confirm(`Delete ${label}? A recovery snapshot will be saved first.`)) return;
+                saveLocalSnapshot({}, 'pre-map-delete', { mapId: id, mapName: target?.name || '' });
                 if (user?.uid === 'local-user') {
                     const localData = loadLocalSketches();
                     const filtered = localData.filter(s => s.id !== id);

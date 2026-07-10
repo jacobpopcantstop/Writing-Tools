@@ -78,8 +78,36 @@
     return match ? match[1].trim() : value;
   }
 
+  // LLM replies often wrap the JSON in prose or code fences. Accept the reply
+  // as-is when possible, then fall back to the outermost {...} block.
+  function extractJsonPayload(text) {
+    var value = stripJsonFence(text);
+    if (!value) return '';
+    var fenced = value.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+    if (fenced && fenced[1]) {
+      var inner = fenced[1].trim();
+      if (inner.charAt(0) === '{') return inner;
+    }
+    if (value.charAt(0) === '{') return value;
+    var start = value.indexOf('{');
+    var end = value.lastIndexOf('}');
+    if (start >= 0 && end > start) return value.slice(start, end + 1);
+    return value;
+  }
+
   function parseStructuredJson(text) {
-    return normalizeFormatterResult(JSON.parse(stripJsonFence(text)));
+    var raw = String(text || '');
+    if (!raw.trim()) {
+      throw new Error('Paste the JSON reply from your LLM first.');
+    }
+    var payload = extractJsonPayload(raw);
+    var parsed;
+    try {
+      parsed = JSON.parse(payload);
+    } catch (_) {
+      throw new Error('Could not find valid JSON in that reply. Make sure you copied the whole response.');
+    }
+    return normalizeFormatterResult(parsed);
   }
 
   function buildManualPrompt(sourceText, titleHint, authorHint) {
@@ -89,6 +117,7 @@
       'Preserve the writer\'s words as much as possible. Do not punch up, summarize, censor, or rewrite jokes.',
       'Infer only these block types: scene-heading, action, character, dialogue, parenthetical, transition.',
       'Uppercase scene headings, character cues, and transitions. Keep dialogue casing natural.',
+      'Convert the ENTIRE draft. Never truncate, skip lines, or stop early.',
       'Return only JSON. Do not wrap it in Markdown.',
       '',
       'Schema:',
@@ -197,6 +226,7 @@
     normalizeType: normalizeType,
     cleanText: cleanText,
     normalizeFormatterResult: normalizeFormatterResult,
+    extractJsonPayload: extractJsonPayload,
     parseStructuredJson: parseStructuredJson,
     buildManualPrompt: buildManualPrompt,
     validateInputText: validateInputText,

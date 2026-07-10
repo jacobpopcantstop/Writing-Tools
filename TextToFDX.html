@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Text to FDX</title>
-  <meta name="description" content="Format raw screenplay text into editable FDX output.">
+  <meta name="description" content="Turn raw screenplay text into editable FDX with any LLM: copy a prompt, paste the reply back, export.">
   <meta name="theme-color" content="#0b0c10">
   <link rel="icon" type="image/svg+xml" href="icon-192.svg">
   <link rel="manifest" href="manifest.webmanifest">
@@ -28,6 +28,7 @@
       --accent: #ff6f61;
       --accent-2: #f4d35e;
       --danger: #ff8b8b;
+      --ok: #5ed690;
     }
     [data-wt-theme="light"] {
       --bg: #f7f3ea;
@@ -39,6 +40,7 @@
       --accent: #d1495b;
       --accent-2: #b88300;
       --danger: #a43636;
+      --ok: #1d7a4c;
     }
     * { box-sizing: border-box; }
     body {
@@ -68,6 +70,7 @@
       font: 700 12px/1 "IBM Plex Mono", monospace;
       letter-spacing: .11em;
       text-transform: uppercase;
+      text-decoration: none;
     }
     .brand-dot {
       width: 10px;
@@ -114,13 +117,35 @@
       text-transform: uppercase;
     }
     h1 { margin: 0 0 8px; font-size: clamp(32px, 5vw, 52px); line-height: 1; letter-spacing: 0; }
-    .hero p { margin: 0; max-width: 70ch; color: var(--muted); }
+    .hero p { margin: 0; max-width: 72ch; color: var(--muted); }
+    .flow-steps {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .flow-step {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 7px 12px;
+      color: var(--muted);
+      font-size: 13px;
+      background: color-mix(in srgb, var(--bg) 40%, var(--panel));
+    }
+    .flow-step b {
+      color: var(--accent);
+      font: 700 11px/1 "IBM Plex Mono", monospace;
+    }
     .grid {
       display: grid;
       grid-template-columns: minmax(0, 430px) minmax(0, 1fr);
       gap: 16px;
       align-items: start;
     }
+    .col { display: grid; gap: 16px; }
     .panel {
       border: 1px solid var(--line);
       border-radius: 12px;
@@ -150,7 +175,7 @@
       letter-spacing: .08em;
       text-transform: uppercase;
     }
-    input[type="text"], input[type="url"], textarea, select {
+    input[type="text"], textarea, select {
       width: 100%;
       border: 1px solid var(--line);
       border-radius: 8px;
@@ -160,15 +185,13 @@
       outline: none;
     }
     textarea {
-      min-height: 350px;
+      min-height: 230px;
       resize: vertical;
       line-height: 1.45;
       font-family: "IBM Plex Mono", monospace;
       font-size: 13px;
     }
-    textarea.compact {
-      min-height: 150px;
-    }
+    textarea.compact { min-height: 150px; }
     input:focus, textarea:focus, select:focus {
       border-color: color-mix(in srgb, var(--accent) 60%, var(--line));
       box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 16%, transparent);
@@ -181,39 +204,14 @@
       font-size: 13px;
     }
     .status.error { color: var(--danger); }
-    .notice {
-      border: 1px solid color-mix(in srgb, var(--accent-2) 45%, var(--line));
-      border-radius: 8px;
-      background: color-mix(in srgb, var(--accent-2) 9%, var(--panel));
-      color: var(--muted);
-      padding: 10px 11px;
-      font-size: 13px;
-      line-height: 1.4;
-      display: none;
-    }
-    .health {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      color: var(--muted);
-      font-size: 13px;
-    }
-    .health::before {
-      content: "";
-      width: 8px;
-      height: 8px;
-      border-radius: 999px;
-      background: var(--muted);
-      flex: 0 0 auto;
-    }
-    .health.ready::before { background: #5ed690; }
-    .health.error::before { background: var(--danger); }
+    .status.ok { color: var(--ok); }
     .preview-empty {
       border: 1px dashed var(--line);
       border-radius: 8px;
       color: var(--muted);
       padding: 22px;
       text-align: center;
+      line-height: 1.5;
     }
     .meta-grid {
       display: grid;
@@ -258,31 +256,10 @@
       display: none;
     }
     .hint {
+      margin: 0;
       color: var(--muted);
       font-size: 13px;
       line-height: 1.4;
-    }
-    details.manual-panel {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: color-mix(in srgb, var(--bg) 34%, var(--panel));
-      overflow: hidden;
-    }
-    details.manual-panel summary {
-      cursor: pointer;
-      padding: 11px;
-      color: var(--accent);
-      font: 700 11px/1 "IBM Plex Mono", monospace;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      list-style: none;
-    }
-    details.manual-panel summary::-webkit-details-marker { display: none; }
-    .manual-inner {
-      border-top: 1px solid var(--line);
-      padding: 11px;
-      display: grid;
-      gap: 10px;
     }
     .summary-strip {
       display: none;
@@ -296,6 +273,17 @@
       border-radius: 999px;
       padding: 6px 9px;
       background: color-mix(in srgb, var(--bg) 42%, var(--panel));
+    }
+    .step-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 20px;
+      height: 20px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--accent) 16%, var(--panel));
+      color: var(--accent);
+      font: 700 11px/1 "IBM Plex Mono", monospace;
     }
     @media (max-width: 860px) {
       .grid { grid-template-columns: 1fr; }
@@ -317,62 +305,69 @@
     <section class="hero">
       <div class="eyebrow">Output Utility</div>
       <h1>Text to FDX</h1>
-      <p>Paste rough script text or upload a `.txt` file. The local proxy asks an LLM to infer screenplay elements, then you can review, edit, export FDX, or send the draft to Courius.</p>
+      <p>No API keys, no server. Paste your rough draft, copy the generated prompt into ChatGPT, Gemini, or Claude, then paste the model's reply back here to get an editable, exportable screenplay.</p>
+      <div class="flow-steps" aria-hidden="true">
+        <span class="flow-step"><b>1</b> Paste draft, copy prompt</span>
+        <span class="flow-step"><b>2</b> Run prompt in any LLM</span>
+        <span class="flow-step"><b>3</b> Paste reply, review, export</span>
+      </div>
     </section>
 
     <main class="grid">
-      <section class="panel" aria-label="Source text">
-        <div class="panel-head">
-          <div class="panel-title">Source</div>
-          <span id="char-count" class="status">0 chars</span>
-        </div>
-        <div class="panel-body">
-          <div class="meta-grid">
-            <div class="field">
-              <label for="title-input">Title Hint</label>
-              <input id="title-input" type="text" autocomplete="off" placeholder="Optional">
-            </div>
-            <div class="field">
-              <label for="author-input">Author Hint</label>
-              <input id="author-input" type="text" autocomplete="off" placeholder="Optional">
-            </div>
+      <div class="col">
+        <section class="panel" aria-label="Source text and prompt">
+          <div class="panel-head">
+            <div class="panel-title"><span class="step-badge">1</span> Draft &rarr; Prompt</div>
+            <span id="char-count" class="status">0 chars</span>
           </div>
-          <div class="field">
-            <label for="source-file">Upload Text</label>
-            <input id="source-file" type="file" accept=".txt,text/plain">
-          </div>
-          <div class="field">
-            <label for="source-text">Unformatted Text</label>
-            <textarea id="source-text" spellcheck="true" placeholder="Paste raw script text here..."></textarea>
-          </div>
-          <div class="field">
-            <label for="endpoint-input">Local Proxy URL</label>
-            <input id="endpoint-input" type="url" autocomplete="off">
-          </div>
-          <div id="hosted-note" class="notice">GitHub Pages is static. API formatting only works when the local proxy is running on this computer; otherwise use Manual JSON Import.</div>
-          <div id="proxy-health" class="health">Checking local proxy...</div>
-          <div class="row">
-            <button id="format-btn" class="btn primary" type="button"><i data-lucide="wand-2"></i> Format Script</button>
-            <button id="clear-btn" class="btn" type="button"><i data-lucide="trash-2"></i> Clear</button>
-          </div>
-          <div id="status" class="status" aria-live="polite"></div>
-          <details class="manual-panel">
-            <summary>Manual JSON Import</summary>
-            <div class="manual-inner">
-              <p class="hint">Use this when you format text in ChatGPT, Gemini, Claude, or another model yourself. Paste the returned JSON here and import it into the same preview/export flow.</p>
-              <textarea id="manual-json" class="compact" spellcheck="false" placeholder='{"title":"","author":"","notes":"","elements":[{"type":"scene-heading","text":"INT. ROOM - DAY"}]}'></textarea>
-              <div class="row">
-                <button id="copy-prompt-btn" class="btn" type="button"><i data-lucide="copy"></i> Copy JSON Prompt</button>
-                <button id="import-json-btn" class="btn" type="button"><i data-lucide="braces"></i> Import JSON</button>
+          <div class="panel-body">
+            <div class="meta-grid">
+              <div class="field">
+                <label for="title-input">Title Hint</label>
+                <input id="title-input" type="text" autocomplete="off" placeholder="Optional">
+              </div>
+              <div class="field">
+                <label for="author-input">Author Hint</label>
+                <input id="author-input" type="text" autocomplete="off" placeholder="Optional">
               </div>
             </div>
-          </details>
-        </div>
-      </section>
+            <div class="field">
+              <label for="source-file">Upload Text</label>
+              <input id="source-file" type="file" accept=".txt,text/plain">
+            </div>
+            <div class="field">
+              <label for="source-text">Unformatted Draft</label>
+              <textarea id="source-text" spellcheck="true" placeholder="Paste raw script text here..."></textarea>
+            </div>
+            <div class="row">
+              <button id="copy-prompt-btn" class="btn primary" type="button"><i data-lucide="copy"></i> Copy LLM Prompt</button>
+              <button id="clear-btn" class="btn" type="button"><i data-lucide="trash-2"></i> Clear All</button>
+            </div>
+            <div id="prompt-status" class="status" aria-live="polite"></div>
+          </div>
+        </section>
+
+        <section class="panel" aria-label="Paste the LLM reply">
+          <div class="panel-head">
+            <div class="panel-title"><span class="step-badge">2</span> Paste LLM Reply</div>
+          </div>
+          <div class="panel-body">
+            <p class="hint">Run the copied prompt in ChatGPT, Gemini, Claude, or any other model. Copy the model's whole reply and paste it below &mdash; code fences and extra chatter are stripped automatically.</p>
+            <div class="field">
+              <label for="llm-reply">LLM Reply (JSON)</label>
+              <textarea id="llm-reply" class="compact" spellcheck="false" placeholder='{"title":"","author":"","notes":"","elements":[{"type":"scene-heading","text":"INT. ROOM - DAY"}]}'></textarea>
+            </div>
+            <div class="row">
+              <button id="import-json-btn" class="btn primary" type="button"><i data-lucide="wand-2"></i> Format Reply</button>
+            </div>
+            <div id="status" class="status" aria-live="polite"></div>
+          </div>
+        </section>
+      </div>
 
       <section class="panel" aria-label="Formatted preview">
         <div class="panel-head">
-          <div class="panel-title">Preview</div>
+          <div class="panel-title"><span class="step-badge">3</span> Preview &amp; Export</div>
           <span id="block-count" class="status">0 blocks</span>
         </div>
         <div class="panel-body">
@@ -389,11 +384,11 @@
           <div id="notes" class="notes"></div>
           <div id="preview-summary" class="summary-strip"></div>
           <div id="preview" class="script-preview">
-            <div class="preview-empty">Formatted blocks will appear here.</div>
+            <div class="preview-empty">Formatted blocks appear here after you paste an LLM reply in step 2.</div>
           </div>
           <div class="preview-actions">
             <div class="row">
-              <button id="add-block-btn" class="btn" type="button" disabled><i data-lucide="plus"></i> Add Block</button>
+              <button id="add-block-btn" class="btn" type="button"><i data-lucide="plus"></i> Add Block</button>
               <button id="download-btn" class="btn primary" type="button" disabled><i data-lucide="download"></i> Download FDX</button>
               <button id="courius-btn" class="btn" type="button" disabled><i data-lucide="send"></i> Send to Courius</button>
             </div>
@@ -412,19 +407,16 @@
       var sourceFile = document.getElementById('source-file');
       var titleInput = document.getElementById('title-input');
       var authorInput = document.getElementById('author-input');
-      var endpointInput = document.getElementById('endpoint-input');
-      var hostedNote = document.getElementById('hosted-note');
-      var proxyHealth = document.getElementById('proxy-health');
-      var manualJson = document.getElementById('manual-json');
+      var llmReply = document.getElementById('llm-reply');
       var previewTitle = document.getElementById('preview-title');
       var previewAuthor = document.getElementById('preview-author');
       var preview = document.getElementById('preview');
       var notes = document.getElementById('notes');
       var status = document.getElementById('status');
+      var promptStatus = document.getElementById('prompt-status');
       var charCount = document.getElementById('char-count');
       var blockCount = document.getElementById('block-count');
       var previewSummary = document.getElementById('preview-summary');
-      var formatBtn = document.getElementById('format-btn');
       var clearBtn = document.getElementById('clear-btn');
       var copyPromptBtn = document.getElementById('copy-prompt-btn');
       var importJsonBtn = document.getElementById('import-json-btn');
@@ -433,59 +425,23 @@
       var couriusBtn = document.getElementById('courius-btn');
       var themeBtn = document.getElementById('theme-btn');
       var currentDoc = { title: '', author: '', notes: '', elements: [] };
-
-      function defaultEndpoint() {
-        if (window.location.port === '8787' || window.location.pathname.indexOf('/api/') === 0) {
-          return '/api/format-fdx';
-        }
-        return 'http://127.0.0.1:8787/api/format-fdx';
-      }
-
-      function healthUrl() {
-        try {
-          var endpoint = new URL(endpointInput.value.trim() || defaultEndpoint(), window.location.href);
-          endpoint.pathname = endpoint.pathname.replace(/\/api\/format-fdx$/, '/api/health');
-          return endpoint.toString();
-        } catch (_) {
-          return '';
-        }
-      }
-
-      function isLocalPage() {
-        return ['localhost', '127.0.0.1', '0.0.0.0'].indexOf(window.location.hostname) !== -1;
-      }
-
-      function localProxyHelp() {
-        return 'Local proxy unavailable. Start it with GEMINI_API_KEY and keep this endpoint set to http://127.0.0.1:8787/api/format-fdx, or use Manual JSON Import.';
-      }
-
-      function explainFetchError(error) {
-        var message = String((error && error.message) || '');
-        if (message.toLowerCase().indexOf('failed to fetch') !== -1 || error instanceof TypeError) {
-          return localProxyHelp();
-        }
-        return message || 'Formatter request failed.';
-      }
+      var DRAFT_KEY = 'writingtools_textfdx_draft_v1';
 
       function notify(message, type) {
         if (window.WTToast && typeof window.WTToast.notify === 'function') {
-          window.WTToast.notify(message, { type: type || 'info' });
+          window.WTToast.notify(message, type || 'info');
         }
       }
 
-      function setStatus(message, isError) {
-        status.textContent = message || '';
-        status.classList.toggle('error', !!isError);
-      }
-
-      function usageLabel(usage) {
-        if (!usage || !usage.limit) return '';
-        return ' - ' + usage.remaining + '/' + usage.limit + ' left today';
+      function setStatus(el, message, tone) {
+        el.textContent = message || '';
+        el.classList.toggle('error', tone === 'error');
+        el.classList.toggle('ok', tone === 'ok');
       }
 
       function updateCounts() {
-        charCount.textContent = String(sourceText.value.length).toLocaleString() + ' chars';
-        blockCount.textContent = String(currentDoc.elements.length).toLocaleString() + ' blocks';
+        charCount.textContent = sourceText.value.length.toLocaleString() + ' chars';
+        blockCount.textContent = currentDoc.elements.length.toLocaleString() + ' blocks';
       }
 
       function updatePreviewSummary() {
@@ -512,29 +468,6 @@
         });
         previewSummary.innerHTML = labels.join('');
         previewSummary.style.display = 'flex';
-      }
-
-      async function checkProxyHealth() {
-        var url = healthUrl();
-        if (!url) {
-          proxyHealth.textContent = 'Proxy URL is invalid.';
-          proxyHealth.className = 'health error';
-          return;
-        }
-        proxyHealth.textContent = 'Checking local proxy...';
-        proxyHealth.className = 'health';
-        try {
-          var response = await fetch(url);
-          var data = await response.json();
-          if (!response.ok || !data.keyConfigured) {
-            throw new Error(data.keyConfigured === false ? 'API key missing' : 'Proxy unavailable');
-          }
-          proxyHealth.textContent = data.provider + ' ready: ' + data.model + usageLabel(data.usage);
-          proxyHealth.className = 'health ready';
-        } catch (error) {
-          proxyHealth.textContent = explainFetchError(error);
-          proxyHealth.className = 'health error';
-        }
       }
 
       function iconRefresh() {
@@ -565,7 +498,6 @@
 
       function updateButtons() {
         var hasBlocks = currentDoc.elements.length > 0;
-        addBlockBtn.disabled = false;
         downloadBtn.disabled = !hasBlocks;
         couriusBtn.disabled = !hasBlocks;
       }
@@ -585,8 +517,8 @@
         if (!currentDoc.elements.length) {
           preview.innerHTML = '<div class="preview-empty">No screenplay blocks returned.</div>';
         } else {
-          currentDoc.elements.forEach(function (element, index) {
-            addPreviewBlock(element, index);
+          currentDoc.elements.forEach(function (element) {
+            addPreviewBlock(element);
           });
         }
         syncDocFromPreview();
@@ -606,7 +538,7 @@
         row.querySelector('.block-remove').addEventListener('click', function () {
           row.remove();
           if (!preview.querySelector('.block')) {
-            preview.innerHTML = '<div class="preview-empty">Formatted blocks will appear here.</div>';
+            preview.innerHTML = '<div class="preview-empty">Formatted blocks appear here after you paste an LLM reply in step 2.</div>';
           }
           syncDocFromPreview();
           iconRefresh();
@@ -616,69 +548,41 @@
         preview.appendChild(row);
       }
 
-      async function formatScript() {
-        var validation = formatter.validateInputText(sourceText.value);
-        if (!validation.ok) {
-          setStatus(validation.message, true);
-          return;
-        }
-        setStatus('Formatting with local proxy...');
-        formatBtn.disabled = true;
+      function importLlmReply() {
         try {
-          var response = await fetch(endpointInput.value.trim() || defaultEndpoint(), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              text: validation.text,
-              titleHint: titleInput.value.trim(),
-              authorHint: authorInput.value.trim()
-            })
-          });
-          var payload = await response.json().catch(function () { return {}; });
-          if (!response.ok) {
-            throw new Error((payload.error || 'Formatter request failed.') + usageLabel(payload.usage));
-          }
-          renderPreview(payload.document || payload);
-          setStatus('Formatted. Review the blocks before exporting.' + usageLabel(payload.usage));
-          checkProxyHealth();
-          notify('Text formatted for FDX.', 'success');
-        } catch (error) {
-          setStatus(explainFetchError(error), true);
-          notify('Text to FDX failed.', 'error');
-        } finally {
-          formatBtn.disabled = false;
-        }
-      }
-
-      function importManualJson() {
-        try {
-          var doc = formatter.parseStructuredJson(manualJson.value);
+          var doc = formatter.parseStructuredJson(llmReply.value);
           if (!doc.elements.length) {
-            throw new Error('That JSON did not contain any screenplay blocks.');
+            throw new Error('That reply did not contain any screenplay blocks. Make sure you copied the full JSON.');
           }
           renderPreview(doc);
-          setStatus('Imported structured JSON. Review the blocks before exporting.');
-          notify('Structured JSON imported.', 'success');
+          setStatus(status, 'Formatted ' + currentDoc.elements.length + ' blocks. Review them, then export.', 'ok');
+          notify('LLM reply formatted.', 'success');
         } catch (error) {
-          setStatus(error.message || 'Could not import that JSON.', true);
-          notify('JSON import failed.', 'error');
+          setStatus(status, error.message || 'Could not read that reply.', 'error');
+          notify('Formatting failed.', 'error');
         }
       }
 
       async function copyManualPrompt() {
-        var prompt = formatter.buildManualPrompt(sourceText.value, titleInput.value, authorInput.value);
+        var validation = formatter.validateInputText(sourceText.value);
+        if (!validation.ok) {
+          setStatus(promptStatus, validation.message, 'error');
+          return;
+        }
+        var prompt = formatter.buildManualPrompt(validation.text, titleInput.value, authorInput.value);
         try {
           await navigator.clipboard.writeText(prompt);
-          setStatus('Copied a structured JSON prompt.');
-          notify('Prompt copied.', 'success');
+          setStatus(promptStatus, 'Prompt copied. Paste it into your LLM, then paste the reply in step 2.', 'ok');
+          notify('Prompt copied to clipboard.', 'success');
         } catch (_) {
-          manualJson.value = prompt;
-          setStatus('Clipboard unavailable. Prompt placed in the JSON box instead.');
+          llmReply.value = prompt;
+          setStatus(promptStatus, 'Clipboard unavailable. The prompt was placed in the step 2 box; copy it from there.', 'error');
         }
       }
 
       function downloadFdx() {
         syncDocFromPreview();
+        if (!currentDoc.elements.length) return;
         var xml = formatter.buildFdx(currentDoc, window.WTScreenplay);
         var safeTitle = (currentDoc.title || 'script').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'script';
         var blob = new Blob([xml], { type: 'text/xml' });
@@ -692,27 +596,61 @@
 
       function sendToCourius() {
         syncDocFromPreview();
+        if (!currentDoc.elements.length) return;
         formatter.saveToCourius(currentDoc);
         notify('Sent to Courius.', 'success');
         window.open('Courius.html', '_blank', 'noopener');
       }
 
       function clearAll() {
+        if (sourceText.value.trim() || llmReply.value.trim() || currentDoc.elements.length) {
+          if (!confirm('Clear the draft, the pasted reply, and the preview?')) return;
+        }
         sourceText.value = '';
         sourceFile.value = '';
-        manualJson.value = '';
+        llmReply.value = '';
         titleInput.value = '';
         authorInput.value = '';
         previewTitle.value = '';
         previewAuthor.value = '';
         currentDoc = { title: '', author: '', notes: '', elements: [] };
-        preview.innerHTML = '<div class="preview-empty">Formatted blocks will appear here.</div>';
+        preview.innerHTML = '<div class="preview-empty">Formatted blocks appear here after you paste an LLM reply in step 2.</div>';
         notes.style.display = 'none';
         notes.textContent = '';
-        setStatus('');
+        setStatus(status, '');
+        setStatus(promptStatus, '');
+        saveDraft();
         updateCounts();
         updateButtons();
         updatePreviewSummary();
+        iconRefresh();
+      }
+
+      function saveDraft() {
+        try {
+          localStorage.setItem(DRAFT_KEY, JSON.stringify({
+            text: sourceText.value,
+            title: titleInput.value,
+            author: authorInput.value
+          }));
+        } catch (_) {}
+      }
+
+      function loadDraft() {
+        try {
+          var raw = localStorage.getItem(DRAFT_KEY);
+          var parsed = raw ? JSON.parse(raw) : null;
+          if (!parsed || typeof parsed !== 'object') return;
+          if (typeof parsed.text === 'string') sourceText.value = parsed.text;
+          if (typeof parsed.title === 'string') titleInput.value = parsed.title;
+          if (typeof parsed.author === 'string') authorInput.value = parsed.author;
+        } catch (_) {}
+      }
+
+      var draftSaveTimer = null;
+      function queueDraftSave() {
+        clearTimeout(draftSaveTimer);
+        draftSaveTimer = setTimeout(saveDraft, 500);
       }
 
       function loadTheme() {
@@ -726,9 +664,12 @@
         localStorage.setItem('writingtools_theme', next);
       }
 
-      sourceText.addEventListener('input', updateCounts);
-      endpointInput.addEventListener('change', checkProxyHealth);
-      endpointInput.addEventListener('blur', checkProxyHealth);
+      sourceText.addEventListener('input', function () {
+        updateCounts();
+        queueDraftSave();
+      });
+      titleInput.addEventListener('input', queueDraftSave);
+      authorInput.addEventListener('input', queueDraftSave);
       sourceFile.addEventListener('change', function () {
         var file = sourceFile.files && sourceFile.files[0];
         if (!file) return;
@@ -736,14 +677,14 @@
           sourceText.value = text;
           if (!titleInput.value.trim()) titleInput.value = file.name.replace(/\.[^.]+$/, '');
           updateCounts();
+          saveDraft();
         }).catch(function () {
-          setStatus('Could not read that file.', true);
+          setStatus(promptStatus, 'Could not read that file.', 'error');
         });
       });
-      formatBtn.addEventListener('click', formatScript);
       clearBtn.addEventListener('click', clearAll);
       copyPromptBtn.addEventListener('click', copyManualPrompt);
-      importJsonBtn.addEventListener('click', importManualJson);
+      importJsonBtn.addEventListener('click', importLlmReply);
       addBlockBtn.addEventListener('click', function () {
         addPreviewBlock({ type: 'action', text: '' });
         syncDocFromPreview();
@@ -761,12 +702,10 @@
       };
 
       loadTheme();
-      endpointInput.value = defaultEndpoint();
-      if (!isLocalPage()) hostedNote.style.display = 'block';
+      loadDraft();
       updateButtons();
       updateCounts();
       updatePreviewSummary();
-      checkProxyHealth();
       iconRefresh();
     })();
   </script>

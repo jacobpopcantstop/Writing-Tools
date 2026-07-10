@@ -18,3 +18,21 @@ Recent follow-up:
 - BeatHive no longer shows the Momentum / Story Audit / Next Moves layer; the UI now sticks to simple beat counts and lighter start guidance.
 - WitherNaught now smooths both the flow bar and ring meter instead of snapping, and its footer no longer shows a version tag.
 - BeatHive load path hardened against malformed local state / injected config: persisted cells are now sanitized and capped before render, and empty or invalid `__firebase_config` values no longer crash startup.
+
+## Fable-tier quality pass (July 2026)
+
+Prompt: get the tools to top quality (priority: Courius, then BeatHive/Synax/Joterie) and replace the useless auto Text-to-FDX proxy with a pure copy-paste LLM workflow.
+
+- **TextToFDX** rebuilt around a 3-step copy-paste flow: paste draft → Copy LLM Prompt → paste the model's reply → Format Reply → preview/edit → export FDX or send to Courius. Removed the local proxy (`tools/text_fdx_proxy`), endpoint field, and health check entirely. Reply parsing now tolerates code fences and prose around the JSON. Draft text/hints persist locally across reloads.
+- **Courius**: FDX/RTF exports now use the script's title/name for the filename; FDX import confirms + saves a recovery snapshot before replacing and lets the same file be re-imported; Clear Script snapshots first; invalid FDX files are rejected without wiping the draft; Ctrl+S force-saves; Alt+1..6 sets element types; page counter shows current/total pages; ghost-suggestion text can no longer eat typed text.
+- **BeatHive**: no longer downloads (or crashes without) the Firebase SDK when no `__firebase_config` is injected; map deletion asks for confirmation and snapshots first; the handoff payload now supports `jots` — incoming ideas land as note cells in a fresh column and the map adopts the topic name; CDN deps pinned (tailwind 3.4.16, react 18.3.1, babel 7.26.4).
+- **Joterie**: "Send to BeatHive" now actually stages the kept jots + prompt as a handoff payload (previously it just opened the page); CDN deps pinned (tailwind 3.4.16, lucide 0.263.1).
+- **Synax**: restored sessions are no longer clobbered by a fresh generation on load; Space shortcut ignores buttons/selects and open modals; Escape closes settings; removed the dead definition modal; CDN deps pinned.
+- Verified: 33 node unit tests pass and `./scripts/smoke-suite.sh` passes; Joterie→BeatHive handoff and the new TextToFDX import/copy-prompt flows exercised in a real browser.
+
+## Print + Enter-behavior follow-up (July 2026)
+
+- **BeatHive print artifact fixed**: the print SVG post-processing regex meant to resize the `<svg>` was instead rewriting the first empty hex's `stroke-width="1"` to `stroke-width="100%"`, painting giant grey blobs / bundles of long diagonal lines on printouts. The SVG is now built with viewBox-only sizing (no regex), cell text is XML-escaped, the print window gets `<meta charset>` (bullets no longer print as "â€¢"), and `@page { margin: 0 }` suppresses the browser's date/URL header/footer.
+- **Courius printouts** no longer show the date/time header or "Courius Screenwriter" footer: replaced the unsupported `@page` margin-box rules with `@page { size: letter; margin: 0 }` (the script's own 1in padding is the paper margin). Printing also temporarily sets the document title to the script's name so saved PDFs are named after the script.
+- **Courius Enter is no longer presumptive**: pressing Enter on an empty line now opens an element-type menu (Final Draft style) instead of stacking another guessed line — Tab/arrows preview the type live, Enter confirms, Esc closes, and typing any character dismisses it. Shift+Tab now always reverse-cycles the element type even when an autocomplete suggestion is showing. Enter on a line with text keeps the existing flow defaults.
+- Verified in-browser: full typing flow (scene heading → action → element menu → character → dialogue), menu navigation, both cycle directions, and clean print PDFs for both tools. Unit tests + smoke suite green.

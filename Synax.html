@@ -12,14 +12,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     
     <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+
     <!-- React & ReactDOM -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    
+    <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+
     <!-- Babel for JSX -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
     <script src="shared-toast.js"></script>
     <script src="shared-pwa.js"></script>
     <script src="shared-tool-manifest.js"></script>
@@ -453,8 +453,6 @@
             const [mode, setMode] = useState('random'); 
             const [loading, setLoading] = useState(false);
             const [contextInput, setContextInput] = useState('');
-            const [definition, setDefinition] = useState(null);
-            const [definitionLoading, setDefinitionLoading] = useState(false);
             const [showCanvas, setShowCanvas] = useState(false);
             const [showSettings, setShowSettings] = useState(false);
             const [serendipityCount, setSerendipityCount] = useState(4);
@@ -763,25 +761,34 @@
             // Initial Load
             useEffect(() => {
                 loadApiPoolFromStorage();
-                if (words.length === 0) generate();
+                // `words` still holds the initial [] here even when a persisted
+                // session was just restored, so check storage directly before
+                // generating a fresh set over the restored one.
+                const persisted = readStateFromStorage();
+                if (!persisted || !persisted.words || persisted.words.length === 0) generate();
             }, []);
 
             // Keyboard shortcuts
             useEffect(() => {
                 const handleKeyPress = (e) => {
-                // Space to generate (when not typing)
-                if (e.code === 'Space' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+                // Space to generate (when not typing or interacting with a control)
+                if (
+                    e.code === 'Space' &&
+                    !showSettings &&
+                    !['INPUT', 'TEXTAREA', 'BUTTON', 'SELECT'].includes(e.target.tagName)
+                ) {
                     e.preventDefault();
                     generate();
                 }
-                // Escape to close canvas
-                if (e.code === 'Escape' && showCanvas) {
-                    setShowCanvas(false);
+                // Escape to close overlays
+                if (e.code === 'Escape') {
+                    if (showSettings) setShowSettings(false);
+                    else if (showCanvas) setShowCanvas(false);
                 }
                 };
                 window.addEventListener('keydown', handleKeyPress);
                 return () => window.removeEventListener('keydown', handleKeyPress);
-            }, [mode, contextInput, offlineMode, serendipityCount, showCanvas]);
+            }, [mode, contextInput, offlineMode, serendipityCount, showCanvas, showSettings]);
 
             useEffect(() => {
                 if (mode === 'random' && !offlineMode) {
@@ -1677,54 +1684,6 @@
                     </div>
                 )}
 
-                {/* --- DEFINITION MODAL --- */}
-                {definition && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in duration-200" onClick={() => setDefinition(null)}>
-                    <div className="bg-white dark:bg-[#16151f] rounded-2xl max-w-lg w-full p-8 shadow-2xl border border-white/20 dark:border-white/10" onClick={e => e.stopPropagation()}>
-                        <div className="flex justify-between items-start mb-6">
-                            <div>
-                                <h2 className="text-4xl font-serif font-black text-slate-900 dark:text-white capitalize tracking-tight mb-2">{definition.word}</h2>
-                                {definition.phonetic && (
-                                    <span className="text-pink-500 font-mono text-sm px-2 py-1 bg-pink-50 dark:bg-pink-900/20 rounded">{definition.phonetic}</span>
-                                )}
-                            </div>
-                            <button onClick={() => setDefinition(null)} className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-full text-slate-400 transition-colors"><X size={24}/></button>
-                        </div>
-                        
-                        <div className="space-y-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
-                            {definition.meanings?.map((m, i) => (
-                            <div key={i}>
-                                <span className="text-xs font-bold uppercase text-slate-400 tracking-widest">{m.partOfSpeech}</span>
-                                <ul className="mt-3 space-y-3">
-                                {m.definitions.slice(0, 2).map((d, j) => (
-                                    <li key={j} className="text-slate-700 dark:text-slate-300 leading-relaxed pl-4 border-l-2 border-pink-200 dark:border-violet-800">
-                                    {d.definition}
-                                    </li>
-                                ))}
-                                </ul>
-                            </div>
-                            ))}
-                            {definition.meanings?.length === 0 && (
-                            <div className="text-center py-8">
-                                <BookOpen size={40} className="mx-auto text-slate-200 mb-4"/>
-                                <p className="text-slate-500 italic">No definition found. It might be a rare or poetic word.</p>
-                            </div>
-                            )}
-                        </div>
-                        
-                        <div className="mt-8 flex justify-end pt-4 border-t border-slate-100 dark:border-white/5">
-                            <a 
-                            href={`https://www.google.com/search?q=define+${definition.word}`} 
-                            target="_blank" 
-                            rel="noreferrer"
-                            className="text-sm font-bold text-pink-500 hover:text-pink-500 flex items-center gap-1 group"
-                            >
-                            Full details <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                            </a>
-                        </div>
-                    </div>
-                    </div>
-                )}
                 </div>
             );
         }

@@ -13,7 +13,7 @@ A browser-based suite of writing apps that now operates as one connected local s
 - `WitherNaught.html`: pressure drafting loop
 - `Wribbon.html`: drafting/export workflow
 - `Courius.html`: screenplay editor
-- `TextToFDX.html`: LLM-assisted raw text to editable FDX preview/export
+- `TextToFDX.html`: copy-paste LLM workflow for raw text to editable FDX preview/export
 - `PaperCut.html`: PDF reading/markup flow
 
 ## Run Locally
@@ -30,32 +30,16 @@ Then open:
 http://127.0.0.1:8017/index.html
 ```
 
-## Text to FDX Proxy
+## Text to FDX Workflow
 
-The Text to FDX tool uses a local proxy so API keys never live in browser code. Gemini is the default provider. Start it from the repo root:
+Text to FDX needs no API keys and no server. The whole flow is copy-paste:
 
-```bash
-GEMINI_API_KEY="..." node tools/text_fdx_proxy/server.mjs
-```
+1. Paste (or upload) your rough draft in step 1 and click **Copy LLM Prompt**.
+2. Paste the prompt into ChatGPT, Gemini, Claude, or any other model and run it.
+3. Copy the model's whole reply and paste it into the step 2 box, then click **Format Reply**. Code fences and extra chatter around the JSON are stripped automatically.
+4. Review and edit the formatted blocks, then download `.fdx` or send the script straight to Courius.
 
-Then open:
-
-```text
-http://127.0.0.1:8787/TextToFDX.html
-```
-
-Optional settings:
-
-- `PORT=8788` changes the local proxy/static server port.
-- `GEMINI_MODEL=gemini-3.1-flash-lite` changes the Gemini model used for structured screenplay formatting.
-- `FDX_DAILY_LIMIT=5` caps successful API formatting requests per local day. Use `0` to disable the cap.
-- `FDX_USAGE_FILE=output/text-fdx-usage.json` changes where the local request counter is stored.
-- `FDX_LLM_PROVIDER=openai OPENAI_API_KEY="sk-..." OPENAI_MODEL=gpt-5.4-mini node tools/text_fdx_proxy/server.mjs` uses OpenAI instead.
-
-You can also skip the API call entirely: copy the JSON prompt from `TextToFDX.html`, paste it into ChatGPT/Gemini/Claude, then paste the returned JSON into the Manual Structured JSON box.
-
-The tool checks `/api/health` on load and shows whether the local provider/model is reachable before formatting.
-On GitHub Pages, keep the local proxy running in a terminal and leave the tool's proxy URL set to `http://127.0.0.1:8787/api/format-fdx`. GitHub Pages cannot host the Gemini/OpenAI proxy itself.
+Your draft text and hints persist locally between visits, so a page reload never loses step 1.
 
 ## Smoke Run
 

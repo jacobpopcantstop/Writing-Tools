@@ -114,3 +114,14 @@ test('saveToCourius writes storage, revision, and timestamp', () => {
   assert.strictEqual(values.get('writingtools_courius_revision_v1'), '4');
   assert.ok(Number(values.get('writingtools_courius_updated_at')) > 0);
 });
+
+test('parseStructuredJson accepts prose-wrapped LLM replies', () => {
+  const reply = 'Sure! Here is the formatted screenplay:\n```json\n{"title":"T","author":"","notes":"","elements":[{"type":"action","text":"Dad enters."}]}\n```\nLet me know if you need anything else.';
+  const parsed = TextFDX.parseStructuredJson(reply);
+  assert.deepStrictEqual(parsed.elements, [{ type: 'action', text: 'Dad enters.' }]);
+});
+
+test('parseStructuredJson throws a friendly error on garbage input', () => {
+  assert.throws(() => TextFDX.parseStructuredJson('no json here'), /valid JSON/i);
+  assert.throws(() => TextFDX.parseStructuredJson('   '), /paste the json/i);
+});
