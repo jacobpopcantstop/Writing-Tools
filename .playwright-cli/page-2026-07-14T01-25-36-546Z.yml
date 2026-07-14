@@ -1,0 +1,67 @@
+- generic [ref=e1]:
+  - generic [ref=e13]:
+    - generic [ref=e14]:
+      - button "Export Menu" [ref=e15] [cursor=pointer]:
+        - img [ref=e16]
+      - generic:
+        - button "Copy to Clipboard"
+        - button "Text File (.txt)"
+        - button "MS Word (.doc)"
+        - button "Markdown (.md)"
+        - button "HTML (.html)"
+        - button "Print / PDF"
+        - button "Email"
+        - button "Gmail"
+        - button "Send to Courius"
+        - button "Restore Latest Snapshot"
+        - button "Clear Snapshots"
+        - generic:
+          - button "Append"
+          - button "Replace"
+    - button "Switch Theme" [ref=e18] [cursor=pointer]:
+      - img [ref=e19]
+    - button "Settings" [ref=e21] [cursor=pointer]:
+      - img [ref=e22]
+  - generic [ref=e24]:
+    - generic "Word Count / Goal" [ref=e25]: 0 / 500
+    - generic "Time Remaining" [ref=e28]: 00:00
+  - textbox "Editor" [ref=e31]: Start writing...
+  - link "Writing Tools Suite" [ref=e32] [cursor=pointer]:
+    - /url: index.html
+  - generic:
+    - generic:
+      - heading "⌨️ Keyboard Shortcuts" [level=3]
+      - generic:
+        - generic: Toggle Theme
+        - generic: Ctrl+D
+      - generic:
+        - generic: Focus Mode
+        - generic: Ctrl+F
+      - generic:
+        - generic: Ambient Sound
+        - generic: Ctrl+M
+      - generic:
+        - generic: Settings
+        - generic: Ctrl+,
+      - generic:
+        - generic: Export
+        - generic: Ctrl+S
+      - generic:
+        - generic: Show Help (when not typing)
+        - generic: "?"
+      - generic:
+        - button "Got it"
+  - generic [ref=e35]:
+    - heading "Session Setup" [level=2] [ref=e36]
+    - paragraph [ref=e37]: Configure your writing session.
+    - generic [ref=e38]:
+      - generic [ref=e39]:
+        - generic [ref=e40]: Word Goal
+        - spinbutton "Word Goal" [active] [ref=e41]: "500"
+      - generic [ref=e42]:
+        - generic [ref=e43]: Minutes
+        - spinbutton "Minutes" [ref=e44]
+    - button "Begin Session" [ref=e45] [cursor=pointer]
+  - button "Open quick actions" [ref=e46] [cursor=pointer]:
+    - text: Actions
+    - generic [ref=e47]: Ctrl K
