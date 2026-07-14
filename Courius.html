@@ -411,18 +411,69 @@
             margin: 0;
         }
 
+        /* --- Print pagination ---
+           beforeprint splits the script into real 8.5x11 sheets so EVERY page
+           gets standard screenplay margins (1in top/bottom/right, 1.5in left)
+           while @page margin stays 0 (which suppresses the browser's
+           date/title/URL header and footer). The sheet styles live outside
+           @media print because the sheets are measured off-screen while the
+           screen stylesheet is still active. */
+        #print-pages {
+            position: fixed;
+            left: -10000px;
+            top: 0;
+            visibility: hidden;
+        }
+        .print-sheet {
+            width: 8.5in;
+            padding: 1in 1in 1in 1.5in;
+            box-sizing: border-box;
+            position: relative;
+            background: #ffffff;
+            color: #000000;
+            font-family: var(--courier);
+            font-size: 12pt;
+            line-height: 1.15;
+        }
+        .print-sheet div {
+            min-height: 1.1em;
+            overflow-wrap: break-word;
+            font-size: 12pt;
+            line-height: 1.15;
+        }
+        .print-sheet .scene-heading { margin-top: 2.3em; margin-bottom: 1.15em; font-weight: bold; text-transform: uppercase; }
+        .print-sheet .action { margin-bottom: 1.15em; }
+        .print-sheet .character { margin-top: 1.15em; margin-left: 2.2in; width: 3.8in; text-transform: uppercase; }
+        .print-sheet .parenthetical { margin-left: 1.6in; width: 2.5in; }
+        .print-sheet .dialogue { margin-left: 1.1in; width: 3.3in; margin-bottom: 1.15em; }
+        .print-sheet .transition { margin-top: 1.15em; margin-bottom: 1.15em; text-align: right; text-transform: uppercase; }
+        .print-sheet > div:first-child { margin-top: 0; }
+        .print-sheet .title-page-container { height: 9in; margin-bottom: 0; border: none; }
+        .print-sheet .print-page-num {
+            position: absolute;
+            top: 0.5in;
+            right: 1in;
+            margin: 0;
+            min-height: 0;
+        }
+
         @media print {
             html, body { height: auto; overflow: visible; }
             body { background: none; }
             .floating-controls, #save-bar, .scene-nav, .help-modal, .imports-panel, .autocomplete-dropdown { display: none !important; }
             a[href="index.html"] { display: none !important; }
-            .courius-import-marker, .snapshot-marker { display: none !important; }
-            main { padding: 0; display: block; overflow: visible; height: auto; }
-            #page { box-shadow: none; margin: 0; padding: 1in 1in 1in 1.5in !important; width: 100%; background-image: none; height: auto; overflow: visible; color: #000000 !important; caret-color: transparent !important; }
-            #page, #page div { font-size: 12pt !important; line-height: 1.15 !important; }
-            #page div { opacity: 1 !important; }
-            #page div[data-placeholder]::before { content: none !important; display: none !important; }
-            .title-page-container { height: auto; min-height: 9in; margin-bottom: 0; border: none; }
+            main { display: none !important; }
+            #print-pages {
+                position: static;
+                left: auto;
+                visibility: visible;
+            }
+            /* Slightly under 11in so rounding can never push a sheet onto an
+               extra blank page; overflow-hidden keeps any residual overrun
+               from spilling into the margins of the next page. */
+            .print-sheet { page-break-after: always; height: 10.98in; overflow: hidden; }
+            .print-sheet:last-child { page-break-after: auto; }
+            .print-sheet div[data-placeholder]::before { content: none !important; display: none !important; }
             ::selection { background: transparent !important; }
         }
 
@@ -2649,15 +2700,93 @@
         }
     });
 
+    // --- Print pagination ---
+    // Splits the script into fixed 8.5x11 sheets so every printed page keeps
+    // standard screenplay margins (see the .print-sheet styles). Runs on
+    // beforeprint; the sheets are measured off-screen at CSS-inch scale.
+    function buildPrintPages() {
+        let holder = document.getElementById('print-pages');
+        if (!holder) {
+            holder = document.createElement('div');
+            holder.id = 'print-pages';
+            document.body.appendChild(holder);
+        }
+        holder.innerHTML = '';
+
+        const INCH = 96; // CSS px per inch
+        // Target slightly less than the true 9in content area: Chrome's print
+        // layout runs a line or two longer than the on-screen measurement, and
+        // a page that overflows spills onto an extra margin-less sheet.
+        const CONTENT_HEIGHT = 8.6 * INCH;
+        const sheets = [];
+        let sheet = null;
+
+        const startSheet = () => {
+            sheet = document.createElement('div');
+            sheet.className = 'print-sheet';
+            holder.appendChild(sheet);
+            sheets.push(sheet);
+        };
+        const contentHeight = () => sheet.offsetHeight - 2 * INCH;
+
+        Array.from(EDITOR.children).forEach((node) => {
+            if (!node.classList) return;
+            if (node.classList.contains('courius-import-marker') || node.classList.contains('snapshot-marker')) return;
+            const clone = node.cloneNode(true);
+            clone.querySelectorAll('.suggestion').forEach((s) => s.remove());
+            clone.removeAttribute('contenteditable');
+            clone.querySelectorAll('[contenteditable]').forEach((el) => el.removeAttribute('contenteditable'));
+
+            if (node.classList.contains('title-page-container')) {
+                startSheet();
+                sheet.appendChild(clone);
+                sheet = null; // the script always starts on a fresh page
+                return;
+            }
+            if (!sheet) startSheet();
+            sheet.appendChild(clone);
+            if (contentHeight() > CONTENT_HEIGHT && sheet.children.length > 1) {
+                // The block overflows this page. Carry it to the next sheet,
+                // and never orphan a character cue or parenthetical at the
+                // bottom of a page away from its dialogue.
+                const carried = [clone];
+                let prev = clone.previousElementSibling;
+                while (prev && carried.length < 3 &&
+                       (prev.classList.contains('character') || prev.classList.contains('parenthetical'))) {
+                    carried.unshift(prev);
+                    prev = prev.previousElementSibling;
+                }
+                if (carried.length < sheet.children.length) {
+                    startSheet();
+                    carried.forEach((el) => sheet.appendChild(el));
+                }
+            }
+        });
+
+        // Standard screenplay page numbers: top right, starting on page 2 of
+        // the script (the title page is never numbered).
+        const numbered = sheets.filter((s) => !s.querySelector('.title-page-container'));
+        numbered.forEach((s, i) => {
+            if (i === 0) return;
+            const num = document.createElement('div');
+            num.className = 'print-page-num';
+            num.textContent = (i + 1) + '.';
+            s.appendChild(num);
+        });
+    }
+
     // Print with the script's name as the document title so a saved PDF is
     // named after the script instead of "Courius Screenwriter".
     window.addEventListener('beforeprint', () => {
         const tp = collectTitlePage();
         const name = String(tp.title || '').trim() || deriveDocName();
         if (name) document.title = name;
+        buildPrintPages();
     });
     window.addEventListener('afterprint', () => {
         document.title = 'Courius Screenwriter';
+        const holder = document.getElementById('print-pages');
+        if (holder) holder.innerHTML = '';
     });
 
     window.addEventListener('beforeunload', () => {

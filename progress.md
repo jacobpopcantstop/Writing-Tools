@@ -36,3 +36,12 @@ Prompt: get the tools to top quality (priority: Courius, then BeatHive/Synax/Jot
 - **Courius printouts** no longer show the date/time header or "Courius Screenwriter" footer: replaced the unsupported `@page` margin-box rules with `@page { size: letter; margin: 0 }` (the script's own 1in padding is the paper margin). Printing also temporarily sets the document title to the script's name so saved PDFs are named after the script.
 - **Courius Enter is no longer presumptive**: pressing Enter on an empty line now opens an element-type menu (Final Draft style) instead of stacking another guessed line — Tab/arrows preview the type live, Enter confirms, Esc closes, and typing any character dismisses it. Shift+Tab now always reverse-cycles the element type even when an autocomplete suggestion is showing. Enter on a line with text keeps the existing flow defaults.
 - Verified in-browser: full typing flow (scene heading → action → element menu → character → dialogue), menu navigation, both cycle directions, and clean print PDFs for both tools. Unit tests + smoke suite green.
+
+## Standard print margins (July 2026)
+
+- Courius now paginates the script into real 8.5x11 sheets at print time (beforeprint), so EVERY printed page gets standard screenplay margins: 1in top/bottom/right, 1.5in left. This works together with the header/footer suppression (@page margin 0) instead of fighting it.
+- Sheets are measured with ~0.4in slack (Chrome's print layout runs slightly longer than screen measurement) and hard-capped at one paper page, so overflow can never spill onto a margin-less extra page.
+- Character cues/parentheticals are never orphaned at the bottom of a page away from their dialogue.
+- Standard screenplay page numbers (top right, from page 2; title page unnumbered).
+- BeatHive print margin bumped from 0.4in to a standard 0.75in.
+- Verified with a 12-page test script rendered to PDF: margins uniform on all pages, numbering sequential, no blank/spill pages, print-sheet holder cleaned up after printing.

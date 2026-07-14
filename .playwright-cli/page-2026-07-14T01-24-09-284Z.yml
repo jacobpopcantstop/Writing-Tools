@@ -1,0 +1,112 @@
+- generic [active] [ref=e1]:
+  - link "Skip to Main Tools" [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]: Writing Tools Suite
+      - button "Switch to light theme" [ref=e7] [cursor=pointer]:
+        - img [ref=e9]
+    - region "Suite overview" [ref=e19]:
+      - generic [ref=e20]:
+        - heading "Dad Skeleton's Writing Tools" [level=1] [ref=e21]
+        - paragraph [ref=e22]: Build sketch premises, comic characters, structure, and scripts in one local writing suite.
+    - main [ref=e23]:
+      - generic [ref=e24]:
+        - generic [ref=e26]: Ideation
+        - generic [ref=e27]:
+          - link "Character Forge Character Forge A Q&A-based character builder — answer prompts to develop a character. Open Tool" [ref=e28] [cursor=pointer]:
+            - /url: CharacterForge.html
+            - generic [ref=e29]:
+              - img "Character Forge" [ref=e32]
+              - heading "Character Forge" [level=2] [ref=e33]
+              - paragraph [ref=e34]: A Q&A-based character builder — answer prompts to develop a character.
+            - generic [ref=e35]: Open Tool
+          - link "Synax Synax A random word and concept generator with rhyme, synonym, and context modes. Open Tool" [ref=e37] [cursor=pointer]:
+            - /url: Synax.html
+            - generic [ref=e38]:
+              - img "Synax" [ref=e41]
+              - heading "Synax" [level=2] [ref=e42]
+              - paragraph [ref=e43]: A random word and concept generator with rhyme, synonym, and context modes.
+            - generic [ref=e44]: Open Tool
+          - link "ThisButThat ThisButThat A Wikipedia trending-topics puller with a built-in notepad. Open Tool" [ref=e46] [cursor=pointer]:
+            - /url: ThisButThat.html
+            - generic [ref=e47]:
+              - img "ThisButThat" [ref=e50]
+              - heading "ThisButThat" [level=2] [ref=e51]
+              - paragraph [ref=e52]: A Wikipedia trending-topics puller with a built-in notepad.
+            - generic [ref=e53]: Open Tool
+          - link "Joterie Joterie Timed brainstorm sprints. Open Tool" [ref=e55] [cursor=pointer]:
+            - /url: Joterie.html
+            - generic [ref=e56]:
+              - img "Joterie" [ref=e59]
+              - heading "Joterie" [level=2] [ref=e60]
+              - paragraph [ref=e61]: Timed brainstorm sprints.
+            - generic [ref=e62]: Open Tool
+      - generic [ref=e64]:
+        - generic [ref=e66]: Structure & Drafting
+        - generic [ref=e67]:
+          - link "BeatHive BeatHive A hex-grid canvas for mapping story beats. Open Tool" [ref=e68] [cursor=pointer]:
+            - /url: BeatHive.html
+            - generic [ref=e69]:
+              - img "BeatHive" [ref=e72]
+              - heading "BeatHive" [level=2] [ref=e73]
+              - paragraph [ref=e74]: A hex-grid canvas for mapping story beats.
+            - generic [ref=e75]: Open Tool
+          - link "WitherNaught WitherNaught A timed writing game built around sustaining flow. Open Tool" [ref=e77] [cursor=pointer]:
+            - /url: WitherNaught.html
+            - generic [ref=e78]:
+              - img "WitherNaught" [ref=e81]
+              - heading "WitherNaught" [level=2] [ref=e82]
+              - paragraph [ref=e83]: A timed writing game built around sustaining flow.
+            - generic [ref=e84]: Open Tool
+          - link "Wribbon Wribbon A minimalist, distraction-free writing pad. Open Tool" [ref=e86] [cursor=pointer]:
+            - /url: Wribbon.html
+            - generic [ref=e87]:
+              - img "Wribbon" [ref=e90]
+              - heading "Wribbon" [level=2] [ref=e91]
+              - paragraph [ref=e92]: A minimalist, distraction-free writing pad.
+            - generic [ref=e93]: Open Tool
+      - generic [ref=e95]:
+        - generic [ref=e97]: Output & Utility
+        - generic [ref=e98]:
+          - link "Courius Courius A screenplay editor with industry-standard FDX/RTF export. Open Tool" [ref=e99] [cursor=pointer]:
+            - /url: Courius.html
+            - generic [ref=e100]:
+              - img "Courius" [ref=e103]
+              - heading "Courius" [level=2] [ref=e104]
+              - paragraph [ref=e105]: A screenplay editor with industry-standard FDX/RTF export.
+            - generic [ref=e106]: Open Tool
+          - link "Text to FDX Format rough text into screenplay blocks, then preview, export FDX, or send it to Courius. Open Tool" [ref=e108] [cursor=pointer]:
+            - /url: TextToFDX.html
+            - generic [ref=e109]:
+              - heading "Text to FDX" [level=2] [ref=e113]
+              - paragraph [ref=e114]: Format rough text into screenplay blocks, then preview, export FDX, or send it to Courius.
+            - generic [ref=e115]: Open Tool
+          - link "PaperCut PaperCut A PDF editor — annotate, split, merge, and convert. Open Tool" [ref=e117] [cursor=pointer]:
+            - /url: PaperCut.html
+            - generic [ref=e118]:
+              - img "PaperCut" [ref=e121]
+              - heading "PaperCut" [level=2] [ref=e122]
+              - paragraph [ref=e123]: A PDF editor — annotate, split, merge, and convert.
+            - generic [ref=e124]: Open Tool
+    - generic [ref=e126]: Advanced Panels
+    - generic [ref=e127]:
+      - region "Recent Sessions" [ref=e128]:
+        - button "Recent Sessions Resume without searching" [ref=e129] [cursor=pointer]:
+          - generic [ref=e130]:
+            - generic [ref=e131]: ▾
+            - heading "Recent Sessions" [level=3] [ref=e132]
+          - generic [ref=e133]: Resume without searching
+      - region "Export Reliability" [ref=e134]:
+        - button "Export Reliability Clear Metrics" [ref=e135] [cursor=pointer]:
+          - generic [ref=e136]:
+            - generic [ref=e137]: ▾
+            - heading "Export Reliability" [level=3] [ref=e138]
+          - button "Clear Metrics" [ref=e139]
+      - region "Recovery Snapshots" [ref=e140]:
+        - button "Recovery Snapshots Clear All" [ref=e141] [cursor=pointer]:
+          - generic [ref=e142]:
+            - generic [ref=e143]: ▾
+            - heading "Recovery Snapshots" [level=3] [ref=e144]
+          - button "Clear All" [ref=e145]
+    - contentinfo [ref=e146]: Writing Tools Suite · Local Storage Powered
