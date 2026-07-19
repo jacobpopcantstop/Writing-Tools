@@ -1,0 +1,3 @@
+- button "Open quick actions" [ref=e2] [cursor=pointer]:
+  - text: Actions
+  - generic [ref=e3]: Ctrl K

@@ -1,0 +1,17 @@
+[     396ms] [ERROR] Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED @ https://cdn.tailwindcss.com/:0
+[     403ms] [ERROR] Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED @ https://unpkg.com/lucide@latest:0
+[   12797ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_RESET @ https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap:0
+[   12800ms] ReferenceError: tailwind is not defined
+    at http://127.0.0.1:51905/ThisButThat.html:66:9
+[   12822ms] ReferenceError: lucide is not defined
+    at HTMLDocument.<anonymous> (http://127.0.0.1:51905/ThisButThat.html:411:13)
+[   13176ms] [ERROR] Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED @ https://wikimedia.org/api/rest_v1/metrics/pageviews/top/en.wikipedia/all-access/2026/07/18:0
+[   13176ms] [WARNING] Fallback to random TypeError: Failed to fetch
+    at fetchTopics (http://127.0.0.1:51905/ThisButThat.html:588:44)
+    at HTMLDocument.<anonymous> (http://127.0.0.1:51905/ThisButThat.html:409:13) @ http://127.0.0.1:51905/ThisButThat.html:602
+[   13539ms] [ERROR] Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED @ https://en.wikipedia.org/w/api.php?origin=*&action=query&format=json&list=random&rnnamespace=0&rnlimit=12:0
+[   13539ms] [ERROR] TypeError: Failed to fetch
+    at fetchTopics (http://127.0.0.1:51905/ThisButThat.html:604:48) @ http://127.0.0.1:51905/ThisButThat.html:645
+[   13547ms] ReferenceError: lucide is not defined
+    at renderTopicGrid (http://127.0.0.1:51905/ThisButThat.html:696:13)
+    at fetchTopics (http://127.0.0.1:51905/ThisButThat.html:648:17)
