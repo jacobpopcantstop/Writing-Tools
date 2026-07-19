@@ -45,3 +45,8 @@ Prompt: get the tools to top quality (priority: Courius, then BeatHive/Synax/Jot
 - Standard screenplay page numbers (top right, from page 2; title page unnumbered).
 - BeatHive print margin bumped from 0.4in to a standard 0.75in.
 - Verified with a 12-page test script rendered to PDF: margins uniform on all pages, numbering sequential, no blank/spill pages, print-sheet holder cleaned up after printing.
+
+## Autocomplete self-suggestion fix (July 2026)
+
+- Typing "EXT" on a fresh scene-heading line was suggesting "INT. EXT": the suggestion pool harvested the line being typed and its normalizer prepends a default INT. to any heading without a prefix. The caret's line is now excluded from harvesting, and prefix-in-progress text (I/IN/INT/E/EX/EXT/INT/EXT) is never treated as a location name.
+- Location-core completions now reuse the prefix each location was actually written with (typing "PA" after "EXT. PARK - DAY" suggests "EXT. PARK", not "INT. PARK").

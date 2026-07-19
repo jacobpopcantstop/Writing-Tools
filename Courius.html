@@ -919,6 +919,7 @@
     let characterSet = new Set();
     let locationSet = new Set();
     let sceneLocationCoreSet = new Set();
+    let sceneLocationPrefixMap = new Map();
     let sceneTimeSet = new Set(SCENE_TIME_HINTS);
     let characterTurnPairs = new Map();
     let saveTimeout;
@@ -1989,8 +1990,14 @@
         });
     }
 
+    // "EXT" mid-type is the start of "EXT. ..." — never a location name.
+    function isPrefixInProgress(text) {
+        return /^(?:I|IN|INT|E|EX|EXT|INT\/|INT\/E|INT\/EX|INT\/EXT)\.?$/.test(String(text || '').trim());
+    }
+
     function getMatches(text, targetSet, type, block) {
         const results = [];
+        const prefixInProgress = type === 'scene-heading' && isPrefixInProgress(text);
         for (let entry of targetSet) {
             if (entry === text) continue;
             if (type === 'scene-heading') {
@@ -2005,7 +2012,7 @@
                 const normalizedEntry = normalizeSceneHeading(entry);
                 const entryParts = parseSceneHeadingParts(normalizedEntry);
                 const fullStarts = normalizedEntry.startsWith(text);
-                const locStarts = entryParts.location && entryParts.location.startsWith(parsedText.location || text);
+                const locStarts = !prefixInProgress && entryParts.location && entryParts.location.startsWith(parsedText.location || text);
                 const timeStarts = parsedText.hasDash && parsedText.time
                     ? (entryParts.time && entryParts.time.startsWith(parsedText.time))
                     : false;
@@ -2020,10 +2027,12 @@
         }
         if (type === 'scene-heading') {
             const parsedText = parseSceneHeadingParts(text);
-            if (parsedText.location) {
+            if (parsedText.location && !prefixInProgress) {
                 sceneLocationCoreSet.forEach((loc) => {
                     if (!loc.startsWith(parsedText.location)) return;
-                    const heading = `${parsedText.prefix || 'INT.'} ${loc}${parsedText.hasDash ? ` - ${parsedText.time || SCENE_TIME_HINTS[0]}` : ''}`.trim();
+                    // Prefer the prefix this location was actually written with.
+                    const prefix = parsedText.prefix || sceneLocationPrefixMap.get(loc) || 'INT.';
+                    const heading = `${prefix} ${loc}${parsedText.hasDash ? ` - ${parsedText.time || SCENE_TIME_HINTS[0]}` : ''}`.trim();
                     results.push(heading);
                 });
             }
@@ -2328,13 +2337,21 @@
         characterSet.clear();
         locationSet.clear();
         sceneLocationCoreSet.clear();
+        sceneLocationPrefixMap.clear();
         sceneTimeSet = new Set(SCENE_TIME_HINTS);
         characterTurnPairs.clear();
+
+        // Never harvest the line the caret is on: a half-typed heading like
+        // "EXT" would be normalized into a bogus "INT. EXT" entry and then
+        // suggested right back at the writer.
+        const sel = window.getSelection();
+        const activeBlock = sel && sel.anchorNode ? getBlock(sel.anchorNode) : null;
 
         const blocks = Array.from(EDITOR.children || []);
         let previousCharacter = '';
         blocks.forEach((node) => {
             if (!node || !node.classList || node.classList.contains('title-page-container')) return;
+            if (node === activeBlock) return;
             if (node.classList.contains('character')) {
                 const name = getPureText(node).trim().toUpperCase();
                 if (!name) return;
@@ -2352,7 +2369,10 @@
                 if (!heading) return;
                 locationSet.add(heading);
                 const parts = parseSceneHeadingParts(heading);
-                if (parts.location) sceneLocationCoreSet.add(parts.location);
+                if (parts.location) {
+                    sceneLocationCoreSet.add(parts.location);
+                    if (parts.prefix) sceneLocationPrefixMap.set(parts.location, parts.prefix);
+                }
                 if (parts.time) sceneTimeSet.add(parts.time);
                 previousCharacter = '';
                 return;

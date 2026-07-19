@@ -1,0 +1,7 @@
+Total messages: 5 (Errors: 5, Warnings: 0)
+
+[ERROR] Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED @ https://cdn.tailwindcss.com/3.4.16:0
+[ERROR] Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED @ https://unpkg.com/react@18.3.1/umd/react.production.min.js:0
+[ERROR] Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED @ https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js:0
+[ERROR] Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED @ https://unpkg.com/@babel/standalone@7.26.4/babel.min.js:0
+[ERROR] Failed to load resource: net::ERR_CONNECTION_RESET @ https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=Space+Grotesk:wght@700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap:0
