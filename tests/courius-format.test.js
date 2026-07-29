@@ -93,3 +93,63 @@ test('extractElements normalizes class to first known token', () => {
   const out = WT.extractElements([{ className: 'character extra-class', text: 'JANE' }]);
   assert.deepStrictEqual(out, [{ type: 'character', text: 'JANE' }]);
 });
+
+test('applyContinueds marks a cue repeated after action in the same scene', () => {
+  const marked = WT.applyContinueds([
+    { type: 'scene-heading', text: 'INT. AUDITORIUM - DAY' },
+    { type: 'character', text: 'TENKEN' },
+    { type: 'dialogue', text: 'In a tie for second place...' },
+    { type: 'action', text: 'ERIC and DEREK come over.' },
+    { type: 'character', text: 'TENKEN' },
+    { type: 'dialogue', text: 'Wow! How did you do that?' }
+  ]);
+  assert.strictEqual(marked[1].text, 'TENKEN');
+  assert.strictEqual(marked[4].text, "TENKEN (CONT'D)");
+});
+
+test('applyContinueds does not mark a different speaker or a new scene', () => {
+  const marked = WT.applyContinueds([
+    { type: 'character', text: 'TENKEN' },
+    { type: 'dialogue', text: 'Third place...' },
+    { type: 'character', text: 'BETHANY' },
+    { type: 'dialogue', text: 'So is Ms. Gobi in heaven?' },
+    { type: 'character', text: 'TENKEN' },
+    { type: 'dialogue', text: 'Moving on.' },
+    { type: 'scene-heading', text: 'INT. HALLWAY - LATER' },
+    { type: 'character', text: 'TENKEN' },
+    { type: 'dialogue', text: 'New scene, fresh cue.' }
+  ]);
+  assert.strictEqual(marked[2].text, 'BETHANY');
+  assert.strictEqual(marked[4].text, 'TENKEN');
+  assert.strictEqual(marked[7].text, 'TENKEN');
+});
+
+test('applyContinueds is idempotent and repairs stale marks', () => {
+  const once = WT.applyContinueds([
+    { type: 'character', text: 'DAD' },
+    { type: 'dialogue', text: 'One.' },
+    { type: 'action', text: 'He pauses.' },
+    { type: 'character', text: "DAD (CONT'D)" },
+    { type: 'dialogue', text: 'Two.' }
+  ]);
+  assert.strictEqual(once[3].text, "DAD (CONT'D)");
+  assert.deepStrictEqual(WT.applyContinueds(once), once);
+
+  // A cue that is no longer a repeat loses the stale mark.
+  const repaired = WT.applyContinueds([
+    { type: 'scene-heading', text: 'INT. KITCHEN - DAY' },
+    { type: 'character', text: "DAD (CONT'D)" },
+    { type: 'dialogue', text: 'Fresh scene.' }
+  ]);
+  assert.strictEqual(repaired[1].text, 'DAD');
+});
+
+test('characterBaseName strips continuation variants', () => {
+  assert.strictEqual(WT.characterBaseName("DAD (CONT'D)"), 'DAD');
+  assert.strictEqual(WT.characterBaseName('DAD (CONTD)'), 'DAD');
+  assert.strictEqual(WT.characterBaseName('DAD (cont.)'), 'DAD');
+  assert.strictEqual(WT.characterBaseName('DAD (CONTINUED)'), 'DAD');
+  assert.strictEqual(WT.characterBaseName('PRINCIPAL MILLER'), 'PRINCIPAL MILLER');
+  // A parenthetical extension that is not a continuation stays put.
+  assert.strictEqual(WT.characterBaseName('DAD (V.O.)'), 'DAD (V.O.)');
+});

@@ -200,10 +200,13 @@
     if (!api || typeof api.buildFdx !== 'function') {
       throw new Error('WTScreenplay.buildFdx is not available.');
     }
+    var elements = typeof api.applyContinueds === 'function'
+      ? api.applyContinueds(normalized.elements)
+      : normalized.elements;
     return api.buildFdx({
       title: normalized.title,
       author: normalized.author,
-      elements: normalized.elements
+      elements: elements
     });
   }
 

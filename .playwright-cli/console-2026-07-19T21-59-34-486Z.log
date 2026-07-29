@@ -1,4 +1,0 @@
-[     441ms] [ERROR] Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED @ https://unpkg.com/lucide@0.263.1:0
-[   12795ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_RESET @ https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Fraunces:opsz,wght@9..144,500;9..144,700&family=IBM+Plex+Mono:wght@500;700&display=swap:0
-[  120840ms] [ERROR] Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED @ https://unpkg.com/lucide@0.263.1:0
-[  133312ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_RESET @ https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Fraunces:opsz,wght@9..144,500;9..144,700&family=IBM+Plex+Mono:wght@500;700&display=swap:0

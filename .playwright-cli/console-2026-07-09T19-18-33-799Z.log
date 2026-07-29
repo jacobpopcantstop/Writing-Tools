@@ -1,8 +1,0 @@
-Total messages: 4 (Errors: 4, Warnings: 0)
-
-[ERROR] Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED @ https://cdn.tailwindcss.com/3.4.16:0
-[ERROR] Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED @ https://unpkg.com/lucide@0.263.1:0
-[ERROR] Failed to load resource: net::ERR_CONNECTION_RESET @ https://fonts.googleapis.com/css2?family=Inter:wght@400;900&family=Newsreader:ital,opsz,wght@1,6..72,400;1,6..72,500&display=swap:0
-ReferenceError: lucide is not defined
-    at applyTheme (http://127.0.0.1:50009/Joterie.html:447:13)
-    at http://127.0.0.1:50009/Joterie.html:871:9

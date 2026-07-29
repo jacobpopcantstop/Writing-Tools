@@ -1,2 +1,0 @@
-[     223ms] [ERROR] Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED @ https://cdn.tailwindcss.com/:0
-[   12950ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_RESET @ https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap:0

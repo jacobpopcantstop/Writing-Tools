@@ -50,3 +50,11 @@ Prompt: get the tools to top quality (priority: Courius, then BeatHive/Synax/Jot
 
 - Typing "EXT" on a fresh scene-heading line was suggesting "INT. EXT": the suggestion pool harvested the line being typed and its normalizer prepends a default INT. to any heading without a prefix. The caret's line is now excluded from harvesting, and prefix-in-progress text (I/IN/INT/E/EX/EXT/INT/EXT) is never treated as a location name.
 - Location-core completions now reuse the prefix each location was actually written with (typing "PA" after "EXT. PARK - DAY" suggests "EXT. PARK", not "INT. PARK").
+
+## Character (CONT'D) continuations (July 2026)
+
+- Courius now follows Final Draft's "Character Continued" convention: when a character speaks again later in the same scene (typically after an intervening action line), the repeated cue is marked `TENKEN (CONT'D)`. A scene heading or transition resets the run, and a different speaker in between clears it.
+- Logic lives in `courius-format.js` as `WTScreenplay.applyContinueds()` / `characterBaseName()` so the on-screen cues, the FDX export, the RTF export and the printed pages all derive marks from one shared, unit-tested helper (marks are re-derived idempotently, so stale `(CONT'D)`s repair themselves when the script is edited).
+- The cue holding the caret is never rewritten mid-typing; the mark lands when the writer leaves the cue, matching Final Draft. Continuation marks are stripped from the autocomplete pool, so completions still offer `TENKEN`, never `TENKEN (CONT'D)`.
+- Text to FDX applies the same convention on FDX export.
+- Also fixed a content-loss risk in the new print pagination: a block taller than one page (a pasted monologue) was clipped by the sheet's `overflow: hidden`. Such a sheet now grows instead of clipping — verified a 90-line single dialogue block prints in full (7 pages) where it previously lost ~60% of its text.

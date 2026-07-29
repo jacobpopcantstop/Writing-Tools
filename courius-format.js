@@ -112,7 +112,35 @@
     }, []);
   }
 
-  var WTScreenplay = { rtfPrefix: rtfPrefix, rtfSuffix: rtfSuffix, escapeRtf: escapeRtf, buildRtf: buildRtf, escapeXml: escapeXml, fdxType: fdxType, buildFdx: buildFdx, extractElements: extractElements, classifyType: classifyType };
+  var CONTD_LABEL = "(CONT'D)";
+  // Any existing continuation mark, so cues can be re-derived idempotently.
+  var CONTD_PATTERN = /\s*\(\s*(?:CONT'D|CONTD|CONT|CONTINUED|MORE)\s*\.?\s*\)\s*$/i;
+
+  function characterBaseName(text) {
+    return String(text || '').replace(CONTD_PATTERN, '').trim();
+  }
+
+  // Final Draft's "Character Continued": when a character speaks again later in
+  // the same scene, the repeated cue is marked (CONT'D). A scene heading or
+  // transition starts a new scene and clears the run.
+  function applyContinueds(elements) {
+    var lastCue = '';
+    return (elements || []).map(function (el) {
+      var type = (el && el.type) || 'action';
+      if (type === 'scene-heading' || type === 'transition') {
+        lastCue = '';
+        return el;
+      }
+      if (type !== 'character') return el;
+      var base = characterBaseName(el && el.text);
+      if (!base) return el;
+      var repeated = !!lastCue && lastCue === base.toUpperCase();
+      lastCue = base.toUpperCase();
+      return { type: type, text: repeated ? base + ' ' + CONTD_LABEL : base };
+    });
+  }
+
+  var WTScreenplay = { rtfPrefix: rtfPrefix, rtfSuffix: rtfSuffix, escapeRtf: escapeRtf, buildRtf: buildRtf, escapeXml: escapeXml, fdxType: fdxType, buildFdx: buildFdx, extractElements: extractElements, classifyType: classifyType, characterBaseName: characterBaseName, applyContinueds: applyContinueds, CONTD_LABEL: CONTD_LABEL };
   if (typeof module !== 'undefined' && module.exports) module.exports = WTScreenplay;
   if (root) root.WTScreenplay = WTScreenplay;
 })(typeof window !== 'undefined' ? window : null);

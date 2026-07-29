@@ -472,6 +472,8 @@
                extra blank page; overflow-hidden keeps any residual overrun
                from spilling into the margins of the next page. */
             .print-sheet { page-break-after: always; height: 10.98in; overflow: hidden; }
+            /* A single block too tall for one page: flow it rather than clip it. */
+            .print-sheet.print-sheet-tall { height: auto; overflow: visible; }
             .print-sheet:last-child { page-break-after: auto; }
             .print-sheet div[data-placeholder]::before { content: none !important; display: none !important; }
             ::selection { background: transparent !important; }
@@ -1348,6 +1350,7 @@
             EDITOR.innerHTML = '';
             createLine('scene-heading');
         }
+        updateCharacterContinueds({ force: true });
         updateSuggestions();
         updateSelectorUI();
         updatePageCount();
@@ -1514,6 +1517,7 @@
         }
         ensureDocsInitialized();
         updateActiveDocLabel();
+        updateCharacterContinueds({ force: true });
         updateSuggestions();
         
         // Theme Logic: Default is Dark (no class). Check local key first, then suite-wide key.
@@ -1830,6 +1834,15 @@
         }
     }
 
+    // Cue text without its (CONT'D) mark, so continuation marks never leak into
+    // the autocomplete pool as part of a character's name.
+    function cueName(text) {
+        if (window.WTScreenplay && typeof WTScreenplay.characterBaseName === 'function') {
+            return WTScreenplay.characterBaseName(text);
+        }
+        return String(text || '').trim();
+    }
+
     function previousBlockOfType(fromBlock, type) {
         let node = fromBlock ? fromBlock.previousElementSibling : null;
         while (node) {
@@ -1843,7 +1856,7 @@
         let node = fromBlock ? fromBlock.previousElementSibling : null;
         while (node) {
             if (node.classList && node.classList.contains('character')) {
-                const name = getPureText(node).trim().toUpperCase();
+                const name = cueName(getPureText(node)).toUpperCase();
                 if (name && name !== currentName) return name;
             }
             node = node.previousElementSibling;
@@ -1869,7 +1882,7 @@
         if (type === 'character') {
             const lastCharBlock = previousBlockOfType(block, 'character');
             if (!lastCharBlock) return;
-            const lastName = getPureText(lastCharBlock).trim().toUpperCase();
+            const lastName = cueName(getPureText(lastCharBlock)).toUpperCase();
             if (!lastName) return;
             const altName = previousDifferentCharacterName(lastCharBlock, lastName);
             if (altName) {
@@ -1975,7 +1988,7 @@
 
     function getPreviousCharacterName(block) {
         const prev = previousBlockOfType(block, 'character');
-        return prev ? getPureText(prev).trim().toUpperCase() : '';
+        return prev ? cueName(getPureText(prev)).toUpperCase() : '';
     }
 
     function rankCharacterMatches(matches, block) {
@@ -2210,6 +2223,7 @@
         STATUS.innerText = 'Syncing...';
         clearTimeout(saveTimeout);
         saveTimeout = setTimeout(() => {
+            updateCharacterContinueds();
             const html = getEditorHtmlForStorage();
             const ok = persistCouriusDocument(html, 'autosave');
             if (ok) {
@@ -2353,7 +2367,7 @@
             if (!node || !node.classList || node.classList.contains('title-page-container')) return;
             if (node === activeBlock) return;
             if (node.classList.contains('character')) {
-                const name = getPureText(node).trim().toUpperCase();
+                const name = cueName(getPureText(node)).toUpperCase();
                 if (!name) return;
                 characterSet.add(name);
                 if (previousCharacter && previousCharacter !== name) {
@@ -2524,6 +2538,7 @@
             // Ensure something is there
             if (EDITOR.children.length === 0) createLine('scene-heading');
 
+            updateCharacterContinueds({ force: true });
             triggerSave();
             updateSuggestions();
         };
@@ -2539,6 +2554,35 @@
     function collectScriptElements() {
         return Array.from(EDITOR.children).map(function (div) {
             return { className: div.className || '', text: getPureText(div).trim() };
+        });
+    }
+
+    function scriptElementsForExport() {
+        return WTScreenplay.applyContinueds(WTScreenplay.extractElements(collectScriptElements()));
+    }
+
+    // Keep the on-screen cues in sync with the Final Draft (CONT'D) convention.
+    // Runs off the same shared helper the exports use so the page and the file
+    // can never disagree. The block holding the caret is left alone unless the
+    // caller forces it (printing/exporting), since rewriting it would collapse
+    // the selection mid-typing.
+    function updateCharacterContinueds(options) {
+        if (!window.WTScreenplay || typeof WTScreenplay.applyContinueds !== 'function') return;
+        const settings = options || {};
+        const skipBlock = settings.force
+            ? null
+            : getBlock(window.getSelection().anchorNode);
+        const nodes = Array.from(EDITOR.children).filter((node) => node.classList);
+        const marked = WTScreenplay.applyContinueds(nodes.map((node) => ({
+            type: WTScreenplay.classifyType(node.className || ''),
+            text: getPureText(node).trim()
+        })));
+        nodes.forEach((node, index) => {
+            if (!node.classList.contains('character')) return;
+            if (node === skipBlock) return;
+            const next = marked[index] ? marked[index].text : '';
+            if (!next || getPureText(node).trim() === next) return;
+            node.textContent = next;
         });
     }
     function collectTitlePage() {
@@ -2562,7 +2606,8 @@
 
     function downloadFDX() {
         var tp = collectTitlePage();
-        var elements = WTScreenplay.extractElements(collectScriptElements());
+        updateCharacterContinueds({ force: true });
+        var elements = scriptElementsForExport();
         var xml = WTScreenplay.buildFdx({ title: tp.title, author: tp.author, elements: elements });
         var blob = new Blob([xml], { type: 'text/xml' });
         var a = document.createElement('a');
@@ -2574,7 +2619,8 @@
 
     function downloadRTF() {
         var tp = collectTitlePage();
-        var elements = WTScreenplay.extractElements(collectScriptElements());
+        updateCharacterContinueds({ force: true });
+        var elements = scriptElementsForExport();
         var rtf = WTScreenplay.buildRtf({ title: tp.title, author: tp.author, contact: tp.contact, elements: elements });
         var blob = new Blob([rtf], { type: 'application/rtf' });
         var a = document.createElement('a');
@@ -2765,21 +2811,31 @@
             }
             if (!sheet) startSheet();
             sheet.appendChild(clone);
-            if (contentHeight() > CONTENT_HEIGHT && sheet.children.length > 1) {
-                // The block overflows this page. Carry it to the next sheet,
-                // and never orphan a character cue or parenthetical at the
-                // bottom of a page away from its dialogue.
-                const carried = [clone];
-                let prev = clone.previousElementSibling;
-                while (prev && carried.length < 3 &&
-                       (prev.classList.contains('character') || prev.classList.contains('parenthetical'))) {
-                    carried.unshift(prev);
-                    prev = prev.previousElementSibling;
-                }
-                if (carried.length < sheet.children.length) {
-                    startSheet();
-                    carried.forEach((el) => sheet.appendChild(el));
-                }
+            if (contentHeight() <= CONTENT_HEIGHT) return;
+
+            // The block overflows this page. Carry it to the next sheet, and
+            // never orphan a character cue or parenthetical at the bottom of a
+            // page away from its dialogue.
+            const carried = [clone];
+            let prev = clone.previousElementSibling;
+            while (prev && carried.length < 3 &&
+                   (prev.classList.contains('character') || prev.classList.contains('parenthetical'))) {
+                carried.unshift(prev);
+                prev = prev.previousElementSibling;
+            }
+            if (carried.length < sheet.children.length) {
+                startSheet();
+                carried.forEach((el) => sheet.appendChild(el));
+            }
+
+            if (contentHeight() > CONTENT_HEIGHT) {
+                // Still too tall even on a sheet of its own: this block is
+                // simply longer than a page (a pasted monologue, say). Let the
+                // sheet grow instead of clipping it — losing script text to a
+                // hidden overflow is far worse than the pages it spills onto
+                // having no top margin.
+                sheet.classList.add('print-sheet-tall');
+                sheet = null;
             }
         });
 
@@ -2801,6 +2857,7 @@
         const tp = collectTitlePage();
         const name = String(tp.title || '').trim() || deriveDocName();
         if (name) document.title = name;
+        updateCharacterContinueds({ force: true });
         buildPrintPages();
     });
     window.addEventListener('afterprint', () => {
