@@ -153,3 +153,27 @@ test('characterBaseName strips continuation variants', () => {
   // A parenthetical extension that is not a continuation stays put.
   assert.strictEqual(WT.characterBaseName('DAD (V.O.)'), 'DAD (V.O.)');
 });
+
+test('escapeRtf encodes em dashes and other non-ASCII as \\uN? escapes', () => {
+  assert.strictEqual(WT.escapeRtf('wait—no'), 'wait\\u8212?no');
+  assert.strictEqual(WT.escapeRtf('“quoted”'), '\\u8220?quoted\\u8221?');
+  assert.strictEqual(WT.escapeRtf('café'), 'caf\\u233?');
+  // Plain ASCII and existing escapes are untouched.
+  assert.strictEqual(WT.escapeRtf('a -- b'), 'a -- b');
+  assert.strictEqual(WT.escapeRtf('a{b}c\\d'), 'a\\{b\\}c\\\\d');
+});
+
+test('buildRtf carries an em dash through as an escape, not raw bytes', () => {
+  const rtf = WT.buildRtf({
+    elements: [{ type: 'dialogue', text: 'I was going to—' }]
+  });
+  assert.ok(rtf.includes('I was going to\\u8212?'));
+  assert.ok(!rtf.includes('—'));
+});
+
+test('buildFdx keeps the em dash literal (FDX is UTF-8)', () => {
+  const fdx = WT.buildFdx({
+    elements: [{ type: 'dialogue', text: 'I was going to—' }]
+  });
+  assert.ok(fdx.includes('I was going to—'));
+});

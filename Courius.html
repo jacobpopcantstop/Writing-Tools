@@ -846,6 +846,7 @@
         <div class="shortcut-row"><span>Save Now</span><span class="shortcut-key">Ctrl+S</span></div>
         <div class="shortcut-row"><span>New Line</span><span class="shortcut-key">Enter</span></div>
         <div class="shortcut-row"><span>Element Menu (on empty line)</span><span class="shortcut-key">Enter</span></div>
+        <div class="shortcut-row"><span>Em Dash</span><span class="shortcut-key">-- → —</span></div>
         <div class="shortcut-row"><span>Show Help (when not typing)</span><span class="shortcut-key">?</span></div>
         <div style="margin-top:12px; padding-top:12px; border-top: 1px solid rgba(0,0,0,0.1); font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; opacity:0.5;">Autocomplete</div>
         <div class="shortcut-row"><span>Accept suggestion</span><span class="shortcut-key">Tab / ↵</span></div>
@@ -917,6 +918,9 @@
         'transition': 'Transition'
     };
     const SCENE_TIME_HINTS = ['DAY.', 'NIGHT.', 'DUSK.', 'DAWN.', 'CONTINUOUS.', 'LATER.'];
+    const EM_DASH = '—';
+    // Guards the nested beforeinput fired by the em-dash replacement itself.
+    let emDashInProgress = false;
 
     let characterSet = new Set();
     let locationSet = new Set();
@@ -1601,10 +1605,44 @@
 
     // --- Core Editor Logic ---
 
+    // Typing a second hyphen turns the pair into an em dash, the way Word and
+    // Final Draft autocorrect it. Returns true when it handled the input.
+    function convertDoubleHyphen(e) {
+        if (e.inputType !== 'insertText' || e.data !== '-') return false;
+        const sel = window.getSelection();
+        if (!sel.rangeCount) return false;
+        const range = sel.getRangeAt(0);
+        if (!range.collapsed) return false;
+        const node = range.startContainer;
+        const offset = range.startOffset;
+        // Only when the character right before the caret is a plain hyphen.
+        if (node.nodeType !== 3 || offset < 1) return false;
+        if (node.textContent.charAt(offset - 1) !== '-') return false;
+
+        e.preventDefault();
+        // Select the hyphen already typed and let the insertion replace it, so
+        // the two hyphens collapse into one em dash and undo stays intact.
+        const pair = document.createRange();
+        pair.setStart(node, offset - 1);
+        pair.setEnd(node, offset);
+        sel.removeAllRanges();
+        sel.addRange(pair);
+        emDashInProgress = true;
+        try {
+            document.execCommand('insertText', false, EM_DASH);
+        } finally {
+            emDashInProgress = false;
+        }
+        return true;
+    }
+
     EDITOR.addEventListener('beforeinput', (e) => {
+        if (emDashInProgress) return;
         const sel = window.getSelection();
         if (!sel.rangeCount) return;
-        
+
+        if (convertDoubleHyphen(e)) return;
+
         const rawNode = sel.anchorNode;
         const el = rawNode.nodeType === 3 ? rawNode.parentNode : rawNode;
 

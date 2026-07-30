@@ -23,7 +23,14 @@
       .replace(/\\/g, '\\\\')
       .replace(/\{/g, '\\{')
       .replace(/\}/g, '\\}')
-      .replace(/\r\n|\r|\n/g, '\\line ');
+      .replace(/\r\n|\r|\n/g, '\\line ')
+      // The document is \ansi, so anything above ASCII (em dashes, curly
+      // quotes, accents) has to go out as a \uN? escape or Word renders the
+      // raw bytes as mojibake. RTF wants a signed 16-bit code unit.
+      .replace(/[^\x00-\x7F]/g, function (ch) {
+        var code = ch.charCodeAt(0);
+        return '\\u' + (code > 32767 ? code - 65536 : code) + '?';
+      });
   }
 
   function buildRtf(doc) {

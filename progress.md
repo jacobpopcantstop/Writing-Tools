@@ -58,3 +58,9 @@ Prompt: get the tools to top quality (priority: Courius, then BeatHive/Synax/Jot
 - The cue holding the caret is never rewritten mid-typing; the mark lands when the writer leaves the cue, matching Final Draft. Continuation marks are stripped from the autocomplete pool, so completions still offer `TENKEN`, never `TENKEN (CONT'D)`.
 - Text to FDX applies the same convention on FDX export.
 - Also fixed a content-loss risk in the new print pagination: a block taller than one page (a pasted monologue) was clipped by the sheet's `overflow: hidden`. Such a sheet now grows instead of clipping — verified a 90-line single dialogue block prints in full (7 pages) where it previously lost ~60% of its text.
+
+## Em dash autocorrect (July 2026)
+
+- Courius now converts `--` into an em dash (`—`) as you type, the way Word and Final Draft autocorrect it. It replaces the pair via `execCommand('insertText')` so browser undo still works, fires in every element type (including the uppercase-enforced scene heading / character lines and title-page fields), and a single hyphen is left alone.
+- Fixed a related export bug this surfaced: `buildRtf` emits an `\ansi` document, so a literal em dash (or curly quote, or accent) went out as raw UTF-8 bytes and rendered as mojibake in Word. `escapeRtf` now encodes anything above ASCII as a signed 16-bit `\uN?` escape. FDX is UTF-8 and keeps the character literal.
+- Verified in-browser: `--` → `—` in dialogue and scene headings, persistence across reload, RTF export escaped as the literal text backslash-u8212? with no raw bytes, FDX export literal. 38 unit tests and the smoke suite pass.
