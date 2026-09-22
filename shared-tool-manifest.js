@@ -3,15 +3,6 @@
 
   var TOOLS = [
     {
-      id: 'CharacterForge',
-      label: 'Character Forge',
-      path: 'CharacterForge.html',
-      category: 'Ideation',
-      commandDesc: 'Q&A character builder',
-      commandKeys: 'character forge people role goal',
-      snapshotKey: 'writingtools_characterforge_snapshots_v1'
-    },
-    {
       id: 'Synax',
       label: 'Synax',
       path: 'Synax.html',
@@ -48,24 +39,6 @@
       snapshotKey: 'writingtools_beathive_snapshots_v1'
     },
     {
-      id: 'Wribbon',
-      label: 'Wribbon',
-      path: 'Wribbon.html',
-      category: 'Drafting',
-      commandDesc: 'Distraction-free writing pad',
-      commandKeys: 'wribbon draft ribbon export',
-      snapshotKey: 'writingtools_wribbon_snapshots_v1'
-    },
-    {
-      id: 'WitherNaught',
-      label: 'WitherNaught',
-      path: 'WitherNaught.html',
-      category: 'Drafting',
-      commandDesc: 'Timed flow-writing game',
-      commandKeys: 'draft withernaught flowstate',
-      snapshotKey: 'writingtools_withernaught_snapshots_v1'
-    },
-    {
       id: 'Courius',
       label: 'Courius',
       path: 'Courius.html',
@@ -82,15 +55,6 @@
       commandDesc: 'AI-assisted raw text to screenplay FDX',
       commandKeys: 'fdx screenplay format ai import text',
       snapshotKey: null
-    },
-    {
-      id: 'PaperCut',
-      label: 'PaperCut',
-      path: 'PaperCut.html',
-      category: 'Output',
-      commandDesc: 'PDF editor & converter',
-      commandKeys: 'pdf papercut annotate markup',
-      snapshotKey: 'writingtools_papercut_snapshots_v1'
     }
   ];
 

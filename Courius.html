@@ -894,6 +894,9 @@
     const DOCS_INDEX_KEY = 'writingtools_courius_docs_v1';
     const ACTIVE_DOC_KEY = 'writingtools_courius_active_doc_v1';
     const DOC_CONTENT_PREFIX = 'writingtools_courius_doc_';
+    // Set by other tools (WTCourius.createScript) to ask Courius to open a
+    // script they just created.
+    const OPEN_REQUEST_KEY = 'writingtools_courius_open_request_v1';
     // NEW KEY to avoid conflict with previous Light Mode settings
     const THEME_STORAGE_KEY = 'courius_theme_v2';
     
@@ -914,7 +917,7 @@
         'parenthetical': 'Parenthetical',
         'transition': 'Transition'
     };
-    const SCENE_TIME_HINTS = ['DAY.', 'NIGHT.', 'DUSK.', 'DAWN.', 'CONTINUOUS.', 'LATER.'];
+    const SCENE_TIME_HINTS = ['DAY', 'NIGHT', 'DUSK', 'DAWN', 'CONTINUOUS', 'LATER'];
 
     let characterSet = new Set();
     let locationSet = new Set();
@@ -1502,6 +1505,19 @@
         }
     }
 
+    // Open a script another tool handed off. Reads (and clears) the shared
+    // request key so only one Courius tab acts on it.
+    function consumeOpenRequest() {
+        let request = null;
+        try {
+            request = JSON.parse(localStorage.getItem(OPEN_REQUEST_KEY) || 'null');
+            localStorage.removeItem(OPEN_REQUEST_KEY);
+        } catch (_) {}
+        if (!request || !request.id || !getDocs().find((d) => d.id === request.id)) return;
+        switchDoc(request.id);
+        STATUS.innerText = 'Opened handoff as a new script';
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
         const content = localStorage.getItem(STORAGE_KEY);
         localKnownRevision = parseInt(localStorage.getItem(STORAGE_REV_KEY) || '0', 10) || 0;
@@ -1530,9 +1546,14 @@
         }
         renderWritingTimer();
         renderImportHistory();
+        consumeOpenRequest();
     });
 
     window.addEventListener('storage', (e) => {
+        if (e && e.key === OPEN_REQUEST_KEY && e.newValue) {
+            consumeOpenRequest();
+            return;
+        }
         if (!e || e.key !== STORAGE_REV_KEY) return;
         const incomingRev = parseInt(e.newValue || '0', 10) || 0;
         if (incomingRev <= localKnownRevision) return;
@@ -1579,6 +1600,11 @@
     function toggleTitlePage() {
         const firstChild = EDITOR.firstElementChild;
         if (firstChild && firstChild.classList.contains('title-page-container')) {
+            const tp = collectTitlePage();
+            const edited = (tp.title.trim() && tp.title.trim() !== 'TITLE') ||
+                (tp.author.trim() && tp.author.trim() !== 'Author Name') ||
+                (tp.contact.trim() && tp.contact.trim() !== 'Contact Info');
+            if (edited && !confirm('Remove the title page? Its title, author, and contact info will be deleted.')) return;
             firstChild.remove();
         } else {
             const tp = document.createElement('div');
@@ -1768,6 +1794,66 @@
         updateSelectorUI();
         triggerSave();
         updatePageCount();
+    });
+
+    // Autosave on every edit, including ones with no keyup: right-click
+    // paste, drag-and-drop, Edit-menu cut, spellcheck corrections, IME.
+    EDITOR.addEventListener('input', () => {
+        triggerSave();
+        updatePageCount();
+    });
+
+    // Paste as plain text. A single line goes into the current element; a
+    // multi-line paste is split into screenplay elements instead of landing
+    // as one styled blob.
+    EDITOR.addEventListener('paste', (e) => {
+        const text = e.clipboardData ? e.clipboardData.getData('text/plain') : '';
+        e.preventDefault();
+        if (!text) return;
+        const sel = window.getSelection();
+        const rawNode = sel.rangeCount ? sel.anchorNode : null;
+        const el = rawNode && rawNode.nodeType === 3 ? rawNode.parentNode : rawNode;
+        const inTitleField = el && el.closest && el.closest('.tp-title, .tp-author, .tp-contact');
+        const block = getBlock(rawNode);
+        const singleLine = !/\S[^\S\n]*\n+\s*\S/.test(text.trim());
+        if (inTitleField || singleLine || !block || block === EDITOR) {
+            let clean = inTitleField ? text : text.replace(/\s*\n\s*/g, ' ').trim();
+            if (block && !inTitleField && (block.className === 'scene-heading' || block.className === 'character')) {
+                clean = clean.toUpperCase();
+            }
+            document.execCommand('insertText', false, clean);
+            return;
+        }
+        if (block.classList.contains('title-page-container')) return;
+        const elements = WTScreenplay.parsePlainScript(text);
+        if (!elements.length) return;
+        hideDropdown();
+        const sugg = block.querySelector('.suggestion');
+        if (sugg) sugg.remove();
+        // Replace an empty current line; otherwise insert after it.
+        let anchor = block;
+        const replaceCurrent = !getPureText(block).trim();
+        let last = null;
+        elements.forEach((item) => {
+            const div = document.createElement('div');
+            setBlockType(div, item.type);
+            div.textContent = item.text;
+            anchor.after(div);
+            anchor = div;
+            last = div;
+        });
+        if (replaceCurrent) block.remove();
+        const range = document.createRange();
+        range.selectNodeContents(last);
+        range.collapse(false);
+        sel.removeAllRanges();
+        sel.addRange(range);
+        last.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        updateSelectorUI();
+        updateSuggestions();
+        triggerSave();
+        updatePageCount();
+        STATUS.innerText = 'Pasted ' + elements.length + ' elements';
     });
 
     // Add mouse interactions for UI sync
@@ -1969,7 +2055,7 @@
         if (!parts.location) return '';
         const prefix = parts.prefix || 'INT.';
         if (!parts.hasDash) return `${prefix} ${parts.location}`.trim();
-        const time = parts.time || 'DAY.';
+        const time = parts.time || 'DAY';
         return `${prefix} ${parts.location} - ${time}`.trim();
     }
 
@@ -2373,7 +2459,8 @@
                     sceneLocationCoreSet.add(parts.location);
                     if (parts.prefix) sceneLocationPrefixMap.set(parts.location, parts.prefix);
                 }
-                if (parts.time) sceneTimeSet.add(parts.time);
+                // Older drafts wrote "NIGHT."; suggest the standard form.
+                if (parts.time) sceneTimeSet.add(parts.time.replace(/\.+$/, ''));
                 previousCharacter = '';
                 return;
             }

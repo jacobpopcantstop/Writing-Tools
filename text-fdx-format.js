@@ -2,9 +2,6 @@
   'use strict';
 
   var KNOWN_TYPES = ['scene-heading', 'action', 'character', 'dialogue', 'parenthetical', 'transition'];
-  var COURIUS_STORAGE_KEY = 'writingtools_courius_storage';
-  var COURIUS_REV_KEY = 'writingtools_courius_revision_v1';
-  var COURIUS_UPDATED_KEY = 'writingtools_courius_updated_at';
   var MAX_INPUT_CHARS = 60000;
 
   function normalizeType(type) {
@@ -183,14 +180,19 @@
     return chunks.join('');
   }
 
-  function saveToCourius(doc, storage) {
+  // Sends the formatted script to Courius as a NEW script (never replacing
+  // the one the writer has open). Returns the Courius HTML that was stored.
+  function saveToCourius(doc, storage, couriusApi) {
+    var courius = couriusApi || (root && root.WTCourius);
+    if (!courius || typeof courius.createScript !== 'function') {
+      throw new Error('WTCourius.createScript is not available.');
+    }
     var target = storage || (root && root.localStorage);
     if (!target) throw new Error('localStorage is not available.');
     var html = buildCouriusHtml(doc);
-    var currentRev = parseInt(target.getItem(COURIUS_REV_KEY) || '0', 10) || 0;
-    target.setItem(COURIUS_STORAGE_KEY, html);
-    target.setItem(COURIUS_REV_KEY, String(currentRev + 1));
-    target.setItem(COURIUS_UPDATED_KEY, String(Date.now()));
+    var normalized = normalizeFormatterResult(doc);
+    var id = courius.createScript(html, 'Text to FDX', normalized.title || 'Text to FDX import', target);
+    if (!id) throw new Error('Could not save the script to Courius (storage may be full).');
     return html;
   }
 

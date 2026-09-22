@@ -13,6 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@500;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@0.263.1"></script>
   <script src="shared-toast.js"></script>
+  <script src="shared-courius.js"></script>
   <script src="courius-format.js"></script>
   <script src="text-fdx-format.js"></script>
   <script src="shared-pwa.js"></script>
@@ -597,8 +598,13 @@
       function sendToCourius() {
         syncDocFromPreview();
         if (!currentDoc.elements.length) return;
-        formatter.saveToCourius(currentDoc);
-        notify('Sent to Courius.', 'success');
+        try {
+          formatter.saveToCourius(currentDoc);
+        } catch (err) {
+          notify(err && err.message ? err.message : 'Could not send to Courius.', 'error');
+          return;
+        }
+        notify('Sent to Courius as a new script.', 'success');
         window.open('Courius.html', '_blank', 'noopener');
       }
 

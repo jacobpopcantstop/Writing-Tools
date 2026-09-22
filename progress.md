@@ -50,3 +50,14 @@ Prompt: get the tools to top quality (priority: Courius, then BeatHive/Synax/Jot
 
 - Typing "EXT" on a fresh scene-heading line was suggesting "INT. EXT": the suggestion pool harvested the line being typed and its normalizer prepends a default INT. to any heading without a prefix. The caret's line is now excluded from harvesting, and prefix-in-progress text (I/IN/INT/E/EX/EXT/INT/EXT) is never treated as a location name.
 - Location-core completions now reuse the prefix each location was actually written with (typing "PA" after "EXT. PARK - DAY" suggests "EXT. PARK", not "INT. PARK").
+
+## Suite trim + Courius safety pass (September 2026)
+
+- Removed CharacterForge, Wribbon, WitherNaught, and PaperCut (plus their tests, smoke checks, hub cards, palette commands, recent-session and snapshot entries). PaperCut's "censor" bar only drew a box over the text, which stayed extractable.
+- Handoffs can no longer destroy the open script: Text to FDX's "Send to Courius" and every tool's "Replace" mode now create a new Courius script (`WTCourius.createScript`) and ask Courius to open it (immediately in an open tab, otherwise on next load).
+- Courius pastes as plain text; multi-line pastes are split into screenplay elements (`WTScreenplay.parsePlainScript`).
+- Courius autosaves on every `input` event (right-click paste, drag-drop, menu cut no longer wait for a keystroke).
+- Scene-heading time suggestions no longer end in a period (`NIGHT`, not `NIGHT.`).
+- Removing an edited title page asks first.
+- RTF export: non-ASCII written as `\uN?` (no more mojibake), letter paper with 1.5in/1in margins, no blank line between cue/parenthetical/dialogue, parentheticals no longer italic, title page ends with a page break, cues/headings uppercased.
+- Smoke suite's stale `WTContextBus` Courius check rewritten for the new handoff semantics.

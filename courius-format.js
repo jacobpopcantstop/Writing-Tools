@@ -1,48 +1,80 @@
 (function (root) {
   'use strict';
 
-  // All indents in twips (1440/inch), measured from a 1.5" left / 1" right page margin.
+  // Letter paper with standard screenplay margins: 1.5in left, 1in elsewhere.
+  // Indents are in twips (1440/inch) from the 1.5in left margin and match the
+  // Courius editor's CSS (character 2.2in, parenthetical 1.6in/2.5in wide,
+  // dialogue 1.1in/3.3in wide on a 6in text column).
+  var RTF_PAGE = '\\paperw12240\\paperh15840\\margl2160\\margr1440\\margt1440\\margb1440';
+  var UPPERCASE_TYPES = ['scene-heading', 'character', 'transition'];
+
+  // Spacing mirrors the page: a blank line after action, dialogue, headings
+  // and transitions; none between a character cue, its parenthetical and
+  // its dialogue.
   function rtfPrefix(type) {
     switch (type) {
-      case 'scene-heading': return '\\pard\\sa240\\sb0\\li0\\ri0\\ql ';
-      case 'character':     return '\\pard\\sa240\\sb0\\li3168\\ri0\\ql ';
-      case 'parenthetical': return '\\pard\\sa240\\sb0\\li2304\\ri2880\\ql\\i ';
-      case 'dialogue':      return '\\pard\\sa240\\sb0\\li1440\\ri2160\\ql ';
+      case 'scene-heading': return '\\pard\\sa240\\sb240\\li0\\ri0\\ql\\keepn ';
+      case 'character':     return '\\pard\\sa0\\sb0\\li3168\\ri0\\ql\\keepn ';
+      case 'parenthetical': return '\\pard\\sa0\\sb0\\li2304\\ri2736\\ql\\keepn ';
+      case 'dialogue':      return '\\pard\\sa240\\sb0\\li1584\\ri2304\\ql ';
       case 'transition':    return '\\pard\\sa240\\sb0\\li0\\ri0\\qr ';
       case 'action':
       default:              return '\\pard\\sa240\\sb0\\li0\\ri0\\ql ';
     }
   }
 
-  function rtfSuffix(type) {
-    return type === 'parenthetical' ? '\\i0\\par' : '\\par';
+  function rtfSuffix() {
+    return '\\par';
   }
 
+  // RTF is 7-bit: anything outside ASCII must be written as \uN? (signed
+  // 16-bit UTF-16 code units, so astral characters become surrogate pairs)
+  // or Word renders curly quotes and em dashes as mojibake.
   function escapeRtf(text) {
-    return String(text || '')
+    var escaped = String(text || '')
       .replace(/\\/g, '\\\\')
       .replace(/\{/g, '\\{')
       .replace(/\}/g, '\\}')
       .replace(/\r\n|\r|\n/g, '\\line ');
+    var out = '';
+    for (var i = 0; i < escaped.length; i += 1) {
+      var code = escaped.charCodeAt(i);
+      if (code < 128) {
+        out += escaped.charAt(i);
+      } else {
+        out += '\\u' + (code > 32767 ? code - 65536 : code) + '?';
+      }
+    }
+    return out;
   }
 
   function buildRtf(doc) {
     var d = doc || {};
     var sections = [];
     if (d.title || d.author || d.contact) {
-      if (d.title)   sections.push('\\pard\\qc\\sa240\\sb0\\fs24\\ul ' + escapeRtf(d.title) + '\\ul0\\par');
-      if (d.author)  sections.push('\\pard\\qc\\sa240\\sb0\\fs24 ' + escapeRtf(d.author) + '\\par');
-      if (d.contact) sections.push('\\pard\\qc\\sa240\\sb0\\fs24 ' + escapeRtf(d.contact) + '\\par');
-      sections.push('\\pard\\par');
+      // Title roughly a third of the way down, contact block near the bottom.
+      for (var i = 0; i < 18; i += 1) sections.push('\\pard\\par');
+      if (d.title) sections.push('\\pard\\qc\\sa240\\sb0\\fs24\\ul ' + escapeRtf(String(d.title).toUpperCase()) + '\\ul0\\par');
+      if (d.author) {
+        sections.push('\\pard\\qc\\sa240\\sb0\\fs24 by\\par');
+        sections.push('\\pard\\qc\\sa240\\sb0\\fs24 ' + escapeRtf(d.author) + '\\par');
+      }
+      if (d.contact) {
+        for (var j = 0; j < 16; j += 1) sections.push('\\pard\\par');
+        sections.push('\\pard\\ql\\sa0\\sb0\\fs24 ' + escapeRtf(d.contact) + '\\par');
+      }
+      sections.push('\\page');
     }
     (d.elements || []).forEach(function (el) {
       var type = (el && el.type) || 'action';
       var text = String((el && el.text) || '').trim();
-      if (!text) { sections.push('\\pard\\par'); return; }
+      if (!text) return;
+      if (UPPERCASE_TYPES.indexOf(type) !== -1) text = text.toUpperCase();
       sections.push(rtfPrefix(type) + escapeRtf(text) + rtfSuffix(type));
     });
-    return '{\\rtf1\\ansi\\deff0' +
-      '{\\fonttbl{\\f0 Courier New;}}' +
+    return '{\\rtf1\\ansi\\ansicpg1252\\deff0' +
+      '{\\fonttbl{\\f0\\fmodern Courier New;}}' +
+      RTF_PAGE +
       '\\viewkind4\\uc1\\pard\\f0\\fs24 ' +
       sections.join('') +
       '}';
@@ -112,7 +144,49 @@
     }, []);
   }
 
-  var WTScreenplay = { rtfPrefix: rtfPrefix, rtfSuffix: rtfSuffix, escapeRtf: escapeRtf, buildRtf: buildRtf, escapeXml: escapeXml, fdxType: fdxType, buildFdx: buildFdx, extractElements: extractElements, classifyType: classifyType };
+
+  var SCENE_HEADING_RE = /^(?:INT\.?\/EXT|EXT\.?\/INT|I\/E|INT|EXT|EST)[.\s]/i;
+  var TRANSITION_RE = /^(?:[A-Z0-9 .'-]+ TO:|FADE (?:IN|OUT)[.:]?|FADE TO BLACK\.?|CUT TO BLACK\.?)$/;
+
+  function isAllCaps(line) {
+    return /[A-Z]/.test(line) && line === line.toUpperCase();
+  }
+
+  // Turns pasted plain text (a script from a PDF, email, or another app)
+  // into screenplay elements with Fountain-style rules: blank lines separate
+  // paragraphs, INT./EXT. lines are scene headings, an all-caps line directly
+  // above text is a character cue, and the lines under it are dialogue.
+  function parsePlainScript(text) {
+    var lines = String(text || '').replace(/\r\n?/g, '\n').replace(/\t/g, ' ').split('\n');
+    var out = [];
+    var inDialogue = false;
+    for (var i = 0; i < lines.length; i += 1) {
+      var line = lines[i].replace(/ /g, ' ').trim();
+      if (!line) { inDialogue = false; continue; }
+      var prevBlank = i === 0 || !lines[i - 1].trim();
+      var nextLine = i + 1 < lines.length ? lines[i + 1].trim() : '';
+      if (inDialogue) {
+        out.push({ type: /^\(.*\)$/.test(line) ? 'parenthetical' : 'dialogue', text: line });
+        continue;
+      }
+      if (SCENE_HEADING_RE.test(line)) {
+        out.push({ type: 'scene-heading', text: line.toUpperCase() });
+      } else if (TRANSITION_RE.test(line)) {
+        out.push({ type: 'transition', text: line });
+      } else if (prevBlank && nextLine && isAllCaps(line) && line.length <= 40 && !/[.!?:]$/.test(line.replace(/\([^)]*\)$/, '').trim())) {
+        out.push({ type: 'character', text: line });
+        inDialogue = true;
+      } else {
+        // Wrapped lines of one paragraph (no blank line between) join up.
+        var last = out[out.length - 1];
+        if (last && last.type === 'action' && !prevBlank) last.text += ' ' + line;
+        else out.push({ type: 'action', text: line });
+      }
+    }
+    return out;
+  }
+
+  var WTScreenplay = { rtfPrefix: rtfPrefix, rtfSuffix: rtfSuffix, escapeRtf: escapeRtf, buildRtf: buildRtf, escapeXml: escapeXml, fdxType: fdxType, buildFdx: buildFdx, extractElements: extractElements, classifyType: classifyType, parsePlainScript: parsePlainScript };
   if (typeof module !== 'undefined' && module.exports) module.exports = WTScreenplay;
   if (root) root.WTScreenplay = WTScreenplay;
 })(typeof window !== 'undefined' ? window : null);
