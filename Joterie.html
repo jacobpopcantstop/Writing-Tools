@@ -13,6 +13,7 @@
 
     <script src="https://cdn.tailwindcss.com/3.4.16"></script>
     <script src="shared-toast.js"></script>
+    <script src="beathive-core.js"></script>
     <script src="shared-pwa.js"></script>
     <script src="shared-export.js"></script>
     <script src="shared-tool-manifest.js"></script>
@@ -800,17 +801,17 @@
 
         function sendToBeatHive() {
             const kept = state.sessionCards.filter(c => c.status === 'kept').map(c => String(c.text || '').trim()).filter(Boolean);
-            try {
-                localStorage.setItem('writingtools_beathive_handoff_v1', JSON.stringify({
+            if (kept.length && window.WTBeatHive) {
+                window.WTBeatHive.queueHandoff({
                     topic: state.focusPrompt || '',
                     jots: kept,
                     source: 'Joterie',
                     createdAt: new Date().toISOString()
-                }));
-            } catch (_) {}
+                });
+            }
             if (window.WTToast && typeof window.WTToast.notify === 'function') {
                 window.WTToast.notify(kept.length
-                    ? `Sending ${kept.length} jot${kept.length === 1 ? '' : 's'} to BeatHive`
+                    ? `Sent ${kept.length} jot${kept.length === 1 ? '' : 's'} to the BeatHive inbox`
                     : 'Opening BeatHive (no kept jots to send)', kept.length ? 'success' : 'info');
             }
             window.open('BeatHive.html', '_blank', 'noopener');

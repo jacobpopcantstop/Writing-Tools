@@ -62,26 +62,27 @@
     } catch (_) {}
 
     try {
-      var rawBeats = localStorage.getItem('writingtools_beathive_sketches');
-      var sketches = rawBeats ? JSON.parse(rawBeats) : [];
-      if (Array.isArray(sketches) && sketches.length) {
-        var recentBeat = sketches
-          .slice()
-          .sort(function (a, b) {
-            return new Date(b && (b.updatedAt || b.createdAt) || 0).getTime() - new Date(a && (a.updatedAt || a.createdAt) || 0).getTime();
-          })[0];
-        var beatCount = Array.isArray(recentBeat && recentBeat.cells)
-          ? recentBeat.cells.filter(function (c) { return c && c.content && String(c.content).trim(); }).length
+      var beatState = JSON.parse(localStorage.getItem('writingtools_beathive_v2') || 'null');
+      var ladders = beatState && Array.isArray(beatState.ladders) ? beatState.ladders : [];
+      var inboxCount = beatState && Array.isArray(beatState.inbox) ? beatState.inbox.length : 0;
+      if (ladders.length || inboxCount) {
+        var recentLadder = ladders.slice().sort(function (a, b) {
+          return (Number(b && b.updatedAt) || 0) - (Number(a && a.updatedAt) || 0);
+        })[0] || null;
+        var rungCount = recentLadder && Array.isArray(recentLadder.rungs)
+          ? recentLadder.rungs.filter(function (r) { return r && String(r.text || '').trim(); }).length
           : 0;
         out.push({
-          signature: recentBeat && recentBeat.id ? String(recentBeat.id) : '',
+          signature: recentLadder && recentLadder.id ? String(recentLadder.id) : 'beathive-inbox',
           id: 'recent-beathive',
           tool: 'BeatHive',
           category: categoryForTool('BeatHive'),
-          title: trimTitle((recentBeat && recentBeat.name) || 'Untitled Hive', 28),
-          meta: beatCount + ' populated beats',
+          title: trimTitle((recentLadder && recentLadder.name) || 'Premise Inbox', 28),
+          meta: recentLadder
+            ? rungCount + ' rung' + (rungCount === 1 ? '' : 's') + ' · ' + inboxCount + ' in inbox'
+            : inboxCount + ' premise' + (inboxCount === 1 ? '' : 's') + ' waiting',
           path: 'BeatHive.html',
-          updatedAt: new Date(recentBeat && (recentBeat.updatedAt || recentBeat.createdAt) || 0).getTime() || 0,
+          updatedAt: (recentLadder && Number(recentLadder.updatedAt)) || (inboxCount && Number(beatState.inbox[0].createdAt)) || 0,
           updatedLabel: ''
         });
       }

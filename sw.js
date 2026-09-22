@@ -1,4 +1,4 @@
-const WT_CACHE_NAME = 'writingtools-static-v6';
+const WT_CACHE_NAME = 'writingtools-static-v7';
 const WT_CORE_ASSETS = [
   './',
   './index.html',
@@ -10,6 +10,7 @@ const WT_CORE_ASSETS = [
   './TextToFDX.html',
   './shared-toast.js',
   './shared-courius.js',
+  './beathive-core.js',
   './courius-format.js',
   './text-fdx-format.js',
   './shared-export.js',

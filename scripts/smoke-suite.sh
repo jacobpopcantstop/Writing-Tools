@@ -370,19 +370,19 @@ run_eval_check wt-joterie "Joterie snapshot restore applies archived payload" "$
 JS
 )"
 
-run_eval_check wt-beathive "BeatHive revisioned local persistence updates on rename" "$(cat <<'JS'
+run_eval_check wt-beathive "BeatHive ingests queued handoffs into the premise inbox" "$(cat <<'JS'
 (() => {
-  localStorage.removeItem('writingtools_beathive_state_v1');
-  localStorage.removeItem('writingtools_beathive_revision_v1');
-  const input = document.querySelector('header input[aria-label="Project Name"]');
-  if (!input) throw new Error('BeatHive project name input not found');
-  input.value = 'Smoke Hive';
-  input.dispatchEvent(new Event('input', { bubbles: true }));
-  input.dispatchEvent(new Event('change', { bubbles: true }));
+  if (!window.WTBeatHive || !window.BeatHiveDebug) throw new Error('BeatHive APIs unavailable');
+  window.WTBeatHive.queueHandoff({ topic: 'Smoke', jots: ['smoke jot one', 'smoke jot two'], source: 'Joterie' });
+  window.WTBeatHive.queueHandoff({ topic: 'Smoke topic', constraints: 'noun: test', source: 'Synax' });
+  window.BeatHiveDebug.ingestHandoffs();
+  const texts = window.BeatHiveDebug.getState().inbox.map((i) => i.text);
+  ['smoke jot one', 'smoke jot two', 'Smoke topic'].forEach((t) => {
+    if (!texts.includes(t)) throw new Error('Inbox missing ' + t);
+  });
+  if (localStorage.getItem('writingtools_beathive_handoff_v1')) throw new Error('Handoff queue not cleared');
   const rev = parseInt(localStorage.getItem('writingtools_beathive_revision_v1') || '0', 10) || 0;
-  const payload = JSON.parse(localStorage.getItem('writingtools_beathive_state_v1') || '{}');
   if (!(rev > 0)) throw new Error('BeatHive revision not persisted');
-  if (!payload || !Array.isArray(payload.sketches)) throw new Error('BeatHive persisted payload missing sketches');
   return true;
 })()
 JS
@@ -390,9 +390,6 @@ JS
 
 run_eval_check wt-beathive "BeatHive latest snapshot restore applies local state" "$(cat <<'JS'
 (() => {
-  if (!window.BeatHiveDebug || typeof window.BeatHiveDebug.restoreLatestSnapshot !== 'function') {
-    throw new Error('BeatHive snapshot controls unavailable');
-  }
   const originalConfirm = window.confirm;
   window.confirm = () => true;
   try {
@@ -400,18 +397,14 @@ run_eval_check wt-beathive "BeatHive latest snapshot restore applies local state
       id: 'bhsmoke',
       at: new Date().toISOString(),
       reason: 'smoke-test',
-      payload: {
-        sketches: [{ id: 'local-1', name: 'Recovered Hive', cells: [], updatedAt: Date.now() }],
-        couriusMode: 'append',
-        immersiveSeen: true
-      }
+      payload: { version: 2, inbox: [], ladders: [{ id: 'l-smoke', name: 'Recovered Ladder', rungs: ['one'] }], activeId: 'l-smoke' }
     }]));
     window.BeatHiveDebug.restoreLatestSnapshot();
   } finally {
     window.confirm = originalConfirm;
   }
-  const payload = JSON.parse(localStorage.getItem('writingtools_beathive_state_v1') || '{}');
-  if (!payload || !Array.isArray(payload.sketches) || payload.sketches[0]?.name !== 'Recovered Hive') {
+  const payload = JSON.parse(localStorage.getItem('writingtools_beathive_v2') || '{}');
+  if (!payload || !Array.isArray(payload.ladders) || payload.ladders[0]?.name !== 'Recovered Ladder') {
     throw new Error('BeatHive restored payload mismatch');
   }
   return true;
@@ -474,26 +467,28 @@ JS
 echo "==> cross-tool Courius handoff checks"
 
 pause_ms wt-beathive 1200
-run_eval_check wt-beathive "BeatHive UI send-to-Courius writes payload" "$(cat <<'JS'
+run_eval_check wt-beathive "BeatHive UI send-to-Courius creates a new script" "$(cat <<'JS'
 (() => {
-  localStorage.removeItem('writingtools_courius_storage');
   const opened = [];
   const originalOpen = window.open;
   window.open = (url) => {
     opened.push(String(url || ''));
     return { closed: false };
   };
+  const docsBefore = JSON.parse(localStorage.getItem('writingtools_courius_docs_v1') || '[]').length;
   try {
-    const sendBtn = Array.from(document.querySelectorAll('button'))
-      .find((btn) => /send\s+map\s+to\s+courius|send\s+to\s+courius/i.test((btn.textContent || '').trim()));
+    const select = document.querySelector('.mode-select');
+    if (select) { select.value = 'new'; }
+    const sendBtn = document.getElementById('send-courius-btn');
     if (!sendBtn) throw new Error('BeatHive send button not found');
     sendBtn.click();
   } finally {
     window.open = originalOpen;
   }
-  const payload = localStorage.getItem('writingtools_courius_storage') || '';
-  if (!payload.trim()) throw new Error('BeatHive did not write Courius payload');
-  if (!/BEAT\s+\d+/i.test(payload)) throw new Error('BeatHive payload missing beat markers');
+  const docs = JSON.parse(localStorage.getItem('writingtools_courius_docs_v1') || '[]');
+  if (docs.length <= docsBefore) throw new Error('BeatHive did not create a Courius script');
+  const payload = localStorage.getItem('writingtools_courius_doc_' + docs[0].id) || '';
+  if (!/\[GAME\]/.test(payload) || !/\[BUTTON\]/.test(payload)) throw new Error('BeatHive payload missing ladder markers');
   if (!opened.some((url) => /Courius\.html/i.test(url))) throw new Error('BeatHive did not attempt to open Courius');
   return true;
 })()

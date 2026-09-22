@@ -1,1764 +1,1059 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <link rel="stylesheet" href="shared-polish.css">
-    <title>BeatHive - Story Structure Architect</title>
-    <meta name="description" content="A hex-grid canvas for mapping story beats.">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5' fill='%23fd19c8'/><polygon points='50,20 80,37.5 80,62.5 50,80 20,62.5 20,37.5' fill='%23da70d6' opacity='0.6'/></svg>">
+    <title>BeatHive</title>
+    <meta name="description" content="Build sketches rung by rung: a premise inbox feeding game ladders, sent to Courius as a script skeleton.">
+    <meta name="theme-color" content="#08080a">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%2308080a%22/><path d=%22M32 14v72M68 14v72%22 stroke=%22%23fd19c8%22 stroke-width=%228%22 stroke-linecap=%22round%22/><path d=%22M32 72h36M32 50h36M32 28h36%22 stroke=%22%23fae84f%22 stroke-width=%227%22 stroke-linecap=%22round%22/></svg>">
     <link rel="manifest" href="manifest.webmanifest">
-    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+    <link rel="stylesheet" href="shared-polish.css">
     <script src="shared-toast.js"></script>
     <script src="shared-courius.js"></script>
+    <script src="beathive-core.js"></script>
     <script src="shared-pwa.js"></script>
     <script src="shared-tool-manifest.js"></script>
     <script src="shared-recent-sessions.js"></script>
     <script src="shared-commands.js"></script>
     <script src="shared-command-palette.js"></script>
-    <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=Space+Grotesk:wght@700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
-        
         :root {
-            --bg-dark: #000000;
-            --bg-light: #f8f5f0;
-            --panel-light: #e6e0d4;
-            --text-dark: #1a1a1a;
-            --text-light: #ffffff;
-            --accent-pink: #fd19c8;
-            --accent-purple: #da70d6;
-            --accent-yellow: #fae84f;
-            --sidebar-width: 320px;
+            --bg: #08080a;
+            --panel: #111114;
+            --panel-2: #18181c;
+            --line: #26262c;
+            --text: #f4f4f5;
+            --muted: #a1a1aa;
+            --faint: #6b6b74;
+            --pink: #fd19c8;
+            --gold: #fae84f;
+            --danger: #f87171;
+            --ok: #4ade80;
+            --field: #0c0c0f;
+            --ui: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
         }
-
+        [data-theme="light"] {
+            --bg: #f5f3ef;
+            --panel: #ffffff;
+            --panel-2: #f0ede7;
+            --line: #ddd8cf;
+            --text: #16161a;
+            --muted: #55555e;
+            --faint: #8a8a94;
+            --pink: #c8119d;
+            --gold: #9a7d00;
+            --danger: #b42318;
+            --ok: #15803d;
+            --field: #fbfaf8;
+        }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; }
         body {
-            font-family: 'Inter', sans-serif;
-            overflow: hidden;
-            margin: 0;
-            padding: 0;
+            min-height: 100vh;
             min-height: 100dvh;
-            -webkit-text-size-adjust: 100%;
-            transition: background-color 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-            user-select: none;
-            -webkit-user-select: none;
+            background: var(--bg);
+            color: var(--text);
+            font: 15px/1.5 var(--ui);
         }
+        button, input, textarea, select { font: inherit; color: inherit; }
+        button { cursor: pointer; }
+        :focus-visible { outline: 2px solid var(--pink); outline-offset: 2px; }
 
-        /* Typography */
-        .font-display { font-family: 'Space Grotesk', sans-serif; }
-        .font-serif { font-family: 'Lora', serif; }
-
-        /* Theme Classes */
-        .light-theme {
-            background-color: var(--bg-light) !important;
-            color: var(--text-dark);
-        }
-        .dark-theme {
-            background-color: #05020a !important;
-            color: var(--text-light);
-        }
-
-        /* Smooth Sidebar Architecture */
-        .sidebar-panel {
-            transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
-            overflow: hidden;
+        /* --- Top bar --- */
+        .topbar {
             display: flex;
-            flex-direction: column;
-            border-color: rgba(255, 255, 255, 0.05);
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--line);
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            height: 57px;
+            background: color-mix(in srgb, var(--bg) 92%, transparent);
+            backdrop-filter: blur(10px);
         }
-        
-        .light-theme .sidebar-panel {
-            border-color: rgba(253, 25, 200, 0.15);
-            background: rgba(230, 224, 212, 0.95);
+        .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+        .brand h1 { margin: 0; font-size: 17px; letter-spacing: 0.02em; }
+        .brand small { color: var(--muted); font-size: 12px; white-space: nowrap; }
+        .brand-mark {
+            width: 26px; height: 26px; border-radius: 7px;
+            background: var(--panel-2); border: 1px solid var(--line);
+            display: grid; place-items: center; flex: none;
         }
-        .dark-theme .sidebar-panel {
-            border-color: rgba(253, 25, 200, 0.12);
-            background: rgba(10, 10, 10, 0.95);
-        }
+        .top-actions { display: flex; gap: 8px; align-items: center; }
+        .home-link { color: var(--muted); font-size: 13px; text-decoration: none; white-space: nowrap; }
+        .home-link:hover { color: var(--text); }
 
-        .sidebar-inner {
-            min-width: var(--sidebar-width);
-            width: var(--sidebar-width);
-            height: 100%;
-            display: flex;
-            flex-direction: column;
+        .btn {
+            border: 1px solid var(--line);
+            background: var(--panel);
+            border-radius: 8px;
+            padding: 7px 12px;
+            font-size: 13px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: border-color .15s, background .15s;
         }
-
-        /* Hex & Grid */
-        .hex-transition { transition: transform 0.1s linear, fill 0.2s ease; }
-        .bg-grid-dark { background-image: radial-gradient(rgba(253, 25, 200, 0.08) 1.5px, transparent 1px); background-size: 40px 40px; }
-        .bg-grid-light { background-image: radial-gradient(rgba(253, 25, 200, 0.1) 1.5px, transparent 1px); background-size: 40px 40px; }
-
-        .hex-shadow {
-            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
-            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.2s ease;
-            transform-origin: center center;
-            transform-box: fill-box;
-        }
-        .hex-group:hover .hex-shadow {
-            transform: scale(1.06);
-            filter: drop-shadow(0 10px 20px rgba(253, 25, 200, 0.25)) drop-shadow(0 4px 8px rgba(0,0,0,0.2));
-        }
-        /* Prevent hover jitter by adding invisible hit area */
-        .hex-group { isolation: isolate; }
-
-        .tooltip { visibility: hidden; opacity: 0; transition: opacity 0.2s; position: absolute; z-index: 100; bottom: 120%; left: 50%; transform: translateX(-50%); pointer-events: none; }
-        .group:hover .tooltip { visibility: visible; opacity: 1; }
-        
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        textarea, input { user-select: text !important; -webkit-user-select: text !important; }
-
-        /* Custom Range Slider */
-        input[type=range] {
-            -webkit-appearance: none;
+        .btn:hover { border-color: var(--faint); }
+        .btn.primary { background: var(--pink); border-color: var(--pink); color: #fff; }
+        .btn.primary:hover { filter: brightness(1.08); }
+        .btn.ghost { background: transparent; }
+        .btn.danger:hover { border-color: var(--danger); color: var(--danger); }
+        .icon-btn {
+            border: 1px solid transparent;
             background: transparent;
+            border-radius: 6px;
+            width: 28px; height: 28px;
+            display: inline-grid; place-items: center;
+            color: var(--muted);
+            font-size: 14px;
         }
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            height: 12px;
-            width: 12px;
-            border-radius: 50%;
-            background: currentColor;
-            cursor: pointer;
-            margin-top: -4px; 
+        .icon-btn:hover { color: var(--text); border-color: var(--line); background: var(--panel-2); }
+        .icon-btn:disabled { opacity: .3; cursor: default; background: transparent; border-color: transparent; }
+
+        /* --- Layout --- */
+        .layout {
+            display: grid;
+            grid-template-columns: 320px minmax(0, 1fr);
+            min-height: calc(100dvh - 57px);
         }
-        input[type=range]::-webkit-slider-runnable-track {
+        .inbox {
+            border-right: 1px solid var(--line);
+            padding: 18px 16px 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            position: sticky;
+            top: 57px;
+            height: calc(100dvh - 57px);
+            overflow: auto;
+        }
+        .section-label {
+            font: 700 11px/1 var(--mono);
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: var(--muted);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .inbox-add textarea {
             width: 100%;
-            height: 4px;
-            cursor: pointer;
-            background: currentColor;
-            opacity: 0.2;
-            border-radius: 2px;
-        }
-
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-in { animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-
-        @keyframes selectedPulse {
-            0%, 100% { stroke-opacity: 1; }
-            50% { stroke-opacity: 0.5; }
-        }
-        .hex-selected-pulse { animation: selectedPulse 2s ease-in-out infinite; }
-
-        @keyframes slideInLeft { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
-        @keyframes slideInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-slide-left { animation: slideInLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        .animate-slide-right { animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        .animate-fade-up { animation: fadeUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-
-        /* Empty hex hover hint */
-        .hex-empty-hover { cursor: crosshair; }
-        .hex-empty-hover:hover polygon { fill-opacity: 0.15 !important; }
-
-        /* Minimap */
-        .minimap {
-            position: absolute;
-            bottom: 80px;
-            right: 20px;
-            width: 150px;
-            height: 120px;
-            border-radius: 12px;
+            resize: none;
+            border: 1px solid var(--line);
+            background: var(--field);
+            border-radius: 10px;
+            padding: 10px 12px;
+            min-height: 44px;
+            line-height: 1.4;
             overflow: hidden;
-            z-index: 50;
-            opacity: 0.8;
-            transition: opacity 0.2s, transform 0.2s;
         }
-        .minimap:hover {
-            opacity: 1;
-            transform: scale(1.05);
+        .inbox-add textarea:focus { border-color: var(--pink); outline: none; }
+        .inbox-hint { color: var(--faint); font-size: 12px; margin: 4px 2px 0; }
+        .inbox-list { display: flex; flex-direction: column; gap: 8px; }
+        .premise {
+            border: 1px solid var(--line);
+            background: var(--panel);
+            border-radius: 10px;
+            padding: 10px 12px;
+            cursor: grab;
+            transition: border-color .15s;
         }
-        .dark-theme .minimap { background: rgba(0,0,0,0.8); border: 1px solid rgba(253, 25, 200, 0.2); }
-        .light-theme .minimap { background: rgba(26,26,26,0.9); border: 1px solid rgba(253, 25, 200, 0.15); }
-        .minimap-viewport {
+        .premise:hover { border-color: var(--faint); }
+        .premise.dragging { opacity: .45; }
+        .premise-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+        .premise-detail { color: var(--muted); font-size: 12px; margin-top: 3px; overflow-wrap: anywhere; }
+        .premise-meta { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-top: 8px; gap: 6px; }
+        .source-badge {
+            font: 700 10px/1 var(--mono);
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            padding: 4px 7px;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            color: var(--muted);
+            white-space: nowrap;
+        }
+        .source-badge[data-source="Joterie"] { color: var(--pink); border-color: color-mix(in srgb, var(--pink) 45%, transparent); }
+        .source-badge[data-source="Synax"] { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 45%, transparent); }
+        .source-badge[data-source="ThisButThat"] { color: #a78bfa; border-color: #a78bfa66; }
+        .premise-actions { display: flex; gap: 4px; align-items: center; }
+        .premise-actions .btn { padding: 4px 8px; font-size: 12px; white-space: nowrap; }
+        .empty {
+            color: var(--faint);
+            font-size: 13px;
+            border: 1px dashed var(--line);
+            border-radius: 10px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        /* --- Main --- */
+        .main { padding: 18px 28px 80px; min-width: 0; }
+        .tabs { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
+        .tab {
+            border: 1px solid var(--line);
+            background: var(--panel);
+            border-radius: 999px;
+            padding: 6px 12px;
+            font-size: 13px;
+            max-width: 240px;
+            display: inline-flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .tab .tab-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .tab .tab-progress { color: var(--faint); font: 600 11px var(--mono); flex: none; }
+        .tab.active { border-color: var(--pink); box-shadow: 0 0 0 1px var(--pink) inset; }
+        .tab.new { border-style: dashed; color: var(--muted); background: transparent; }
+        .tab.drop-ok { border-color: var(--gold); color: var(--gold); }
+
+        .ladder { max-width: 820px; }
+        .ladder-name {
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: -.01em;
+            border: 1px solid transparent;
+            background: transparent;
+            border-radius: 8px;
+            padding: 2px 6px;
+            margin-left: -7px;
+            width: min(100%, 640px);
+            text-overflow: ellipsis;
+        }
+        .ladder-name:hover { border-color: var(--line); }
+        .ladder-name:focus { border-color: var(--pink); outline: none; }
+        .premise-line textarea {
+            width: 100%;
+            border: 1px solid transparent;
+            background: transparent;
+            border-radius: 8px;
+            padding: 4px 6px;
+            margin: 2px 0 0 -7px;
+            resize: none;
+            color: var(--muted);
+            font-size: 14px;
+            overflow: hidden;
+        }
+        .premise-line textarea:hover { border-color: var(--line); }
+        .premise-line textarea:focus { border-color: var(--pink); outline: none; color: var(--text); }
+
+        .hints {
+            margin: 14px 0 20px;
+            border: 1px solid var(--line);
+            border-left: 3px solid var(--gold);
+            background: var(--panel);
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 13px;
+        }
+        .hints.done { border-left-color: var(--ok); }
+        .hints ul { margin: 0; padding-left: 18px; color: var(--muted); }
+        .hints span { color: var(--muted); }
+        .hints strong { display: block; font: 700 11px/1.6 var(--mono); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 2px; }
+
+        /* The ladder rail */
+        .steps { position: relative; padding-left: 44px; }
+        .steps::before {
+            content: "";
             position: absolute;
-            border: 2px solid #fd19c8;
-            border-radius: 3px;
-            pointer-events: none;
+            left: 15px; top: 14px; bottom: 14px;
+            width: 2px;
+            background: linear-gradient(to bottom, var(--line), color-mix(in srgb, var(--pink) 55%, var(--line)) 60%, var(--gold));
         }
+        .step { position: relative; margin-bottom: 14px; }
+        .step-dot {
+            position: absolute;
+            left: -44px; top: 10px;
+            width: 32px; height: 32px;
+            border-radius: 999px;
+            background: var(--bg);
+            border: 2px solid var(--line);
+            display: grid; place-items: center;
+            font: 700 12px var(--mono);
+            color: var(--muted);
+        }
+        .step.filled .step-dot { border-color: var(--pink); color: var(--text); }
+        .step.game .step-dot { border-color: var(--gold); color: var(--gold); }
+        .card {
+            border: 1px solid var(--line);
+            background: var(--panel);
+            border-radius: 12px;
+            padding: 12px 14px;
+            transition: border-color .15s, box-shadow .15s;
+        }
+        .step.game .card { border-color: color-mix(in srgb, var(--gold) 55%, var(--line)); }
+        .card.drop-ok { border-color: var(--gold); box-shadow: 0 0 0 2px color-mix(in srgb, var(--gold) 35%, transparent); }
+        .card-label { font: 700 11px/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+        .step.game .card-label { color: var(--gold); }
+        .card-prompt { color: var(--faint); font-size: 13px; margin: 2px 0 6px; }
+        .field {
+            width: 100%;
+            border: 1px solid var(--line);
+            background: var(--field);
+            border-radius: 8px;
+            padding: 8px 10px;
+            resize: none;
+            line-height: 1.45;
+            min-height: 40px;
+            overflow: hidden;
+            display: block;
+        }
+        .field:focus { outline: none; border-color: var(--pink); }
+        .step.game .field { font-weight: 600; }
 
+        .rungs { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+        .rung {
+            display: grid;
+            grid-template-columns: 30px minmax(0, 1fr) auto;
+            gap: 8px;
+            align-items: start;
+        }
+        .rung-num {
+            width: 30px; height: 30px; margin-top: 5px;
+            border-radius: 8px;
+            display: grid; place-items: center;
+            font: 700 12px var(--mono);
+            color: #0b0b0d;
+            background: color-mix(in srgb, #fae84f var(--heat, 0%), #fd19c8);
+        }
+        .rung-tools { display: flex; gap: 2px; align-items: center; margin-top: 5px; }
+        .tops {
+            border: 1px solid var(--line);
+            background: transparent;
+            border-radius: 999px;
+            padding: 3px 9px;
+            font: 700 11px var(--mono);
+            color: var(--faint);
+            white-space: nowrap;
+        }
+        .tops[aria-pressed="true"] { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 55%, transparent); }
+        .tops.first { visibility: hidden; }
+        .add-rung { margin-top: 10px; }
+        .rung-summary { color: var(--faint); font-size: 12px; margin-top: 8px; }
+
+        .ladder-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid var(--line);
+        }
+        .ladder-actions .spacer { flex: 1; }
+        .mode-select {
+            border: 1px solid var(--line);
+            background: var(--panel);
+            border-radius: 8px;
+            padding: 6px 8px;
+            font-size: 13px;
+        }
+        .notes-card { margin-top: 18px; }
+
+        .welcome { max-width: 620px; padding-top: 32px; }
+        .welcome h2 { font-size: 28px; margin: 0 0 8px; }
+        .welcome p { color: var(--muted); }
+        .welcome ol { color: var(--muted); padding-left: 20px; }
+        .welcome li { margin: 4px 0; }
+        .welcome b { color: var(--text); }
+
+        @media (max-width: 860px) {
+            .layout { grid-template-columns: 1fr; }
+            .inbox { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--line); }
+            .main { padding: 16px 16px 80px; }
+            .steps { padding-left: 38px; }
+            .step-dot { left: -38px; width: 28px; height: 28px; }
+            .steps::before { left: 13px; }
+            .rung { grid-template-columns: 26px minmax(0, 1fr); }
+            .rung-num { width: 26px; height: 26px; }
+            .rung-tools { grid-column: 2; margin-top: 0; }
+            .brand small, #restore-btn { display: none; }
+            .ladder-name { font-size: 20px; }
+            .topbar { padding: 12px 16px; }
+        }
         @media print {
-            body { background: white !important; }
-            header, .sidebar-panel, .minimap { display: none !important; }
-            main { overflow: visible !important; }
-            svg { max-width: 100% !important; height: auto !important; }
-        }
-
-        @media (max-width: 1024px) {
-            .minimap { display: none !important; }
-            button, [role="button"], input[type="range"] { min-height: 44px; }
-            input, textarea { font-size: 16px; }
+            .topbar, .inbox, .tabs, .ladder-actions, .hints, .rung-tools, .add-rung { display: none !important; }
+            .layout { display: block; }
+            body { background: #fff; color: #000; }
         }
     </style>
 </head>
-<body class="dark-theme">
-    <div id="root"></div>
+<body>
+<header class="topbar">
+    <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 100 100"><path d="M32 10v80M68 10v80" stroke="#fd19c8" stroke-width="10" stroke-linecap="round"/><path d="M32 72h36M32 50h36M32 28h36" stroke="#fae84f" stroke-width="9" stroke-linecap="round"/></svg>
+        </span>
+        <h1>BeatHive</h1>
+        <small>premise inbox → game ladder → Courius</small>
+    </div>
+    <div class="top-actions">
+        <a class="home-link" href="index.html">Suite home</a>
+        <button class="btn ghost" id="restore-btn" type="button" title="Restore the latest recovery snapshot">Restore</button>
+        <button class="btn ghost" id="theme-btn" type="button" aria-label="Toggle theme">◐</button>
+    </div>
+</header>
 
-    <script type="module">
-        // The Firebase SDK is only needed in hosted environments that inject
-        // __firebase_config. Everywhere else (GitHub Pages, local files, offline)
-        // we skip the download entirely and BeatHive runs on localStorage.
-        const embeddedConfig = typeof __firebase_config !== 'undefined' && __firebase_config;
-        if (embeddedConfig) {
-            try {
-                const [appMod, authMod, storeMod] = await Promise.all([
-                    import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"),
-                    import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"),
-                    import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js")
-                ]);
-                window.FirebaseLib = {
-                    initializeApp: appMod.initializeApp,
-                    getAuth: authMod.getAuth,
-                    signInAnonymously: authMod.signInAnonymously,
-                    signInWithCustomToken: authMod.signInWithCustomToken,
-                    onAuthStateChanged: authMod.onAuthStateChanged,
-                    getFirestore: storeMod.getFirestore,
-                    doc: storeMod.doc,
-                    setDoc: storeMod.setDoc,
-                    getDoc: storeMod.getDoc,
-                    getDocs: storeMod.getDocs,
-                    collection: storeMod.collection,
-                    query: storeMod.query,
-                    onSnapshot: storeMod.onSnapshot,
-                    addDoc: storeMod.addDoc,
-                    updateDoc: storeMod.updateDoc,
-                    deleteDoc: storeMod.deleteDoc,
-                    serverTimestamp: storeMod.serverTimestamp
-                };
-            } catch (_) {
-                // SDK unreachable: the app falls back to local-storage mode.
-            }
+<div class="layout">
+    <aside class="inbox" aria-label="Premise inbox">
+        <div class="section-label"><span>Premise inbox</span><span id="inbox-count">0</span></div>
+        <div class="inbox-add">
+            <textarea id="inbox-input" rows="1" aria-label="New premise" placeholder="Jot a premise and press Enter"></textarea>
+            <p class="inbox-hint">Kept jots from Joterie, twists from ThisButThat, and Synax topics land here too. Drag a premise onto a step to use it.</p>
+        </div>
+        <div class="inbox-list" id="inbox-list"></div>
+    </aside>
+
+    <main class="main">
+        <nav class="tabs" id="tabs" aria-label="Ladders"></nav>
+        <section id="ladder-root"></section>
+    </main>
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    const BH = window.WTBeatHive;
+    const STATE_KEY = 'writingtools_beathive_v2';
+    const REV_KEY = 'writingtools_beathive_revision_v1';
+    const SNAPSHOTS_KEY = 'writingtools_beathive_snapshots_v1';
+    const HANDOFF_KEY = 'writingtools_beathive_handoff_v1';
+    const MODE_KEY = 'writingtools_beathive_courius_mode';
+    const LEGACY_STATE_KEY = 'writingtools_beathive_state_v1';
+    const LEGACY_SKETCHES_KEY = 'writingtools_beathive_sketches';
+    const TAB_ID = 'beathive-' + Math.random().toString(36).slice(2, 10);
+
+    const STEPS = [
+        { key: 'base', label: 'Base reality', prompt: 'Who are we with, where, and what does normal look like?' },
+        { key: 'weird', label: 'First unusual thing', prompt: 'What happens that breaks the normal?' },
+        { key: 'game', label: 'The game', prompt: 'One sentence: if this is true, what else is true?' },
+        { key: 'rungs', label: 'Heightening', prompt: 'Each rung plays the same game, bigger. Mark the ones that top the last.' },
+        { key: 'button', label: 'Button', prompt: 'How does it end? The biggest turn yet, or a snap back to normal.' }
+    ];
+
+    let state = BH.emptyState();
+    let localRev = 0;
+    let saveTimer = null;
+    let draggingPremiseId = '';
+
+    const $ = (id) => document.getElementById(id);
+    const el = (tag, props, children) => {
+        const node = document.createElement(tag);
+        Object.entries(props || {}).forEach(([k, v]) => {
+            if (k === 'class') node.className = v;
+            else if (k === 'text') node.textContent = v;
+            else if (k.startsWith('on')) node.addEventListener(k.slice(2), v);
+            else if (v === true) node.setAttribute(k, '');
+            else if (v !== false && v != null) node.setAttribute(k, v);
+        });
+        (children || []).forEach((c) => c && node.appendChild(typeof c === 'string' ? document.createTextNode(c) : c));
+        return node;
+    };
+    const notify = (msg, type) => {
+        if (window.WTToast && typeof window.WTToast.notify === 'function') window.WTToast.notify(msg, type || 'info');
+    };
+
+    // ===== Persistence =====
+    function readJson(key, fallback) {
+        try {
+            const raw = localStorage.getItem(key);
+            return raw ? JSON.parse(raw) : fallback;
+        } catch (_) {
+            return fallback;
         }
-    </script>
+    }
 
-    <script type="text/babel">
-        const { useState, useEffect, useRef, useMemo, useCallback } = React;
-
-        const HEX_SIZE = 130; 
-        const HEX_WIDTH = Math.sqrt(3) * HEX_SIZE;
-        const HEX_HEIGHT = 2 * HEX_SIZE;
-        const VERT_SPACING = HEX_HEIGHT * 0.75;
-        const LOCAL_STORAGE_KEY = 'writingtools_beathive_sketches';
-        const BEATHIVE_STATE_KEY = 'writingtools_beathive_state_v1';
-        const BEATHIVE_REV_KEY = 'writingtools_beathive_revision_v1';
-        const BEATHIVE_SNAPSHOTS_KEY = 'writingtools_beathive_snapshots_v1';
-        const BEATHIVE_HANDOFF_KEY = 'writingtools_beathive_handoff_v1';
-        const MAX_BEATHIVE_CELLS = 600;
-
-        function normalizeBeatHiveCells(list) {
-            if (!Array.isArray(list)) return [];
-            return list
-                .filter((item) => item && typeof item === 'object')
-                .map((item) => {
-                    const q = Number(item.q);
-                    const r = Number(item.r);
-                    if (!Number.isFinite(q) || !Number.isFinite(r)) return null;
-                    return {
-                        q: Math.round(q),
-                        r: Math.round(r),
-                        type: typeof item.type === 'string' && item.type.trim() ? item.type.trim() : 'note',
-                        content: String(typeof item.content === 'string' ? item.content : (typeof item.text === 'string' ? item.text : '')),
-                        tags: Array.isArray(item.tags) ? item.tags.slice(0, 8).map((tag) => String(tag || '').trim()).filter(Boolean) : []
-                    };
-                })
-                .filter(Boolean)
-                .slice(0, MAX_BEATHIVE_CELLS);
+    function loadState() {
+        const stored = readJson(STATE_KEY, null);
+        if (stored) return BH.normalizeState(stored);
+        // First run on v2: carry old hex maps over as ladders. The legacy
+        // keys are left untouched in case anything needs recovering.
+        const legacy = readJson(LEGACY_STATE_KEY, null);
+        const sketches = legacy && Array.isArray(legacy.sketches) ? legacy.sketches : readJson(LEGACY_SKETCHES_KEY, []);
+        const migrated = BH.normalizeState({ ladders: BH.migrateLegacySketches(sketches) });
+        if (migrated.ladders.length) {
+            const n = migrated.ladders.length;
+            setTimeout(() => notify('Moved ' + n + ' old hex map' + (n === 1 ? '' : 's') + ' into ladders', 'success'), 400);
         }
+        return migrated;
+    }
 
-        function normalizeBeatHiveSketches(list) {
-            if (!Array.isArray(list)) return [];
-            return list
-                .filter((item) => item && typeof item === 'object' && item.id)
-                .map((item) => ({
-                    ...item,
-                    id: String(item.id),
-                    name: String(item.name || 'Untitled Hive'),
-                    cells: normalizeBeatHiveCells(item.cells),
-                    updatedAt: Number(item.updatedAt || Date.now())
-                }));
+    function saveSnapshot(reason) {
+        try {
+            const snaps = readJson(SNAPSHOTS_KEY, []);
+            const list = Array.isArray(snaps) ? snaps : [];
+            list.unshift({ id: 'bh_' + Date.now(), at: new Date().toISOString(), reason: reason, sourceTab: TAB_ID, payload: state });
+            localStorage.setItem(SNAPSHOTS_KEY, JSON.stringify(list.slice(0, 20)));
+        } catch (_) {}
+    }
+
+    function persistNow() {
+        clearTimeout(saveTimer);
+        saveTimer = null;
+        try {
+            const currentRev = parseInt(localStorage.getItem(REV_KEY) || '0', 10) || 0;
+            const nextRev = Math.max(currentRev, localRev) + 1;
+            localStorage.setItem(STATE_KEY, JSON.stringify(state));
+            localStorage.setItem(REV_KEY, String(nextRev));
+            localRev = nextRev;
+        } catch (_) {
+            notify('Could not save (storage may be full)', 'error');
         }
+    }
 
-        function parseEmbeddedJson(rawValue) {
-            if (!rawValue) return null;
-            if (typeof rawValue === 'object') return rawValue;
-            if (typeof rawValue !== 'string') return null;
-            const trimmed = rawValue.trim();
-            if (!trimmed) return null;
-            try {
-                return JSON.parse(trimmed);
-            } catch (_) {
-                return null;
-            }
+    function scheduleSave() {
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(persistNow, 350);
+    }
+
+    // Structural change: optional snapshot first, then save and re-render.
+    function commit(snapshotReason) {
+        if (snapshotReason) saveSnapshot(snapshotReason);
+        persistNow();
+        renderAll();
+    }
+
+    function ingestHandoffs() {
+        const raw = readJson(HANDOFF_KEY, null);
+        if (!raw) return;
+        try { localStorage.removeItem(HANDOFF_KEY); } catch (_) {}
+        const items = BH.handoffToInbox(raw);
+        if (!items.length) return;
+        state.inbox = items.concat(state.inbox);
+        persistNow();
+        renderInbox();
+        const sources = Array.from(new Set(items.map((i) => i.source))).join(', ');
+        notify(items.length + ' premise' + (items.length === 1 ? '' : 's') + ' from ' + sources + ' added to the inbox', 'success');
+    }
+
+    // ===== Helpers =====
+    const activeLadder = () => state.ladders.find((l) => l.id === state.activeId) || null;
+
+    function touch(ladder) {
+        ladder.updatedAt = Date.now();
+    }
+
+    function autoGrow(textarea) {
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 2 + 'px';
+    }
+
+    function takePremise(id) {
+        const idx = state.inbox.findIndex((p) => p.id === id);
+        return idx >= 0 ? state.inbox.splice(idx, 1)[0] : null;
+    }
+
+    function startLadderFromPremise(id) {
+        const premise = takePremise(id);
+        if (!premise) return;
+        const ladder = BH.newLadder({
+            name: premise.text.split('\n')[0].slice(0, 60),
+            premise: premise.detail && premise.text.toLowerCase().indexOf(premise.detail.toLowerCase()) === -1
+                ? premise.text + '\n(' + premise.detail + ')'
+                : premise.text,
+            source: premise.source
+        });
+        state.ladders.unshift(ladder);
+        state.activeId = ladder.id;
+        commit('start-ladder');
+        focusField('base');
+    }
+
+    function newBlankLadder() {
+        const ladder = BH.newLadder({});
+        state.ladders.unshift(ladder);
+        state.activeId = ladder.id;
+        commit();
+        const name = document.querySelector('.ladder-name');
+        if (name) { name.focus(); name.select(); }
+    }
+
+    // Drop a premise onto a step: fills an empty step or adds a line to it;
+    // the heightening step gets a new rung.
+    function dropPremiseOnStep(premiseId, stepKey) {
+        const ladder = activeLadder();
+        if (!ladder) return;
+        const premise = state.inbox.find((p) => p.id === premiseId);
+        if (!premise) return;
+        if (stepKey === 'rungs') {
+            if (ladder.rungs.length >= BH.MAX_RUNGS) return notify('That ladder is full', 'error');
+            ladder.rungs.push({ id: BH.uid('rung'), text: premise.text, tops: false });
+        } else {
+            const current = String(ladder[stepKey] || '').trim();
+            ladder[stepKey] = current ? current + '\n' + premise.text : premise.text;
         }
+        takePremise(premiseId);
+        touch(ladder);
+        commit('use-premise');
+    }
 
-        function readBeatHiveStateFromStorage() {
-            try {
-                const modernRaw = localStorage.getItem(BEATHIVE_STATE_KEY);
-                if (modernRaw) {
-                    const parsed = JSON.parse(modernRaw);
-                    if (parsed && typeof parsed === 'object') {
-                        return {
-                            sketches: normalizeBeatHiveSketches(parsed.sketches),
-                            couriusMode: parsed.couriusMode === 'overwrite' ? 'overwrite' : 'append',
-                            immersiveSeen: !!parsed.immersiveSeen
-                        };
-                    }
-                }
-            } catch (_) {}
-            try {
-                return {
-                    sketches: normalizeBeatHiveSketches(JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || '[]')),
-                    couriusMode: localStorage.getItem('writingtools_beathive_courius_mode') === 'overwrite' ? 'overwrite' : 'append',
-                    immersiveSeen: !!localStorage.getItem('writingtools_beathive_immersive_seen')
-                };
-            } catch (_) {
-                return { sketches: [], couriusMode: 'append', immersiveSeen: false };
-            }
+    // Rendering is synchronous, so focus right away: deferring it would drop
+    // keystrokes typed immediately after Ctrl+Enter.
+    function focusField(key, index) {
+        const selector = key === 'rungs'
+            ? '.rung[data-index="' + index + '"] textarea'
+            : '[data-field="' + key + '"]';
+        const node = document.querySelector(selector);
+        if (node) {
+            node.focus();
+            node.setSelectionRange(node.value.length, node.value.length);
         }
+    }
 
-        const Icon = ({ name, size = 20, className = "", style = {} }) => {
-            const icons = {
-                mask: <path d="M12 2a10 10 0 0 0-10 10c0 5.5 4.5 10 10 10s10-4.5 10-10A10 10 0 0 0 12 2zm-3 9a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm6 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm-6 4s1.5 2 3 2 3-2 3-2"/>,
-                plus: <path d="M12 5v14M5 12h14"/>,
-                trash: (
-                    <React.Fragment>
-                        <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
-                        <line x1="10" y1="11" x2="10" y2="17"/>
-                        <line x1="14" y1="11" x2="14" y2="17"/>
-                    </React.Fragment>
-                ),
-                zoomIn: <g><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></g>,
-                zoomOut: <g><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></g>,
-                sun: (
-                    <React.Fragment>
-                        <circle cx="12" cy="12" r="4"/>
-                        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
-                    </React.Fragment>
-                ),
-                moon: <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>,
-                folder: <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>,
-                chevronLeft: <polyline points="15 18 9 12 15 6" />,
-                chevronRight: <polyline points="9 18 15 12 9 6" />,
-                zap: <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>,
-                repeat: (
-                    <React.Fragment>
-                        <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
-                    </React.Fragment>
-                ),
-                alert: (
-                    <React.Fragment>
-                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-                    </React.Fragment>
-                ),
-                ghost: <path d="M9 10h.01M15 10h.01M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z"/>,
-                eyeOff: (
-                    <React.Fragment>
-                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-                        <line x1="1" y1="1" x2="23" y2="23"/>
-                    </React.Fragment>
-                ),
-                more: (
-                    <React.Fragment>
-                        <circle cx="12" cy="12" r="1"/>
-                        <circle cx="19" cy="12" r="1"/>
-                        <circle cx="5" cy="12" r="1"/>
-                    </React.Fragment>
-                ),
-                printer: (
-                    <React.Fragment>
-                        <polyline points="6 9 6 2 18 2 18 9"/>
-                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
-                        <rect x="6" y="14" width="12" height="8"/>
-                    </React.Fragment>
-                )
-            };
-            return (
-                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className} style={style}>
-                    {icons[name] || <circle cx="12" cy="12" r="10" />}
-                </svg>
-            );
-        };
+    function addRung(afterIndex) {
+        const ladder = activeLadder();
+        if (!ladder) return;
+        if (ladder.rungs.length >= BH.MAX_RUNGS) return notify('That ladder is full', 'error');
+        const at = typeof afterIndex === 'number' ? afterIndex + 1 : ladder.rungs.length;
+        ladder.rungs.splice(at, 0, { id: BH.uid('rung'), text: '', tops: false });
+        touch(ladder);
+        commit();
+        focusField('rungs', at);
+    }
 
-        const STICKERS = [
-            { id: 'game', icon: 'zap', color: '#eab308', label: 'The Game' },
-            { id: 'callback', icon: 'repeat', color: '#3b82f6', label: 'Call-back' },
-            { id: 'twist', icon: 'alert', color: '#ef4444', label: 'Subversion' },
-            { id: 'weird', icon: 'ghost', color: '#a855f7', label: 'Weird Thing' },
-            { id: 'secret', icon: 'eyeOff', color: '#6b7280', label: 'Hidden Info' },
-        ];
+    function wireDropTarget(node, onDrop) {
+        node.addEventListener('dragover', (e) => {
+            if (!draggingPremiseId) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+            node.classList.add('drop-ok');
+        });
+        node.addEventListener('dragleave', (e) => {
+            if (!node.contains(e.relatedTarget)) node.classList.remove('drop-ok');
+        });
+        node.addEventListener('drop', (e) => {
+            node.classList.remove('drop-ok');
+            const id = draggingPremiseId;
+            if (!id) return;
+            e.preventDefault();
+            draggingPremiseId = '';
+            onDrop(id);
+        });
+    }
 
-        // Sticker icon component for use in tags
-        const StickerIcon = ({ stickerId, size = 14, theme }) => {
-            const sticker = STICKERS.find(s => s.id === stickerId);
-            if (!sticker) return null;
-            return <Icon name={sticker.icon} size={size} style={{ color: sticker.color }} />;
-        };
-
-        const BEAT_TYPES = [
-            { id: 'setup', label: 'Normal World', color: { dark: '#1e40af', light: '#4361ee' }, stroke: { dark: '#60a5fa', light: '#2563eb' } },
-            { id: 'inciting', label: 'First Weird Thing', color: { dark: '#7e22ce', light: '#7209b7' }, stroke: { dark: '#c084fc', light: '#9333ea' } },
-            { id: 'heightening', label: 'Heightening', color: { dark: '#166534', light: '#bbf7d0' }, stroke: { dark: '#4ade80', light: '#16a34a' } },
-            { id: 'blowoff', label: 'Ending', color: { dark: '#991b1b', light: '#fca5a5' }, stroke: { dark: '#f87171', light: '#dc2626' } },
-            { id: 'note', label: 'Context / Note', color: { dark: '#334155', light: '#6c757d' }, stroke: { dark: '#94a3b8', light: '#9ca3af' } },
-        ];
-
-        // --- NEW INTEGRATED GUIDE IN MAP HEXES ---
-        const WELCOME_CELLS = [
-            { q: 0, r: 0, type: 'setup', content: "WELCOME TO BEATHIVE\n\nThis is your infinite narrative canvas. Beats persist automatically.", tags: ['zap'] },
-            { q: 0, r: 1, type: 'inciting', content: "NAVIGATION\n\n• WASD to Pan\n• Scroll to Zoom\n• Drag background to slide", tags: [] },
-            { q: 0, r: 2, type: 'heightening', content: "CONSTRUCTION\n\n• Double-click empty space to add beats\n• Drag hexes to move/swap them", tags: ['callback'] },
-            { q: 1, r: 0, type: 'note', content: "EDITING\n\n• Click a beat to open the inspector\n• Use the floating bar for quick edits", tags: [] },
-            { q: 1, r: 1, type: 'blowoff', content: "WORKFLOW\n\n• Top-Left: Map Library\n• Top-Right: Focus Mode & Theme", tags: ['twist'] }
-        ];
-
-        const HexCell = ({ q, r, data, isSelected, theme, zoom, onMouseDown, onDoubleClick }) => {
-            const { x, y } = useMemo(() => ({
-                x: q * HEX_WIDTH + (r % 2 === 0 ? 0 : HEX_WIDTH / 2),
-                y: r * VERT_SPACING
-            }), [q, r]);
-
-            const typeData = BEAT_TYPES.find(t => t.id === (data?.type || 'note')) || BEAT_TYPES[4];
-            const fill = theme === 'dark' ? typeData.color.dark : typeData.color.light;
-            const opacity = data ? 1 : (isSelected ? 0.3 : 0.05);
-            const stroke = isSelected
-                ? '#fd19c8'
-                : (data ? (theme === 'dark' ? typeData.stroke.dark : 'rgba(67, 40, 24, 0.15)')
-                : (theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(67, 40, 24, 0.08)'));
-            
-            const points = useMemo(() => [30, 90, 150, 210, 270, 330].map(a => {
-                const rad = (Math.PI / 180) * a;
-                return `${x + (HEX_SIZE - 2) * Math.cos(rad)},${y + (HEX_SIZE - 2) * Math.sin(rad)}`;
-            }).join(' '), [x, y]);
-
-            const isFarZoom = zoom < 0.5;
-            // Scale text inversely with zoom to maintain readability when zoomed out
-            const baseSize = isFarZoom ? 22 : 14;
-            const scaledFontSize = baseSize / Math.max(0.25, zoom);
-            const titleFontSize = Math.min(80, Math.max(18, scaledFontSize));
-
-            return (
-                <g 
-                    onMouseDown={(e) => onMouseDown(e, q, r)} 
-                    onDoubleClick={(e) => { e.preventDefault(); onDoubleClick(e, q, r); }}
-                    className="cursor-pointer hex-group select-none"
-                >
-                    <polygon 
-                        points={points} 
-                        className="hex-shadow hex-transition"
-                        fill={data ? fill : 'transparent'} 
-                        fillOpacity={opacity} 
-                        stroke={stroke} 
-                        strokeWidth={isSelected ? 6 : (data ? 3 : 2)} 
-                    />
-                    
-                    {/* Tags with icons on the hex edge */}
-                    {data?.tags?.length > 0 && !isFarZoom && (
-                        <g>
-                            {data.tags.map((tagId, idx) => {
-                                const s = STICKERS.find(st => st.id === tagId);
-                                if (!s) return null;
-                                // Position tags along the top-right edge of the hex
-                                const angle = (-30 + idx * 30) * (Math.PI / 180);
-                                const tagX = x + (HEX_SIZE - 12) * Math.cos(angle);
-                                const tagY = y + (HEX_SIZE - 12) * Math.sin(angle);
-                                return (
-                                    <g key={tagId}>
-                                        <circle
-                                            cx={tagX}
-                                            cy={tagY}
-                                            r="14"
-                                            fill={theme === 'dark' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.95)'}
-                                            stroke={s.color}
-                                            strokeWidth="2"
-                                            style={{ filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.4))' }}
-                                        />
-                                        <foreignObject x={tagX - 8} y={tagY - 8} width="16" height="16" style={{ pointerEvents: 'none' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
-                                                <Icon name={s.icon} size={12} style={{ color: s.color }} />
-                                            </div>
-                                        </foreignObject>
-                                    </g>
-                                );
-                            })}
-                        </g>
-                    )}
-
-                    {data && (
-                        <foreignObject x={x - HEX_WIDTH/2 + 20} y={y - HEX_SIZE + 50} width={HEX_WIDTH - 40} height={HEX_HEIGHT - 100} style={{ pointerEvents: 'none' }}>
-                            <div className="w-full h-full flex flex-col items-center justify-center text-center overflow-hidden p-2">
-                                {isFarZoom ? (
-                                    <h1 className={`font-display font-black leading-tight uppercase tracking-tighter ${theme === 'dark' ? 'text-white' : 'text-[#432818]'}`} 
-                                        style={{ 
-                                            fontSize: `${titleFontSize}px`, 
-                                            textShadow: '0 2px 10px rgba(0,0,0,0.2)',
-                                            maxWidth: '100%',
-                                            overflow: 'hidden',
-                                            textOverflow: 'ellipsis',
-                                            display: '-webkit-box',
-                                            WebkitLineClamp: 2,
-                                            WebkitBoxOrient: 'vertical'
-                                        }}>
-                                        {data.content.split('\n')[0]}
-                                    </h1>
-                                ) : (
-                                    <span className={`text-[13px] leading-snug line-clamp-5 ${theme === 'dark' ? 'text-gray-100 font-bold' : 'text-gray-800 font-bold'}`}>
-                                        {data.content}
-                                    </span>
-                                )}
-                            </div>
-                        </foreignObject>
-                    )}
-                </g>
-            );
-        };
-
-        const SpineLine = ({ cells, theme }) => {
-            const sorted = cells.filter(c => c.type !== 'note').sort((a,b) => a.r - b.r);
-            if (sorted.length < 2) return null;
-
-            const pathD = sorted.map((c, i) => {
-                // Throughline should pass through the actual center of each adjacent hex.
-                const x = c.q * HEX_WIDTH + (c.r % 2 === 0 ? 0 : HEX_WIDTH / 2);
-                const y = c.r * VERT_SPACING;
-                return (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
-            }).join(' ');
-
-            return (
-                <path 
-                    d={pathD} 
-                    fill="none" 
-                    stroke={theme === 'dark' ? '#6366f1' : '#432818'} 
-                    strokeWidth="12" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round"
-                    strokeOpacity="0.4"
-                    style={{ pointerEvents: 'none' }}
-                />
-            );
-        };
-
-        function App() {
-            // State
-            const [user, setUser] = useState(null);
-            const [isInitialLoading, setIsInitialLoading] = useState(true);
-            const [sketches, setSketches] = useState([]);
-            const [currentId, setCurrentId] = useState(null);
-            const [cells, setCells] = useState([]);
-            const [sketchName, setSketchName] = useState("");
-            
-            const [theme, setTheme] = useState(() => localStorage.getItem('writingtools_theme') || 'dark');
-            const [selection, setSelection] = useState({ q: null, r: null });
-            const [pan, setPan] = useState({ x: 0, y: 0 });
-            const [zoom, setZoom] = useState(1.0);
-            
-            const [dragState, setDragState] = useState({ active: false, startQ: null, startR: null, dropTarget: null });
-            const [quickMenu, setQuickMenu] = useState(null);
-            const [libOpen, setLibOpen] = useState(true);
-            const [sidebarOpen, setSidebarOpen] = useState(true);
-            const [isCreating, setIsCreating] = useState(false);
-            const [saveStatus, setSaveStatus] = useState('ready');
-            const [showImmersionTips, setShowImmersionTips] = useState(() => !readBeatHiveStateFromStorage().immersiveSeen);
-            const [couriusMode, setCouriusMode] = useState(() => readBeatHiveStateFromStorage().couriusMode);
-
-            // Refs
-            const keysPressed = useRef({});
-            const panRef = useRef({ x: 0, y: 0 });
-            const dragOrigin = useRef({ x: 0, y: 0 });
-            const requestRef = useRef();
-            const saveTimeoutRef = useRef(null);
-            const cellsRef = useRef([]);
-            const nameRef = useRef("");
-            const currentIdRef = useRef(null);
-            const sketchesRef = useRef([]);
-            const localRevisionRef = useRef(0);
-            const beatHiveTabIdRef = useRef('beathive-' + Math.random().toString(36).slice(2, 10));
-            const canvasRef = useRef(null);
-            const svgRef = useRef(null);
-            const [dimensions, setDimensions] = useState({ w: window.innerWidth, h: window.innerHeight });
-            const firebase = useRef({
-                auth: null,
-                db: null,
-                appId: (typeof __app_id === 'string' && __app_id.trim()) ? __app_id.trim() : 'beathive-v5'
+    // ===== Rendering =====
+    function renderInbox() {
+        const list = $('inbox-list');
+        list.innerHTML = '';
+        $('inbox-count').textContent = String(state.inbox.length);
+        if (!state.inbox.length) {
+            list.appendChild(el('div', { class: 'empty', text: 'No premises yet. Jot one above, or send kept jots from Joterie.' }));
+            return;
+        }
+        const ladder = activeLadder();
+        state.inbox.forEach((p) => {
+            const card = el('div', { class: 'premise', draggable: 'true', 'data-id': p.id }, [
+                el('div', { class: 'premise-text', text: p.text }),
+                p.detail ? el('div', { class: 'premise-detail', text: p.detail }) : null,
+                el('div', { class: 'premise-meta' }, [
+                    el('span', { class: 'source-badge', 'data-source': p.source, text: p.source }),
+                    el('div', { class: 'premise-actions' }, [
+                        el('button', { class: 'btn primary', type: 'button', title: 'Start a new ladder from this premise', onclick: () => startLadderFromPremise(p.id), text: 'Start ladder' }),
+                        ladder ? el('button', { class: 'btn', type: 'button', title: 'Add as a heightening rung on "' + ladder.name + '"', onclick: () => dropPremiseOnStep(p.id, 'rungs'), text: '+ Rung' }) : null,
+                        el('button', {
+                            class: 'icon-btn', type: 'button', 'aria-label': 'Delete premise', title: 'Delete',
+                            onclick: () => { takePremise(p.id); commit('delete-premise'); }
+                        }, ['×'])
+                    ])
+                ])
+            ]);
+            card.addEventListener('dragstart', (e) => {
+                draggingPremiseId = p.id;
+                card.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'copy';
+                e.dataTransfer.setData('text/plain', p.text);
             });
-
-            useEffect(() => { cellsRef.current = cells; }, [cells]);
-            useEffect(() => { nameRef.current = sketchName; }, [sketchName]);
-            useEffect(() => { currentIdRef.current = currentId; }, [currentId]);
-            useEffect(() => { sketchesRef.current = sketches; }, [sketches]);
-            useEffect(() => {
-                document.body.className = theme === 'dark' ? 'dark-theme' : 'light-theme';
-                localStorage.setItem('writingtools_theme', theme);
-            }, [theme]);
-            const getLocalPersistedState = useCallback((override = {}) => ({
-                sketches: normalizeBeatHiveSketches(override.sketches || sketchesRef.current),
-                couriusMode: override.couriusMode || couriusMode,
-                immersiveSeen: typeof override.immersiveSeen === 'boolean' ? override.immersiveSeen : !showImmersionTips
-            }), [couriusMode, showImmersionTips]);
-            const localStateComparable = useCallback((payload) => {
-                try { return JSON.stringify(getLocalPersistedState(payload)); } catch (_) { return ''; }
-            }, [getLocalPersistedState]);
-            const saveLocalSnapshot = useCallback((payload, reason, meta) => {
-                try {
-                    const raw = localStorage.getItem(BEATHIVE_SNAPSHOTS_KEY);
-                    const parsed = raw ? JSON.parse(raw) : [];
-                    const snapshots = Array.isArray(parsed) ? parsed : [];
-                    snapshots.unshift({
-                        id: 'snap_' + Date.now() + '_' + Math.floor(Math.random() * 100000),
-                        at: new Date().toISOString(),
-                        reason: String(reason || 'autosave'),
-                        sourceTab: beatHiveTabIdRef.current,
-                        meta: meta && typeof meta === 'object' ? meta : {},
-                        payload: getLocalPersistedState(payload)
-                    });
-                    localStorage.setItem(BEATHIVE_SNAPSHOTS_KEY, JSON.stringify(snapshots.slice(0, 20)));
-                } catch (_) {}
-            }, [getLocalPersistedState]);
-            const getLocalSnapshots = useCallback(() => {
-                try {
-                    const raw = localStorage.getItem(BEATHIVE_SNAPSHOTS_KEY);
-                    const parsed = raw ? JSON.parse(raw) : [];
-                    return Array.isArray(parsed) ? parsed : [];
-                } catch (_) {
-                    return [];
-                }
-            }, []);
-            const persistLocalState = useCallback((override, reason = 'autosave') => {
-                const candidate = getLocalPersistedState(override || {});
-                const remoteRev = parseInt(localStorage.getItem(BEATHIVE_REV_KEY) || '0', 10) || 0;
-                const remoteState = readBeatHiveStateFromStorage();
-                if (
-                    remoteRev > localRevisionRef.current &&
-                    localStateComparable(remoteState) !== localStateComparable(candidate)
-                ) {
-                    saveLocalSnapshot(candidate, 'save-conflict', {
-                        reason: String(reason || 'autosave'),
-                        baseRevision: localRevisionRef.current,
-                        remoteRevision: remoteRev
-                    });
-                    return false;
-                }
-                const nextRev = Math.max(remoteRev, localRevisionRef.current) + 1;
-                localStorage.setItem(BEATHIVE_STATE_KEY, JSON.stringify(candidate));
-                localStorage.setItem(BEATHIVE_REV_KEY, String(nextRev));
-                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(candidate.sketches));
-                localStorage.setItem('writingtools_beathive_courius_mode', candidate.couriusMode);
-                if (candidate.immersiveSeen) localStorage.setItem('writingtools_beathive_immersive_seen', '1');
-                else localStorage.removeItem('writingtools_beathive_immersive_seen');
-                localRevisionRef.current = nextRev;
-                return true;
-            }, [getLocalPersistedState, localStateComparable, saveLocalSnapshot]);
-            const applyRemoteLocalState = useCallback((payload) => {
-                const normalized = getLocalPersistedState(payload || {});
-                setSketches(normalized.sketches);
-                setCouriusMode(normalized.couriusMode);
-                setShowImmersionTips(!normalized.immersiveSeen);
-                const active = normalized.sketches.find((item) => item.id === currentIdRef.current) || normalized.sketches[0];
-                if (active) {
-                    setCurrentId(active.id);
-                    setCells(active.cells || []);
-                    setSketchName(active.name || '');
-                } else {
-                    setCurrentId(null);
-                    setCells([]);
-                    setSketchName('');
-                }
-            }, [getLocalPersistedState]);
-
-            useEffect(() => {
-                if (user?.uid !== 'local-user') return;
-                persistLocalState({ couriusMode }, 'courius-mode');
-            }, [couriusMode, persistLocalState, user]);
-            useEffect(() => {
-                if (user?.uid !== 'local-user') return;
-                persistLocalState({ immersiveSeen: !showImmersionTips }, 'immersion-tip');
-            }, [showImmersionTips, persistLocalState, user]);
-
-            const restoreLatestBeatHiveSnapshot = useCallback(() => {
-                const latest = getLocalSnapshots()[0];
-                if (!latest || !latest.payload) return;
-                if (!window.confirm('Restore the latest BeatHive snapshot and replace local map state?')) return;
-                saveLocalSnapshot(getLocalPersistedState(), 'manual-restore-backup', { snapshotId: latest.id });
-                applyRemoteLocalState(latest.payload);
-                persistLocalState(latest.payload, 'snapshot-restore');
-            }, [applyRemoteLocalState, getLocalPersistedState, getLocalSnapshots, persistLocalState, saveLocalSnapshot]);
-
-            const clearBeatHiveSnapshots = useCallback(() => {
-                if (!window.confirm('Clear all BeatHive recovery snapshots?')) return;
-                try { localStorage.removeItem(BEATHIVE_SNAPSHOTS_KEY); } catch (_) {}
-                setSketches((current) => [...current]);
-            }, []);
-
-            const loadLocalSketches = () => readBeatHiveStateFromStorage().sketches;
-            const saveLocalSketches = (list) => {
-                const normalized = normalizeBeatHiveSketches(list);
-                setSketches(normalized);
-                persistLocalState({ sketches: normalized }, 'sketch-save');
-            };
-
-            useEffect(() => {
-                localRevisionRef.current = parseInt(localStorage.getItem(BEATHIVE_REV_KEY) || '0', 10) || 0;
-                const handleResize = () => setDimensions({ w: window.innerWidth, h: window.innerHeight });
-                window.addEventListener('resize', handleResize);
-
-                // Hotkey Zoom Handlers
-                const handleZoomKeys = (e) => {
-                    if (['TEXTAREA', 'INPUT'].includes(document.activeElement.tagName)) return;
-                    if (e.key === '=' || e.key === '+') {
-                        setZoom(z => Math.min(3.0, z + 0.1));
-                    } else if (e.key === '-') {
-                        setZoom(z => Math.max(0.1, z - 0.1));
-                    } else if (e.key === '0') {
-                        setZoom(1.0);
-                        setPan({x:0, y:0});
-                    }
-                };
-                window.addEventListener('keydown', handleZoomKeys);
-
-                const container = canvasRef.current;
-                const handleWheel = (e) => {
-                    e.preventDefault();
-                    if (e.ctrlKey || e.metaKey) {
-                        const delta = -e.deltaY * 0.002; 
-                        setZoom(z => Math.min(Math.max(0.1, z + delta), 3.0));
-                    } else {
-                        setPan(p => ({ x: p.x - e.deltaX, y: p.y - e.deltaY }));
-                    }
-                };
-
-                if (container) container.addEventListener('wheel', handleWheel, { passive: false });
-                
-                const { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, getFirestore, getDocs, collection, addDoc, serverTimestamp } = window.FirebaseLib || {};
-                const config = parseEmbeddedJson(typeof __firebase_config !== 'undefined' ? __firebase_config : null);
-
-                if (config && window.FirebaseLib) {
-                    const app = initializeApp(config);
-                    firebase.current.auth = getAuth(app);
-                    firebase.current.db = getFirestore(app);
-
-                    const initAuthAndSeed = async () => {
-                        try {
-                            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                                await signInWithCustomToken(firebase.current.auth, __initial_auth_token);
-                            } else {
-                                await signInAnonymously(firebase.current.auth);
-                            }
-                        } catch (e) {
-                            console.error("Auth", e);
-                            setUser({ uid: 'guest-' + Math.random().toString(36).substr(2, 9) }); 
-                        }
-                    };
-
-                    initAuthAndSeed();
-                    
-                    const unsub = onAuthStateChanged(firebase.current.auth, async (u) => {
-                        if (u) {
-                            setUser(u);
-                            const sketchesCol = collection(firebase.current.db, 'artifacts', firebase.current.appId, 'public', 'data', 'sketches');
-                            const snap = await getDocs(sketchesCol);
-                            if (snap.empty) {
-                                await addDoc(sketchesCol, {
-                                    name: "Welcome Map",
-                                    cells: WELCOME_CELLS,
-                                    owner: u.uid,
-                                    createdAt: serverTimestamp(),
-                                    updatedAt: serverTimestamp()
-                                });
-                            }
-                            setIsInitialLoading(false);
-                        }
-                    });
-                    return () => { 
-                        unsub(); 
-                        window.removeEventListener('resize', handleResize);
-                        window.removeEventListener('keydown', handleZoomKeys);
-                        if (container) container.removeEventListener('wheel', handleWheel);
-                    };
-                } else {
-                    setUser({ uid: 'local-user' });
-                    const localData = loadLocalSketches();
-                    if (localData.length === 0) {
-                        const newMap = { id: 'local-1', name: "Local Demo Map", cells: WELCOME_CELLS, updatedAt: Date.now() };
-                        saveLocalSketches([newMap]);
-                        setSketches([newMap]);
-                        setCurrentId('local-1');
-                        setCells(WELCOME_CELLS);
-                        setSketchName("Local Demo Map");
-                    } else {
-                        setSketches(localData);
-                        setCurrentId(localData[0].id);
-                        setCells(localData[0].cells);
-                        setSketchName(localData[0].name);
-                    }
-                    setIsInitialLoading(false);
-                    return () => {
-                        window.removeEventListener('resize', handleResize);
-                        window.removeEventListener('keydown', handleZoomKeys);
-                        if (container) container.removeEventListener('wheel', handleWheel);
-                    };
-                }
-            }, []);
-
-            useEffect(() => {
-                if (user?.uid !== 'local-user') return;
-                const onStorage = (event) => {
-                    if (!event || event.key !== BEATHIVE_REV_KEY) return;
-                    const incomingRev = parseInt(event.newValue || '0', 10) || 0;
-                    if (incomingRev <= localRevisionRef.current) return;
-                    const remote = readBeatHiveStateFromStorage();
-                    const local = getLocalPersistedState();
-                    if (localStateComparable(remote) !== localStateComparable(local)) {
-                        saveLocalSnapshot(local, 'remote-sync', {
-                            previousRevision: localRevisionRef.current,
-                            incomingRevision: incomingRev
-                        });
-                        applyRemoteLocalState(remote);
-                    }
-                    localRevisionRef.current = incomingRev;
-                };
-                window.addEventListener('storage', onStorage);
-                return () => window.removeEventListener('storage', onStorage);
-            }, [applyRemoteLocalState, getLocalPersistedState, localStateComparable, saveLocalSnapshot, user]);
-
-            useEffect(() => {
-                if (user?.uid !== 'local-user' && firebase.current.db && !isInitialLoading) {
-                    const { collection, query, onSnapshot } = window.FirebaseLib;
-                    const q = query(collection(firebase.current.db, 'artifacts', firebase.current.appId, 'public', 'data', 'sketches'));
-                    return onSnapshot(q, (snap) => {
-                        const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                        setSketches(list);
-                        if (list.length > 0 && !currentIdRef.current && !isCreating) {
-                            setCurrentId(list[0].id);
-                        }
-                    });
-                }
-            }, [user, isInitialLoading, isCreating]);
-
-            useEffect(() => {
-                if (user?.uid !== 'local-user' && currentId && firebase.current.db) {
-                    const { doc, onSnapshot } = window.FirebaseLib;
-                    const docRef = doc(firebase.current.db, 'artifacts', firebase.current.appId, 'public', 'data', 'sketches', currentId);
-                    return onSnapshot(docRef, (snap) => {
-                        if (snap.exists()) {
-                            const d = snap.data();
-                            setCells(d.cells || []);
-                            setSketchName(d.name || "");
-                        }
-                    });
-                } else if (user?.uid === 'local-user' && currentId) {
-                    const localData = loadLocalSketches();
-                    const active = localData.find(s => s.id === currentId);
-                    if (active) {
-                        setCells(active.cells || []);
-                        setSketchName(active.name || "");
-                    }
-                }
-            }, [user, currentId]);
-
-            const save = useCallback(async (newCells, newName) => {
-                const nameToSave = typeof newName === 'string' ? newName : nameRef.current;
-                const cellsToSave = newCells || cellsRef.current;
-
-                setSaveStatus('saving');
-                if (user?.uid === 'local-user') {
-                    const localData = loadLocalSketches();
-                    const updated = localData.map(s => s.id === currentIdRef.current ? { ...s, name: nameToSave, cells: cellsToSave, updatedAt: Date.now() } : s);
-                    saveLocalSketches(updated);
-                    setSketchName(nameToSave);
-                } else if (firebase.current.db && currentIdRef.current) {
-                    const { doc, updateDoc, serverTimestamp } = window.FirebaseLib;
-                    try {
-                        await updateDoc(doc(firebase.current.db, 'artifacts', firebase.current.appId, 'public', 'data', 'sketches', currentIdRef.current), {
-                            cells: cellsToSave,
-                            name: nameToSave,
-                            updatedAt: serverTimestamp()
-                        });
-                    } catch (e) { console.error("Save", e); }
-                }
-                setSaveStatus('saved');
-                setTimeout(() => setSaveStatus('ready'), 2000);
-            }, [user]);
-
-            useEffect(() => {
-                if (isInitialLoading || !user) return;
-                let payload = null;
-                try {
-                    const raw = localStorage.getItem(BEATHIVE_HANDOFF_KEY);
-                    payload = raw ? JSON.parse(raw) : null;
-                } catch (_) {
-                    payload = null;
-                }
-                if (!payload || typeof payload !== 'object') return;
-                try { localStorage.removeItem(BEATHIVE_HANDOFF_KEY); } catch (_) {}
-
-                const nextTopic = String(payload.topic || '').trim();
-                const nextConstraints = String(payload.constraints || '').trim();
-                const incomingJots = Array.isArray(payload.jots)
-                    ? payload.jots.map(j => String(j || '').trim()).filter(Boolean).slice(0, 60)
-                    : [];
-                if (!nextTopic && !nextConstraints && !incomingJots.length) return;
-
-                const currentName = String(nameRef.current || '').trim();
-                const shouldAdoptTopic = !!nextTopic && (
-                    !currentName ||
-                    currentName === 'Local Demo Map' ||
-                    currentName === 'Welcome Map' ||
-                    currentName === 'New Beat Map' ||
-                    currentName === 'Untitled Hive'
-                );
-
-                // Incoming jots (e.g. a Joterie harvest) land as note cells in a
-                // fresh column below the existing map, ready to drag into the spine.
-                let mergedCells = null;
-                if (incomingJots.length) {
-                    const existing = cellsRef.current || [];
-                    const baseR = existing.length ? Math.max(...existing.map(c => Number(c.r) || 0)) + 1 : 0;
-                    const jotCells = incomingJots.map((text, i) => ({ q: 0, r: baseR + i, type: 'note', content: text, tags: [] }));
-                    mergedCells = [...existing, ...jotCells];
-                    setCells(mergedCells);
-                    setSelection({ q: 0, r: baseR });
-                    if (window.WTToast && typeof window.WTToast.notify === 'function') {
-                        window.WTToast.notify(`Received ${incomingJots.length} idea${incomingJots.length === 1 ? '' : 's'} from ${String(payload.source || 'another tool')}`, 'success');
-                    }
-                }
-
-                if (currentIdRef.current) {
-                    if (mergedCells || shouldAdoptTopic) {
-                        save(mergedCells, shouldAdoptTopic ? nextTopic : undefined);
-                    }
-                } else if (shouldAdoptTopic) {
-                    setSketchName(nextTopic);
-                }
-            }, [isInitialLoading, save, user]);
-
-            const getCellContentText = useCallback((cell) => {
-                if (!cell) return '';
-                const modern = typeof cell.content === 'string' ? cell.content : '';
-                const legacy = typeof cell.text === 'string' ? cell.text : '';
-                return (modern || legacy).trim();
-            }, []);
-
-            const handlePrint = useCallback(() => {
-                const usedCells = cells.filter(c => getCellContentText(c).length > 0 || c.type !== 'setup');
-                if (usedCells.length === 0) {
-                    alert('No content to print. Add some beats first!');
-                    return;
-                }
-
-                const printWindow = window.open('', '_blank');
-                if (!printWindow) {
-                    alert('Please allow popups to open the print preview.');
-                    return;
-                }
-
-                const qValues = usedCells.map(c => c.q);
-                const rValues = usedCells.map(c => c.r);
-                const minQ = Math.min(...qValues) - 1;
-                const maxQ = Math.max(...qValues) + 1;
-                const minR = Math.min(...rValues) - 1;
-                const maxR = Math.max(...rValues) + 1;
-
-                const qRange = Math.max(1, maxQ - minQ + 1);
-                const rRange = Math.max(1, maxR - minR + 1);
-
-                // Dynamically maximize hex size based on content bounds.
-                const targetWidth = 1500;
-                const targetHeight = 980;
-                const maxByWidth = targetWidth / (Math.sqrt(3) * (qRange + 2));
-                const maxByHeight = targetHeight / (1.5 * rRange + 2);
-                const hexSize = Math.max(42, Math.min(130, Math.floor(Math.min(maxByWidth, maxByHeight))));
-                const hexWidth = Math.sqrt(3) * hexSize;
-                const hexHeight = 2 * hexSize;
-                const vertSpacing = hexHeight * 0.75;
-
-                const getHexPoints = (cx, cy, size) => {
-                    const pts = [];
-                    for (let i = 0; i < 6; i++) {
-                        const angle = (Math.PI / 3) * i - Math.PI / 6;
-                        pts.push(`${cx + size * Math.cos(angle)},${cy + size * Math.sin(angle)}`);
-                    }
-                    return pts.join(' ');
-                };
-
-                const hexToPixel = (q, r) => ({
-                    x: (q - minQ) * hexWidth + ((r % 2 === 0) ? 0 : hexWidth / 2) + hexSize + 40,
-                    y: (r - minR) * vertSpacing + hexSize + 40
-                });
-
-                const width = (qRange + 2) * hexWidth + hexSize * 2;
-                const height = (rRange + 2) * vertSpacing + hexSize * 2;
-
-                const escapeXml = (text) => String(text || '')
-                    .replace(/&/g, '&amp;')
-                    .replace(/</g, '&lt;')
-                    .replace(/>/g, '&gt;')
-                    .replace(/"/g, '&quot;');
-
-                // viewBox-only sizing so the print scales to the paper; never set
-                // width/height attributes here (a past regex "fix" for that turned
-                // a hex's stroke-width="1" into stroke-width="100%").
-                let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" style="width:100%;height:auto;">`;
-
-                // Draw grid outline for all cells in bounds (dashed for empty)
-                for (let q = minQ; q <= maxQ; q++) {
-                    for (let r = minR; r <= maxR; r++) {
-                        const { x, y } = hexToPixel(q, r);
-                        const cell = cells.find(c => c.q === q && c.r === r);
-                        const hasContent = cell && (getCellContentText(cell).length > 0 || cell.type !== 'setup');
-
-                        if (!hasContent) {
-                            svgContent += `<polygon points="${getHexPoints(x, y, hexSize)}" fill="none" stroke="#ccc" stroke-width="1" stroke-dasharray="5,5"/>`;
-                        }
-                    }
-                }
-
-                // Draw filled hexes
-                usedCells.forEach(cell => {
-                    const { x, y } = hexToPixel(cell.q, cell.r);
-                    const beatType = BEAT_TYPES.find(t => t.id === cell.type) || BEAT_TYPES[0];
-                    const fillColor = beatType.color.light;
-                    const strokeColor = beatType.stroke.light;
-
-                    svgContent += `<polygon points="${getHexPoints(x, y, hexSize)}" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2"/>`;
-
-                    // Add text
-                    const cellText = getCellContentText(cell);
-                    if (cellText) {
-                        const lines = cellText.split('\n').slice(0, 4);
-                        const lineHeight = Math.max(12, Math.floor(hexSize * 0.17));
-                        const startY = y - (lines.length - 1) * lineHeight / 2;
-                        lines.forEach((line, i) => {
-                            const maxChars = Math.max(14, Math.floor(hexSize / 4));
-                            const truncated = line.length > maxChars ? line.substring(0, maxChars - 3) + '...' : line;
-                            svgContent += `<text x="${x}" y="${startY + i * lineHeight}" text-anchor="middle" font-size="${Math.max(9, Math.floor(hexSize * 0.14))}" font-family="Inter, sans-serif" fill="#000">${escapeXml(truncated)}</text>`;
-                        });
-                    }
-
-                    // Add beat type label
-                    svgContent += `<text x="${x}" y="${y + hexSize - Math.max(14, Math.floor(hexSize * 0.18))}" text-anchor="middle" font-size="${Math.max(8, Math.floor(hexSize * 0.1))}" font-family="Inter, sans-serif" fill="${strokeColor}" font-weight="bold">${beatType.label.toUpperCase()}</text>`;
-                });
-
-                svgContent += '</svg>';
-
-                printWindow.document.write(`
-                    <!DOCTYPE html>
-                    <html>
-                    <head>
-                        <meta charset="utf-8">
-                        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5' fill='%23fd19c8'/><polygon points='50,20 80,37.5 80,62.5 50,80 20,62.5 20,37.5' fill='%23da70d6' opacity='0.6'/></svg>">
-                        <title>BeatHive - ${escapeXml(sketchName || 'Untitled')}</title>
-                        <style>
-                            /* Zero page margins suppress the browser's date/title/URL
-                               header and footer; body padding keeps a paper margin. */
-                            @page { margin: 0; }
-                            body { margin: 0; padding: 20px; }
-                            svg { display: block; max-width: 100%; height: auto; margin: 0 auto; }
-                            @media print {
-                                body { padding: 0.75in; }
-                            }
-                        </style>
-                    </head>
-                    <body>
-                        <h1 style="text-align: center; font-family: sans-serif; margin-bottom: 20px;">${escapeXml(sketchName || 'Untitled Beat Map')}</h1>
-                        ${svgContent}
-                    </body>
-                    </html>
-                `);
-                printWindow.document.close();
-                printWindow.focus();
-                printWindow.onload = () => setTimeout(() => printWindow.print(), 150);
-            }, [cells, sketchName, getCellContentText]);
-
-            const handleNewMap = async () => {
-                setIsCreating(true);
-                try {
-                    const newId = `map-${Date.now()}`;
-                    const newData = { name: "New Beat Map", cells: [], owner: user.uid, createdAt: Date.now(), updatedAt: Date.now() };
-
-                    if (user?.uid === 'local-user') {
-                        const localData = loadLocalSketches();
-                        const newItem = { id: newId, ...newData };
-                        saveLocalSketches([...localData, newItem]);
-                        setCurrentId(newId);
-                        setCells([]);
-                        setSketchName("New Beat Map");
-                        setSelection({ q: null, r: null });
-                    } else if (firebase.current.db) {
-                        const { collection, addDoc, serverTimestamp } = window.FirebaseLib;
-                        const docRef = await addDoc(collection(firebase.current.db, 'artifacts', firebase.current.appId, 'public', 'data', 'sketches'), {
-                            ...newData,
-                            createdAt: serverTimestamp(),
-                            updatedAt: serverTimestamp()
-                        });
-                        setCurrentId(docRef.id);
-                    }
-                } catch(e) { console.error(e); } finally { setIsCreating(false); }
-            };
-
-            const handleDeleteMap = async (id, e) => {
-                e.stopPropagation();
-                const target = sketchesRef.current.find(s => s.id === id);
-                const label = (target && target.name) ? `"${target.name}"` : 'this map';
-                if (!window.confirm(`Delete ${label}? A recovery snapshot will be saved first.`)) return;
-                saveLocalSnapshot({}, 'pre-map-delete', { mapId: id, mapName: target?.name || '' });
-                if (user?.uid === 'local-user') {
-                    const localData = loadLocalSketches();
-                    const filtered = localData.filter(s => s.id !== id);
-                    saveLocalSketches(filtered);
-                    if (currentId === id) {
-                        setCurrentId(filtered.length > 0 ? filtered[0].id : null);
-                        setCells(filtered.length > 0 ? filtered[0].cells : []);
-                        setSketchName(filtered.length > 0 ? filtered[0].name : "");
-                    }
-                } else if (firebase.current.db) {
-                    const { doc, deleteDoc } = window.FirebaseLib;
-                    await deleteDoc(doc(firebase.current.db, 'artifacts', firebase.current.appId, 'public', 'data', 'sketches', id));
-                    if (currentId === id) {
-                        setCurrentId(null);
-                        currentIdRef.current = null;
-                        setCells([]);
-                        setSketchName("");
-                    }
-                }
-            };
-
-            // -- Interactions --
-            const handleDoubleClick = (e, q, r) => {
-                e.preventDefault();
-                setSelection({ q, r });
-                setQuickMenu({ x: e.clientX, y: e.clientY, q, r });
-                window.getSelection().removeAllRanges();
-            };
-
-            const updateCell = (q, r, updates) => {
-                const existing = cellsRef.current.find(c => c.q === q && c.r === r);
-                const nextCells = existing 
-                    ? cellsRef.current.map(c => (c.q === q && c.r === r) ? { ...c, ...updates } : c)
-                    : [...cellsRef.current, { q, r, type: 'setup', content: '', tags: [], ...updates }];
-                setCells(nextCells);
-                
-                // Debounce content updates (Audit Rec 4.3)
-                if (updates.content !== undefined && Object.keys(updates).length === 1) {
-                    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-                    saveTimeoutRef.current = setTimeout(() => save(nextCells), 800);
-                } else {
-                    // Immediate save for structural changes
-                    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-                    save(nextCells);
-                }
-            };
-
-            const handleMouseDown = (e, q, r) => {
-                if (e.button !== 0) return;
-                setQuickMenu(null);
-                dragOrigin.current = { x: e.clientX, y: e.clientY };
-                
-                setDragState({ active: false, startQ: q, startR: r, dropTarget: { q, r } }); 
-            };
-
-            const handleMouseMove = (e) => {
-                if (dragState.startQ !== null) {
-                    const dist = Math.hypot(e.clientX - dragOrigin.current.x, e.clientY - dragOrigin.current.y);
-                    if (dist > 5) {
-                        const rect = svgRef.current.getBoundingClientRect();
-                        // Use same transform calculation as the SVG group
-                        const transformX = dimensions.w/2 + pan.x - (libOpen ? 160 : 0) + (sidebarOpen ? -160 : 0);
-                        const transformY = dimensions.h/2 + pan.y - 40;
-                        const adjX = (e.clientX - rect.left - transformX) / zoom;
-                        const adjY = (e.clientY - rect.top - transformY) / zoom;
-                        let r = Math.round(adjY / VERT_SPACING);
-                        let q = Math.round((adjX - (r % 2 === 0 ? 0 : HEX_WIDTH / 2)) / HEX_WIDTH);
-                        setDragState(prev => ({ ...prev, active: true, dropTarget: { q, r } }));
-                    }
-                } else if (e.buttons === 1) {
-                    setPan(p => {
-                        const next = { x: p.x + e.movementX, y: p.y + e.movementY };
-                        panRef.current = next;
-                        return next;
-                    });
-                }
-            };
-
-            const handleMouseUp = () => {
-                if (dragState.active && dragState.dropTarget) {
-                    const { startQ, startR, dropTarget } = dragState;
-                    if (dropTarget.q !== startQ || dropTarget.r !== startR) {
-                        const source = cellsRef.current.find(c => c.q === startQ && c.r === startR);
-                        let next = cellsRef.current.filter(c => !(c.q === startQ && c.r === startR) && !(c.q === dropTarget.q && c.r === dropTarget.r));
-                        if (source) next.push({ ...source, q: dropTarget.q, r: dropTarget.r });
-                        setCells(next); save(next); setSelection(dropTarget);
-                    }
-                } else if (dragState.startQ !== null) {
-                    setSelection({ q: dragState.startQ, r: dragState.startR });
-                }
-                setDragState({ active: false, startQ: null, startR: null, dropTarget: null });
-            };
-
-            // WASD Movement
-            useEffect(() => {
-                const moveLoop = () => {
-                    if (document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'INPUT') {
-                        requestRef.current = requestAnimationFrame(moveLoop);
-                        return;
-                    }
-                    const speed = 12 / zoom; 
-                    let dx = 0, dy = 0;
-                    if (keysPressed.current['w'] || keysPressed.current['arrowup']) dy += speed;
-                    if (keysPressed.current['s'] || keysPressed.current['arrowdown']) dy -= speed;
-                    if (keysPressed.current['a'] || keysPressed.current['arrowleft']) dx += speed;
-                    if (keysPressed.current['d'] || keysPressed.current['arrowright']) dx -= speed;
-                    if (dx !== 0 || dy !== 0) {
-                        panRef.current = { x: panRef.current.x + dx, y: panRef.current.y + dy };
-                        setPan({ ...panRef.current });
-                    }
-                    requestRef.current = requestAnimationFrame(moveLoop);
-                };
-
-                const handleKeyDown = (e) => {
-                    keysPressed.current[e.key.toLowerCase()] = true;
-                    if (!['TEXTAREA', 'INPUT'].includes(document.activeElement.tagName)) {
-                        if ((e.key === 'Delete' || e.key === 'Backspace') && selection.q !== null) {
-                            const next = cellsRef.current.filter(c => !(c.q === selection.q && c.r === selection.r));
-                            setCells(next); save(next); setSelection({ q: null, r: null });
-                        }
-                    }
-                };
-                const handleKeyUp = (e) => keysPressed.current[e.key.toLowerCase()] = false;
-
-                window.addEventListener('keydown', handleKeyDown);
-                window.addEventListener('keyup', handleKeyUp);
-                requestRef.current = requestAnimationFrame(moveLoop);
-                return () => {
-                    window.removeEventListener('keydown', handleKeyDown);
-                    window.removeEventListener('keyup', handleKeyUp);
-                    cancelAnimationFrame(requestRef.current);
-                };
-            }, [zoom, selection, save]);
-
-            const centerX = useMemo(() => {
-                let x = dimensions.w / 2;
-                if (!libOpen && sidebarOpen) x -= 160;
-                if (libOpen && !sidebarOpen) x += 140;
-                return x;
-            }, [dimensions, libOpen, sidebarOpen]);
-            const centerY = dimensions.h / 2.2;
-
-            const selectedCell = cells.find(c => c.q === selection.q && c.r === selection.r);
-            const mapStats = useMemo(() => {
-                const withContent = cells.filter(c => getCellContentText(c).length > 0);
-                return {
-                    populatedCells: withContent.length,
-                    storyBeats: withContent.filter(c => c.type !== 'note').length
-                };
-            }, [cells, getCellContentText]);
-            const sendMapToCourius = useCallback(() => {
-                const storyCells = cells
-                    .filter((c) => getCellContentText(c).length > 0)
-                    .slice(0, 80);
-                if (storyCells.length === 0) return;
-
-                const safe = (text) => String(text || '')
-                    .replace(/&/g, '&amp;')
-                    .replace(/</g, '&lt;')
-                    .replace(/>/g, '&gt;');
-
-                let beatNum = 0;
-                const html = storyCells.map((cell) => {
-                    const content = safe(getCellContentText(cell));
-                    if (cell.type === 'note') {
-                        // Notes/context become bullet points under the previous beat
-                        const bullets = content.split(/\n/).filter(l => l.trim()).map(l => `• ${l.trim()}`).join('<br>');
-                        return `<div class="action">${bullets}</div>`;
-                    }
-                    beatNum++;
-                    const beatType = (BEAT_TYPES.find(t => t.id === cell.type) || BEAT_TYPES[4]).label;
-                    return `<div class="scene-heading">BEAT ${beatNum} - ${safe(beatType)}</div><div class="action">${content.replace(/\n/g, '<br>')}</div>`;
-                }).join('');
-
-                const mode = couriusMode === 'overwrite' ? 'overwrite' : 'append';
-                let transferOk = false;
-                try {
-                    if (window.WTCourius) {
-                        if (mode === 'overwrite') {
-                            transferOk = !!window.WTCourius.overwrite(html, 'BeatHive');
-                        } else {
-                            transferOk = !!window.WTCourius.append(html, 'BeatHive');
-                        }
-                    }
-                } catch (_) {}
-                if (window.WTToast && typeof window.WTToast.notify === 'function') {
-                    window.WTToast.notify(
-                        transferOk
-                            ? `Sent to Courius (${mode === 'overwrite' ? 'new script' : 'append'})`
-                            : 'Courius transfer failed',
-                        transferOk ? 'success' : 'error'
-                    );
-                }
-                window.open('Courius.html', '_blank', 'noopener');
-            }, [cells, getCellContentText, couriusMode]);
-            useEffect(() => {
-                window.WTToolActions = {
-                    exportPrimary: () => sendMapToCourius(),
-                    handoffPrimary: () => sendMapToCourius()
-                };
-                window.BeatHiveDebug = {
-                    restoreLatestSnapshot: restoreLatestBeatHiveSnapshot,
-                    clearSnapshots: clearBeatHiveSnapshots
-                };
-                return () => {
-                    try { delete window.WTToolActions; } catch (_) {}
-                    try { delete window.BeatHiveDebug; } catch (_) {}
-                };
-            }, [clearBeatHiveSnapshots, restoreLatestBeatHiveSnapshot, sendMapToCourius]);
-
-            const seedStarterArc = useCallback(() => {
-                const base = [
-                    { q: 0, r: 0, type: 'setup', content: "ORDINARY WORLD\nWho are we following and what do they want?" },
-                    { q: 0, r: 1, type: 'inciting', content: "INCITING INCIDENT\nSomething forces a change of plan." },
-                    { q: 0, r: 2, type: 'heightening', content: "MIDPOINT ESCALATION\nRaise the cost and reveal new information." },
-                    { q: 0, r: 3, type: 'heightening', content: "CRISIS\nThe worst option becomes the only option." },
-                    { q: 0, r: 4, type: 'blowoff', content: "RESOLUTION\nHow are they changed by what happened?" }
-                ];
-                setCells(base);
-                save(base);
-                setSelection({ q: 0, r: 0 });
-            }, [save]);
-
-            const dismissImmersionTips = useCallback(() => {
-                setShowImmersionTips(false);
-            }, []);
-
-            // Optimization 4.1: Memoize Grid Generation
-            const visibleGrid = useMemo(() => {
-                const centerR = Math.round(-pan.y / VERT_SPACING / zoom);
-                const centerQ = Math.round(-pan.x / HEX_WIDTH / zoom);
-                
-                return Array.from({length: 16}).flatMap((_, r_idx) => {
-                    const r = r_idx - 8 + centerR;
-                    return Array.from({length: 16}).map((__, q_idx) => {
-                        const q = q_idx - 8 + centerQ;
-                        const cData = cells.find(c => c.q === q && c.r === r);
-                        return <HexCell key={`g-${q}-${r}`} q={q} r={r} data={cData} theme={theme} zoom={zoom} isSelected={selection.q === q && selection.r === r} onMouseDown={handleMouseDown} onDoubleClick={handleDoubleClick} />;
-                    });
-                });
-            }, [cells, selection, theme, zoom, Math.round(pan.x / HEX_WIDTH / zoom), Math.round(pan.y / VERT_SPACING / zoom)]);
-
-            if (isInitialLoading) return (
-                <div className="w-full h-screen bg-black flex items-center justify-center flex-col gap-6">
-                    <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                    <div className="text-white/30 font-black tracking-[0.4em] uppercase text-xs animate-pulse">Initializing System</div>
-                </div>
-            );
-
-            return (
-                <div className={`w-full h-screen flex flex-col transition-all duration-500 ${theme === 'dark' ? 'dark-theme' : 'light-theme'}`}>
-                    <header className={`h-16 flex items-center justify-between px-6 border-b transition-colors ${theme === 'dark' ? 'border-white/5 bg-black/50' : 'border-stone-400/20 bg-[#e6e0d4]/80'} backdrop-blur-xl z-50`}>
-                        <div className="flex items-center gap-4">
-                            <button onClick={() => setLibOpen(!libOpen)} aria-label="Toggle Library" className={`p-2 rounded-lg transition-all ${libOpen ? 'bg-indigo-600 text-white shadow-lg' : 'hover:bg-black/10 opacity-60'}`}><Icon name="folder" size={18}/></button>
-                            <div className="flex flex-col">
-                                <input value={sketchName} onChange={(e) => { setSketchName(e.target.value); save(null, e.target.value); }} aria-label="Project Name" className="bg-transparent font-display font-bold text-lg outline-none w-48 sm:w-64" placeholder="Untitled Hive" />
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2 px-2">
-                                <button
-                                    onClick={() => setZoom(z => Math.max(0.1, z - 0.1))}
-                                    aria-label="Zoom out"
-                                    className="p-1 rounded hover:bg-current/10 transition-colors"
-                                >
-                                    <Icon name="zoomOut" size={12} className="opacity-70"/>
-                                </button>
-                                <input 
-                                    type="range" min="0.1" max="3" step="0.1" 
-                                    value={zoom} 
-                                    onChange={(e) => setZoom(parseFloat(e.target.value))}
-                                    aria-label="Zoom Level"
-                                    className="w-20 h-1 bg-current opacity-20 rounded-lg appearance-none cursor-pointer"
-                                />
-                                <button
-                                    onClick={() => setZoom(z => Math.min(3.0, z + 0.1))}
-                                    aria-label="Zoom in"
-                                    className="p-1 rounded hover:bg-current/10 transition-colors"
-                                >
-                                    <Icon name="zoomIn" size={12} className="opacity-70"/>
-                                </button>
-                            </div>
-                            <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} aria-label="Toggle Theme" className="p-2 opacity-50 hover:opacity-100"><Icon name={theme === 'dark' ? 'sun' : 'moon'} size={20}/></button>
-                            <button onClick={handlePrint} aria-label="Print" className="p-2 opacity-50 hover:opacity-100"><Icon name="printer" size={20}/></button>
-                            <button onClick={() => setSidebarOpen(!sidebarOpen)} aria-label="Toggle Inspector" className={`p-2 rounded-lg transition-all ${sidebarOpen ? 'bg-indigo-600 text-white shadow-lg' : 'hover:bg-black/10 opacity-60'}`}><Icon name="mask" size={18}/></button>
-                        </div>
-                    </header>
-
-                    <main className="flex-1 flex overflow-hidden relative">
-                        <aside className={`sidebar-panel border-r backdrop-blur-sm ${libOpen ? 'w-[320px]' : 'w-0'}`}>
-                            <div className="sidebar-inner p-6 space-y-6">
-                                <button onClick={handleNewMap} disabled={isCreating} aria-label="New Map" className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs tracking-widest uppercase flex items-center justify-center gap-3 shadow-xl transition-all active:scale-95 disabled:opacity-50">
-                                    <Icon name="plus" size={14}/> New Universe
-                                </button>
-                                <div className={`rounded-2xl p-4 border ${theme === 'dark' ? 'border-white/10 bg-white/5' : 'border-[#432818]/15 bg-white/50'}`}>
-                                    <div className="flex items-center justify-between gap-3">
-                                        <div>
-                                            <div className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-1">Recovery</div>
-                                            <div className="text-xs font-semibold">{getLocalSnapshots().length} snapshot{getLocalSnapshots().length === 1 ? '' : 's'}</div>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <button id="beathive-restore-snapshot-btn" onClick={restoreLatestBeatHiveSnapshot} className="px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-current/10 hover:bg-current/15 transition-colors" disabled={getLocalSnapshots().length < 1}>Restore</button>
-                                            <button id="beathive-clear-snapshots-btn" onClick={clearBeatHiveSnapshots} className="px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-current/10 hover:bg-current/15 transition-colors" disabled={getLocalSnapshots().length < 1}>Clear</button>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="flex-1 overflow-y-auto space-y-2 no-scrollbar pr-2">
-                                    {sketches.map(s => (
-                                        <div key={s.id} onClick={() => setCurrentId(s.id)} className={`group flex items-center justify-between p-4 rounded-xl cursor-pointer transition-all ${currentId === s.id ? 'bg-indigo-500/10 border border-indigo-500/30 text-indigo-500 font-bold' : 'opacity-60 hover:opacity-100 hover:bg-current/5'}`}>
-                                            <span className="text-xs truncate px-1">{s.name || "Untitled"}</span>
-                                            <button onClick={(e) => handleDeleteMap(s.id, e)} aria-label="Delete Map" className="opacity-0 group-hover:opacity-100 p-2 hover:bg-red-500/20 hover:text-red-500 rounded-lg transition-all"><Icon name="trash" size={14}/></button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </aside>
-
-                        <div ref={canvasRef} className={`flex-1 relative cursor-grab active:cursor-grabbing overflow-hidden transition-all duration-300 ${theme === 'dark' ? 'bg-grid-dark' : 'bg-grid-light'}`} 
-                             onMouseDown={(e) => { if(e.target.tagName === 'svg') setSelection({q:null, r:null}); }}
-                             onMouseMove={handleMouseMove}
-                             onMouseUp={handleMouseUp}
-                             onMouseLeave={() => setDragState({ active: false, startQ: null, startR: null, dropTarget: null })}>
-                            <svg ref={svgRef} className="w-full h-full">
-                                <g transform={`translate(${window.innerWidth/2 + pan.x - (libOpen ? 160 : 0) + (sidebarOpen ? -160 : 0)}, ${window.innerHeight/2 + pan.y - 40}) scale(${zoom})`}>
-                                    
-                                    {/* Infinite Grid Simulation (Optimized) */}
-                                    {visibleGrid}
-
-                                    {/* Active Hexes (Foreground) */}
-                                    {cells.map(c => <HexCell key={`active-${c.q},${c.r}`} q={c.q} r={c.r} data={c} theme={theme} zoom={zoom} isSelected={selection.q === c.q && selection.r === c.r} onMouseDown={handleMouseDown} onDoubleClick={handleDoubleClick} />)}
-
-                                    {/* Drag Ghost */}
-                                    {dragState.active && dragState.dropTarget && (
-                                         <HexCell q={dragState.dropTarget.q} r={dragState.dropTarget.r} isSelected={true} theme={theme} zoom={zoom} onMouseDown={()=>{}} onDoubleClick={()=>{}} />
-                                    )}
-
-                                    {/* Spine Line - Rendered Last */}
-                                    <SpineLine cells={cells} theme={theme} />
-                                </g>
-                            </svg>
-                            {/* Floating Status */}
-                            <div className="absolute bottom-8 left-8 flex flex-col gap-2 pointer-events-none animate-in">
-                                <div className={`px-5 py-3 rounded-full border text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl ${theme === 'dark' ? 'bg-black/80 border-white/10 text-white/50' : 'bg-white/80 border-black/5 text-black/50'}`}>
-                                    {selection.q !== null ? 'Node Selected' : 'Hive Ready'}
-                                </div>
-                                {mapStats.storyBeats < 1 && (
-                                    <div className={`px-4 py-2 rounded-xl text-[10px] font-bold tracking-wider uppercase ${theme === 'dark' ? 'bg-black/70 border border-white/10 text-white/60' : 'bg-white/85 border border-black/10 text-black/60'}`}>
-                                        Add a beat to start building
-                                    </div>
-                                )}
-                                {mapStats.storyBeats >= 1 && (
-                                    <div className={`px-4 py-2 rounded-xl text-[10px] font-bold tracking-wider uppercase ${theme === 'dark' ? 'bg-black/70 border border-white/10 text-white/60' : 'bg-white/85 border border-black/10 text-black/60'}`}>
-                                        {mapStats.storyBeats} story beat{mapStats.storyBeats === 1 ? '' : 's'}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Minimap */}
-                            {cells.length > 0 && (
-                                <div className="minimap" onClick={(e) => {
-                                    const rect = e.currentTarget.getBoundingClientRect();
-                                    const clickX = e.clientX - rect.left;
-                                    const clickY = e.clientY - rect.top;
-
-                                    const points = cells.map(c => ({
-                                        q: c.q,
-                                        r: c.r,
-                                        x: c.q * HEX_WIDTH + (c.r % 2 === 0 ? 0 : HEX_WIDTH / 2),
-                                        y: c.r * VERT_SPACING
-                                    }));
-                                    const minX = Math.min(...points.map(p => p.x)) - HEX_WIDTH;
-                                    const maxX = Math.max(...points.map(p => p.x)) + HEX_WIDTH;
-                                    const minY = Math.min(...points.map(p => p.y)) - HEX_HEIGHT;
-                                    const maxY = Math.max(...points.map(p => p.y)) + HEX_HEIGHT;
-
-                                    const worldX = minX + (clickX / 150) * (maxX - minX || 1);
-                                    const worldY = minY + (clickY / 120) * (maxY - minY || 1);
-                                    const snappedR = Math.round(worldY / VERT_SPACING);
-                                    const snappedQ = Math.round((worldX - (snappedR % 2 === 0 ? 0 : HEX_WIDTH / 2)) / HEX_WIDTH);
-                                    const snappedX = snappedQ * HEX_WIDTH + (snappedR % 2 === 0 ? 0 : HEX_WIDTH / 2);
-                                    const snappedY = snappedR * VERT_SPACING;
-
-                                    setPan({ x: -snappedX * zoom, y: -snappedY * zoom });
-                                    panRef.current = { x: -snappedX * zoom, y: -snappedY * zoom };
-                                }}>
-                                    <svg width="150" height="120" style={{ display: 'block' }}>
-                                        {(() => {
-                                            const points = cells.map(c => ({
-                                                q: c.q,
-                                                r: c.r,
-                                                x: c.q * HEX_WIDTH + (c.r % 2 === 0 ? 0 : HEX_WIDTH / 2),
-                                                y: c.r * VERT_SPACING,
-                                                type: c.type
-                                            }));
-                                            const minX = Math.min(...points.map(p => p.x)) - HEX_WIDTH;
-                                            const maxX = Math.max(...points.map(p => p.x)) + HEX_WIDTH;
-                                            const minY = Math.min(...points.map(p => p.y)) - HEX_HEIGHT;
-                                            const maxY = Math.max(...points.map(p => p.y)) + HEX_HEIGHT;
-                                            const rangeX = (maxX - minX) || 1;
-                                            const rangeY = (maxY - minY) || 1;
-
-                                            return points.map(p => {
-                                                const nx = ((p.x - minX) / rangeX) * 146 + 2;
-                                                const ny = ((p.y - minY) / rangeY) * 116 + 2;
-                                                const typeData = BEAT_TYPES.find(t => t.id === p.type) || BEAT_TYPES[4];
-                                                const fill = theme === 'dark' ? typeData.color.dark : typeData.color.light;
-                                                return <circle key={`mm-${p.q}-${p.r}`} cx={nx} cy={ny} r={3.6} fill={fill} />;
-                                            });
-                                        })()}
-                                    </svg>
-                                </div>
-                            )}
-                            
-                            {/* Quick Menu */}
-                            {quickMenu && (
-                                <div className="fixed z-[100] animate-in" style={{ left: quickMenu.x, top: quickMenu.y }}>
-                                    <div className={`p-2 rounded-3xl shadow-2xl border w-64 ${theme === 'dark' ? 'bg-zinc-900 border-white/10' : 'bg-[#e6e0d4] border-[#432818]/10'}`}>
-                                        <div className="px-4 py-3 text-[10px] font-black uppercase tracking-widest opacity-30">Select Archetype</div>
-                                        {BEAT_TYPES.map(t => (
-                                            <button key={t.id} onClick={(e) => { e.stopPropagation(); updateCell(quickMenu.q, quickMenu.r, { type: t.id }); setQuickMenu(null); }} className={`w-full text-left px-4 py-3 rounded-2xl text-xs font-bold transition-all flex items-center gap-3 ${theme === 'dark' ? 'hover:bg-white/5' : 'hover:bg-black/5'}`}>
-                                                <div className="w-2 h-2 rounded-full ring-2 ring-offset-2 ring-offset-transparent" style={{ backgroundColor: theme === 'dark' ? t.color.dark : t.color.light, '--tw-ring-color': theme === 'dark' ? t.color.dark : t.color.light }}></div>
-                                                {t.label}
-                                            </button>
-                                        ))}
-                                        <div className={`border-t my-2 ${theme === 'dark' ? 'border-white/10' : 'border-black/10'}`}></div>
-                                        <div className="px-4 py-2 text-[10px] font-black uppercase tracking-widest opacity-30">Story Tags</div>
-                                        <div className="px-2 pb-2 flex flex-wrap gap-1">
-                                            {STICKERS.map(s => {
-                                                const existingCell = cells.find(c => c.q === quickMenu.q && c.r === quickMenu.r);
-                                                const isActive = existingCell?.tags?.includes(s.id);
-                                                return (
-                                                    <button
-                                                        key={s.id}
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            const currentTags = existingCell?.tags || [];
-                                                            const newTags = isActive
-                                                                ? currentTags.filter(t => t !== s.id)
-                                                                : [...currentTags, s.id];
-                                                            updateCell(quickMenu.q, quickMenu.r, { tags: newTags });
-                                                        }}
-                                                        className={`p-2 rounded-xl transition-all ${isActive ? 'scale-110 shadow-lg' : 'opacity-40 hover:opacity-100'}`}
-                                                        style={{ backgroundColor: isActive ? s.color + '30' : 'transparent' }}
-                                                        title={s.label}
-                                                    >
-                                                        <Icon name={s.icon} size={16} style={{ color: s.color }} />
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Floating Editor */}
-                            {selectedCell && !sidebarOpen && (
-                                <div className="fixed z-50 bottom-16 left-1/2 -translate-x-1/2 w-full max-w-lg px-4 animate-in">
-                                    <div className={`p-1 rounded-2xl shadow-2xl backdrop-blur-xl border ${theme === 'dark' ? 'bg-zinc-900/90 border-white/10' : 'bg-[#e6e0d4]/90 border-[#432818]/10'}`}>
-                                        <div className="flex items-center justify-between px-4 py-2 border-b border-inherit opacity-50">
-                                            <span className="text-[9px] font-black uppercase tracking-widest flex items-center gap-2">
-                                                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: theme === 'dark' ? (BEAT_TYPES.find(t => t.id === selectedCell.type) || BEAT_TYPES[4]).color.dark : (BEAT_TYPES.find(t => t.id === selectedCell.type) || BEAT_TYPES[4]).color.light }}></div>
-                                                {(BEAT_TYPES.find(t => t.id === selectedCell.type) || BEAT_TYPES[4]).label}
-                                            </span>
-                                            <span className="text-[9px] font-black uppercase tracking-widest">Quick Edit (Enter to Exit)</span>
-                                        </div>
-                                        <div className="flex gap-1 px-3 py-2 border-b border-inherit">
-                                            {STICKERS.map(s => {
-                                                const isActive = selectedCell.tags?.includes(s.id);
-                                                return (
-                                                    <button
-                                                        key={s.id}
-                                                        onClick={() => {
-                                                            const currentTags = selectedCell.tags || [];
-                                                            const newTags = isActive
-                                                                ? currentTags.filter(t => t !== s.id)
-                                                                : [...currentTags, s.id];
-                                                            updateCell(selection.q, selection.r, { tags: newTags });
-                                                        }}
-                                                        className={`p-1.5 rounded-lg transition-all ${isActive ? 'scale-110' : 'opacity-30 hover:opacity-100'}`}
-                                                        style={{ backgroundColor: isActive ? s.color + '30' : 'transparent' }}
-                                                        title={s.label}
-                                                    >
-                                                        <Icon name={s.icon} size={14} style={{ color: s.color }} />
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-                                        <textarea
-                                            className={`w-full bg-transparent p-4 resize-none outline-none text-sm font-medium leading-relaxed h-32 ${theme === 'dark' ? 'text-white placeholder-white/20' : 'text-[#432818] placeholder-[#432818]/40'}`}
-                                            placeholder="Describe this beat..."
-                                            value={selectedCell.content}
-                                            onChange={(e) => updateCell(selection.q, selection.r, { content: e.target.value })}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter' && !e.shiftKey) {
-                                                    e.preventDefault();
-                                                    setSelection({ q: null, r: null });
-                                                }
-                                                if (e.key === 'Escape') {
-                                                    e.preventDefault();
-                                                    setSelection({ q: null, r: null });
-                                                }
-                                            }}
-                                            autoFocus
-                                        />
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        <aside className={`sidebar-panel border-l backdrop-blur-sm ${sidebarOpen ? 'w-[320px]' : 'w-0'}`}>
-                            <div className="sidebar-inner p-8 space-y-8">
-                                {selectedCell ? (
-                                    <>
-                                        <div className="space-y-4">
-                                            <label className="text-[10px] font-black opacity-30 uppercase tracking-[0.2em]">Archetype</label>
-                                            <div className="flex flex-col gap-2">
-                                                {BEAT_TYPES.map(t => (
-                                                    <button key={t.id} onClick={() => updateCell(selection.q, selection.r, { type: t.id })} className={`w-full text-left px-4 py-3 rounded-xl text-[11px] font-bold transition-all border ${selectedCell.type === t.id ? 'bg-indigo-600 text-white border-indigo-500 shadow-lg scale-[1.02]' : 'bg-current/5 border-transparent hover:bg-current/10'}`}>
-                                                        {t.label}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <div className="space-y-4">
-                                            <label className="text-[10px] font-black opacity-30 uppercase tracking-[0.2em]">Story Tags</label>
-                                            <div className="flex flex-wrap gap-2">
-                                                {STICKERS.map(s => {
-                                                    const isActive = selectedCell.tags?.includes(s.id);
-                                                    return (
-                                                        <button
-                                                            key={s.id}
-                                                            onClick={() => {
-                                                                const currentTags = selectedCell.tags || [];
-                                                                const newTags = isActive
-                                                                    ? currentTags.filter(t => t !== s.id)
-                                                                    : [...currentTags, s.id];
-                                                                updateCell(selection.q, selection.r, { tags: newTags });
-                                                            }}
-                                                            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[10px] font-bold transition-all border ${isActive ? 'border-current scale-105 shadow-lg' : 'border-transparent opacity-50 hover:opacity-100'}`}
-                                                            style={{ backgroundColor: isActive ? s.color + '30' : 'transparent', borderColor: isActive ? s.color : 'transparent' }}
-                                                        >
-                                                            <Icon name={s.icon} size={14} style={{ color: s.color }} />
-                                                            {s.label}
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                        <div className="flex-1 flex flex-col space-y-4">
-                                            <label className="text-[10px] font-black opacity-30 uppercase tracking-[0.2em]">Narrative Log</label>
-                                            <textarea className={`flex-1 w-full p-5 rounded-2xl resize-none outline-none text-sm leading-relaxed transition-all shadow-inner ${theme === 'dark' ? 'bg-black/40 border border-white/5 focus:border-indigo-500/50' : 'bg-white border border-black/5 focus:border-indigo-500/50'}`}
-                                                      value={selectedCell.content}
-                                                      placeholder="Describe the moment..."
-                                                      onChange={(e) => updateCell(selection.q, selection.r, { content: e.target.value })} />
-                                        </div>
-                                        <button onClick={() => {
-                                            if (!selectedCell.content?.trim() || window.confirm('Delete this beat? This cannot be undone.')) {
-                                                const next = cells.filter(c => !(c.q === selection.q && c.r === selection.r));
-                                                setCells(next); save(next); setSelection({q:null, r:null});
-                                            }
-                                        }} className="w-full py-4 bg-red-500/10 text-red-500 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-red-500/20 transition-all">
-                                            Purge Node
-                                        </button>
-                                        <button onClick={sendMapToCourius} className="w-full py-3 bg-indigo-600/15 text-indigo-500 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-indigo-600/25 transition-all">
-                                            Send Map To Courius ({couriusMode === 'overwrite' ? 'New Script' : 'Append'})
-                                        </button>
-                                        <div className={`w-full p-1 rounded-xl border flex items-center gap-1 ${theme === 'dark' ? 'border-white/10 bg-black/30' : 'border-[#432818]/15 bg-white/70'}`}>
-                                            <button
-                                                onClick={() => setCouriusMode('append')}
-                                                className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-[0.12em] transition-all ${couriusMode === 'append' ? 'bg-indigo-600 text-white shadow' : 'opacity-60 hover:opacity-100'}`}
-                                            >
-                                                Append
-                                            </button>
-                                            <button
-                                                onClick={() => setCouriusMode('overwrite')}
-                                                className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-[0.12em] transition-all ${couriusMode === 'overwrite' ? 'bg-rose-600 text-white shadow' : 'opacity-60 hover:opacity-100'}`}
-                                            >
-                                                Replace
-                                            </button>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <div className="h-full flex flex-col items-center justify-center text-center opacity-30 space-y-6">
-                                        <div className="p-6 rounded-full" style={{background: 'rgba(253, 25, 200, 0.08)'}}>
-                                            <Icon name="mask" size={40} style={{color: '#fd19c8', opacity: 0.5}}/>
-                                        </div>
-                                        <div className="space-y-2 max-w-[220px]">
-                                            <p className="text-xs font-black uppercase tracking-widest leading-loose">Click a hex to inspect</p>
-                                            <p className="text-[10px] opacity-60 leading-relaxed normal-case tracking-normal">Double-click empty space to create new story beats</p>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </aside>
-                    </main>
-
-                    {showImmersionTips && (
-                        <div className="absolute inset-0 z-[120] flex items-center justify-center p-6" style={{ background: theme === 'dark' ? 'rgba(0,0,0,0.65)' : 'rgba(26,26,26,0.45)' }}>
-                            <div className={`w-full max-w-xl rounded-3xl border shadow-2xl p-7 md:p-8 ${theme === 'dark' ? 'bg-black/90 border-white/10' : 'bg-[#f5efe4]/95 border-[#432818]/15'}`}>
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center"><Icon name="zap" size={16} /></div>
-                                    <h2 className="font-display text-xl">Ignite BeatHive</h2>
-                                </div>
-                                <p className="text-sm opacity-75 leading-relaxed mb-5">
-                                    Build the spine fast, keep notes close to the action, and shape the map in whatever order helps you think.
-                                </p>
-                                <div className={`rounded-2xl p-4 mb-6 text-xs leading-relaxed ${theme === 'dark' ? 'bg-white/5' : 'bg-white/70'}`}>
-                                    <div className="font-black uppercase tracking-[0.15em] mb-2 opacity-60">Suggested Start</div>
-                                    1. Seed a few beats in the rough order you feel them.
-                                    <br />
-                                    2. Tag any twist, callback, or hidden info you want to track.
-                                    <br />
-                                    3. Branch sideways once the core path is visible.
-                                </div>
-                                <div className="flex flex-col sm:flex-row gap-3">
-                                    <button
-                                        onClick={() => { seedStarterArc(); dismissImmersionTips(); }}
-                                        className="flex-1 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-widest transition-all"
-                                    >
-                                        Start With Arc
-                                    </button>
-                                    <button
-                                        onClick={dismissImmersionTips}
-                                        className={`flex-1 py-3 px-4 rounded-xl border font-bold text-xs uppercase tracking-widest transition-all ${theme === 'dark' ? 'border-white/15 hover:bg-white/5' : 'border-[#432818]/20 hover:bg-black/5'}`}
-                                    >
-                                        Continue Current Map
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    <footer className={`h-12 px-8 flex items-center justify-between border-t border-inherit bg-current/5 text-[10px] font-bold opacity-40 uppercase tracking-widest`}>
-                        <div className="flex gap-6">
-                            <span className="flex items-center gap-2"><span className={`w-1.5 h-1.5 rounded-full animate-pulse ${user?.uid === 'local-user' ? 'bg-amber-500' : 'bg-emerald-500'}`}></span> {user?.uid === 'local-user' ? 'Local Storage' : 'Network Active'}</span>
-                            <span className="flex items-center gap-2">
-                                {cells.filter(c => c.type !== 'note').length > 0 && (
-                                    <span style={{color: '#fd19c8', opacity: 0.8}}>{cells.filter(c => c.type !== 'note').length} beats</span>
-                                )}
-                            </span>
-                            <span className={`transition-opacity duration-300 ${saveStatus === 'saved' ? 'opacity-100' : 'opacity-0'}`} style={{color: '#4ade80'}}>Saved</span>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-1 border border-current/20 rounded-md p-0.5">
-                                <button onClick={() => setCouriusMode('append')} className={`px-2 py-1 rounded text-[9px] ${couriusMode === 'append' ? 'bg-indigo-600 text-white' : 'opacity-70 hover:opacity-100'}`}>Append</button>
-                                <button onClick={() => setCouriusMode('overwrite')} className={`px-2 py-1 rounded text-[9px] ${couriusMode === 'overwrite' ? 'bg-rose-600 text-white' : 'opacity-70 hover:opacity-100'}`}>New Script</button>
-                            </div>
-                            <button onClick={sendMapToCourius} className="hover:opacity-100 transition-opacity">Send To Courius</button>
-                            <a href="index.html" className="hover:opacity-100 transition-opacity" style={{textDecoration: 'none', color: 'inherit'}}>Writing Tools Suite</a>
-                        </div>
-                    </footer>
-                </div>
-            );
+            card.addEventListener('dragend', () => {
+                draggingPremiseId = '';
+                card.classList.remove('dragging');
+                document.querySelectorAll('.drop-ok').forEach((n) => n.classList.remove('drop-ok'));
+            });
+            list.appendChild(card);
+        });
+    }
+
+    function renderTabs() {
+        const tabs = $('tabs');
+        tabs.innerHTML = '';
+        state.ladders.forEach((l) => {
+            const stats = BH.ladderStats(l);
+            tabs.appendChild(el('button', {
+                class: 'tab' + (l.id === state.activeId ? ' active' : ''),
+                type: 'button',
+                title: l.name,
+                onclick: () => { state.activeId = l.id; commit(); }
+            }, [
+                el('span', { class: 'tab-name', text: l.name }),
+                el('span', { class: 'tab-progress', text: stats.filled + '/' + stats.total })
+            ]));
+        });
+        const add = el('button', { class: 'tab new', type: 'button', onclick: newBlankLadder, title: 'New ladder (or drop a premise here)' }, ['+ New ladder']);
+        wireDropTarget(add, startLadderFromPremise);
+        tabs.appendChild(add);
+    }
+
+    function renderHints(ladder) {
+        const box = document.querySelector('.hints');
+        if (!box) return;
+        const hints = BH.ladderHints(ladder);
+        box.innerHTML = '';
+        box.classList.toggle('done', !hints.length);
+        if (!hints.length) {
+            box.appendChild(el('strong', { text: 'Ladder complete' }));
+            box.appendChild(el('span', { text: 'Every step is filled and every rung tops the last. Send it to Courius and write the scene.' }));
+            return;
         }
+        box.appendChild(el('strong', { text: 'Next' }));
+        box.appendChild(el('ul', {}, hints.map((h) => el('li', { text: h }))));
+    }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
+    function rungSummary(ladder) {
+        const stats = BH.ladderStats(ladder);
+        if (!stats.rungs) return 'No rungs yet.';
+        return stats.toppers + ' of ' + stats.rungs + ' escalate. Ctrl+Enter in a rung adds the next one.';
+    }
+
+    // Cheap updates while typing: hints, step dots, rung summary, tab label.
+    function refreshLiveBits(ladder) {
+        renderHints(ladder);
+        document.querySelectorAll('.step[data-step]').forEach((node) => {
+            const key = node.getAttribute('data-step');
+            const filled = key === 'rungs' ? ladder.rungs.some((r) => r.text.trim()) : !!String(ladder[key] || '').trim();
+            node.classList.toggle('filled', filled);
+        });
+        const summary = document.querySelector('.rung-summary');
+        if (summary) summary.textContent = rungSummary(ladder);
+        const activeTab = document.querySelector('.tab.active');
+        if (activeTab) {
+            const stats = BH.ladderStats(ladder);
+            activeTab.querySelector('.tab-name').textContent = ladder.name;
+            activeTab.querySelector('.tab-progress').textContent = stats.filled + '/' + stats.total;
+        }
+    }
+
+    function textField(ladder, key, placeholder) {
+        const ta = el('textarea', { class: 'field', rows: '1', 'data-field': key, placeholder: placeholder || '', 'aria-label': key });
+        ta.value = ladder[key] || '';
+        ta.addEventListener('input', () => {
+            ladder[key] = ta.value;
+            touch(ladder);
+            autoGrow(ta);
+            refreshLiveBits(ladder);
+            scheduleSave();
+        });
+        return ta;
+    }
+
+    function renderRungs(ladder) {
+        const wrap = el('div', { class: 'rungs' });
+        const count = ladder.rungs.length;
+        ladder.rungs.forEach((rung, i) => {
+            // Rung chips heat from pink to gold as the ladder climbs.
+            const heat = count > 1 ? Math.round((i / (count - 1)) * 100) : 0;
+            const ta = el('textarea', {
+                class: 'field', rows: '1', 'aria-label': 'Rung ' + (i + 1),
+                placeholder: i === 0 ? 'The first time the game plays out' : 'Same game, bigger'
+            });
+            ta.value = rung.text;
+            ta.addEventListener('input', () => {
+                rung.text = ta.value;
+                touch(ladder);
+                autoGrow(ta);
+                refreshLiveBits(ladder);
+                scheduleSave();
+            });
+            ta.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault();
+                    addRung(i);
+                }
+            });
+            const move = (delta) => {
+                const j = i + delta;
+                if (j < 0 || j >= ladder.rungs.length) return;
+                const [item] = ladder.rungs.splice(i, 1);
+                ladder.rungs.splice(j, 0, item);
+                touch(ladder);
+                commit();
+                focusField('rungs', j);
+            };
+            const topsBtn = el('button', {
+                class: 'tops' + (i === 0 ? ' first' : ''),
+                type: 'button',
+                'aria-pressed': rung.tops ? 'true' : 'false',
+                title: 'Does this rung top the one before it?',
+                onclick: () => { rung.tops = !rung.tops; touch(ladder); commit(); }
+            }, [rung.tops ? '▲ tops it' : 'tops it?']);
+            wrap.appendChild(el('div', { class: 'rung', 'data-index': String(i) }, [
+                el('span', { class: 'rung-num', style: '--heat:' + heat + '%', text: String(i + 1) }),
+                ta,
+                el('div', { class: 'rung-tools' }, [
+                    topsBtn,
+                    el('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Move rung up', disabled: i === 0, onclick: () => move(-1) }, ['↑']),
+                    el('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Move rung down', disabled: i === count - 1, onclick: () => move(1) }, ['↓']),
+                    el('button', {
+                        class: 'icon-btn', type: 'button', 'aria-label': 'Delete rung',
+                        onclick: () => {
+                            if (rung.text.trim()) saveSnapshot('delete-rung');
+                            ladder.rungs.splice(i, 1);
+                            touch(ladder);
+                            commit();
+                        }
+                    }, ['×'])
+                ])
+            ]));
+        });
+        return wrap;
+    }
+
+    function renderWelcome(root) {
+        root.appendChild(el('div', { class: 'welcome' }, [
+            el('h2', { text: 'Build a sketch rung by rung' }),
+            el('p', { text: 'A sketch finds one funny pattern (the game) and plays it bigger each time. A ladder walks you through it:' }),
+            el('ol', {}, [
+                el('li', {}, [el('b', { text: 'Base reality' }), ': the normal world.']),
+                el('li', {}, [el('b', { text: 'First unusual thing' }), ': what breaks it.']),
+                el('li', {}, [el('b', { text: 'The game' }), ': if this is true, what else is true?']),
+                el('li', {}, [el('b', { text: 'Heightening' }), ': each rung tops the last.']),
+                el('li', {}, [el('b', { text: 'Button' }), ': the ending.'])
+            ]),
+            el('p', { text: 'Start from a premise in the inbox, or begin blank.' }),
+            el('button', { class: 'btn primary', type: 'button', onclick: newBlankLadder, text: '+ New ladder' })
+        ]));
+    }
+
+    function renderLadder() {
+        const root = $('ladder-root');
+        root.innerHTML = '';
+        const ladder = activeLadder();
+        if (!ladder) return renderWelcome(root);
+
+        const name = el('input', { class: 'ladder-name', type: 'text', 'aria-label': 'Sketch name', maxlength: '80' });
+        name.value = ladder.name;
+        name.addEventListener('input', () => {
+            ladder.name = name.value.trim() ? name.value : 'Untitled Sketch';
+            touch(ladder);
+            refreshLiveBits(ladder);
+            scheduleSave();
+        });
+
+        const premise = el('textarea', { rows: '1', 'aria-label': 'Premise', placeholder: 'Premise (optional)' });
+        premise.value = ladder.premise;
+        premise.addEventListener('input', () => {
+            ladder.premise = premise.value;
+            touch(ladder);
+            autoGrow(premise);
+            scheduleSave();
+        });
+
+        const steps = el('div', { class: 'steps' });
+        STEPS.forEach((step, idx) => {
+            const card = el('div', { class: 'card' }, [
+                el('div', { class: 'card-label', text: step.label }),
+                el('div', { class: 'card-prompt', text: step.prompt })
+            ]);
+            if (step.key === 'rungs') {
+                card.appendChild(renderRungs(ladder));
+                card.appendChild(el('button', { class: 'btn add-rung', type: 'button', onclick: () => addRung(), text: '+ Add rung' }));
+                card.appendChild(el('div', { class: 'rung-summary', text: rungSummary(ladder) }));
+            } else {
+                card.appendChild(textField(ladder, step.key, step.key === 'game' ? 'If this is true, then…' : ''));
+            }
+            wireDropTarget(card, (id) => dropPremiseOnStep(id, step.key));
+            steps.appendChild(el('div', {
+                class: 'step' + (step.key === 'game' ? ' game' : ''),
+                'data-step': step.key
+            }, [el('span', { class: 'step-dot', text: String(idx + 1) }), card]));
+        });
+
+        const modeSelect = el('select', { class: 'mode-select', 'aria-label': 'Courius destination' }, [
+            el('option', { value: 'new', text: 'as a new script' }),
+            el('option', { value: 'append', text: 'appended to the open script' })
+        ]);
+        modeSelect.value = localStorage.getItem(MODE_KEY) === 'append' ? 'append' : 'new';
+        modeSelect.addEventListener('change', () => {
+            try { localStorage.setItem(MODE_KEY, modeSelect.value); } catch (_) {}
+        });
+
+        const notes = el('div', { class: 'card notes-card' }, [
+            el('div', { class: 'card-label', text: 'Notes' }),
+            el('div', { class: 'card-prompt', text: 'Callbacks, alternate buttons, casting thoughts.' }),
+            textField(ladder, 'notes', '')
+        ]);
+
+        root.appendChild(el('div', { class: 'ladder' }, [
+            name,
+            el('div', { class: 'premise-line' }, [premise]),
+            el('div', { class: 'hints' }),
+            steps,
+            notes,
+            el('div', { class: 'ladder-actions' }, [
+                el('button', { class: 'btn primary', type: 'button', id: 'send-courius-btn', onclick: () => sendToCourius(modeSelect.value), text: 'Send to Courius' }),
+                modeSelect,
+                el('button', { class: 'btn', type: 'button', onclick: copyOutline, text: 'Copy outline' }),
+                el('span', { class: 'spacer' }),
+                el('button', { class: 'btn ghost', type: 'button', onclick: duplicateLadder, text: 'Duplicate' }),
+                el('button', { class: 'btn ghost danger', type: 'button', onclick: deleteLadder, text: 'Delete' })
+            ])
+        ]));
+        refreshLiveBits(ladder);
+        requestAnimationFrame(() => root.querySelectorAll('textarea').forEach(autoGrow));
+    }
+
+    function renderAll() {
+        renderTabs();
+        renderInbox();
+        renderLadder();
+    }
+
+    // ===== Actions =====
+    function sendToCourius(mode) {
+        const ladder = activeLadder();
+        if (!ladder) return;
+        if (!window.WTCourius) return notify('Courius handoff unavailable', 'error');
+        persistNow();
+        const html = BH.ladderToCouriusHtml(ladder);
+        const ok = mode === 'append'
+            ? window.WTCourius.append(html, 'BeatHive')
+            : window.WTCourius.createScript(html, 'BeatHive', ladder.name);
+        if (!ok) return notify('Courius transfer failed (storage may be full)', 'error');
+        notify(mode === 'append' ? 'Appended to the open Courius script' : 'Sent to Courius as a new script', 'success');
+        window.open('Courius.html', '_blank', 'noopener');
+    }
+
+    function copyOutline() {
+        const ladder = activeLadder();
+        if (!ladder) return;
+        if (!navigator.clipboard || !navigator.clipboard.writeText) return notify('Clipboard unavailable', 'error');
+        navigator.clipboard.writeText(BH.ladderToText(ladder))
+            .then(() => notify('Outline copied', 'success'), () => notify('Copy failed', 'error'));
+    }
+
+    function duplicateLadder() {
+        const ladder = activeLadder();
+        if (!ladder) return;
+        const copy = BH.newLadder(Object.assign(JSON.parse(JSON.stringify(ladder)), {
+            id: '', name: ladder.name.slice(0, 70) + ' copy', createdAt: 0, updatedAt: 0
+        }));
+        copy.rungs.forEach((r) => { r.id = BH.uid('rung'); });
+        state.ladders.splice(state.ladders.indexOf(ladder) + 1, 0, copy);
+        state.activeId = copy.id;
+        commit();
+    }
+
+    function deleteLadder() {
+        const ladder = activeLadder();
+        if (!ladder) return;
+        if (!confirm('Delete "' + ladder.name + '"? A recovery snapshot is saved first.')) return;
+        saveSnapshot('delete-ladder');
+        const idx = state.ladders.indexOf(ladder);
+        state.ladders.splice(idx, 1);
+        const next = state.ladders[Math.min(idx, state.ladders.length - 1)];
+        state.activeId = next ? next.id : '';
+        commit();
+    }
+
+    function restoreLatestSnapshot() {
+        const snaps = readJson(SNAPSHOTS_KEY, []);
+        const latest = Array.isArray(snaps) ? snaps[0] : null;
+        if (!latest || !latest.payload) return notify('No recovery snapshots yet', 'info');
+        const when = latest.at ? new Date(latest.at).toLocaleString() : 'an earlier save';
+        if (!confirm('Restore BeatHive to the snapshot from ' + when + '? Your current state is snapshotted first.')) return;
+        const payload = latest.payload;
+        // Snapshots from the old hex version hold { sketches }; migrate those.
+        const next = Array.isArray(payload.sketches)
+            ? BH.normalizeState({ ladders: BH.migrateLegacySketches(payload.sketches), inbox: state.inbox })
+            : BH.normalizeState(payload);
+        saveSnapshot('pre-restore');
+        state = next;
+        commit();
+        notify('Snapshot restored', 'success');
+    }
+
+    function addInboxFromInput() {
+        const input = $('inbox-input');
+        const item = BH.newInboxItem({ text: input.value, source: 'You' });
+        if (!item) return;
+        state.inbox.unshift(item);
+        input.value = '';
+        autoGrow(input);
+        persistNow();
+        renderInbox();
+    }
+
+    // ===== Theme =====
+    function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme === 'light' ? 'light' : 'dark');
+    }
+    function toggleTheme() {
+        const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+        applyTheme(next);
+        try { localStorage.setItem('writingtools_theme', next); } catch (_) {}
+    }
+
+    // ===== Boot =====
+    function init() {
+        applyTheme(localStorage.getItem('writingtools_theme'));
+        localRev = parseInt(localStorage.getItem(REV_KEY) || '0', 10) || 0;
+        state = loadState();
+        if (!localStorage.getItem(STATE_KEY)) persistNow();
+        ingestHandoffs();
+        renderAll();
+
+        const input = $('inbox-input');
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                addInboxFromInput();
+            }
+        });
+        input.addEventListener('input', () => autoGrow(input));
+        $('theme-btn').addEventListener('click', toggleTheme);
+        $('restore-btn').addEventListener('click', restoreLatestSnapshot);
+
+        window.addEventListener('storage', (e) => {
+            if (!e) return;
+            if (e.key === HANDOFF_KEY && e.newValue) return ingestHandoffs();
+            if (e.key === 'writingtools_theme' && e.newValue) return applyTheme(e.newValue);
+            if (e.key === REV_KEY) {
+                const incoming = parseInt(e.newValue || '0', 10) || 0;
+                if (incoming <= localRev) return;
+                localRev = incoming;
+                state = BH.normalizeState(readJson(STATE_KEY, {}));
+                renderAll();
+            }
+        });
+        // Text boxes size to their content, which changes with the width.
+        let resizeFrame = 0;
+        window.addEventListener('resize', () => {
+            cancelAnimationFrame(resizeFrame);
+            resizeFrame = requestAnimationFrame(() => document.querySelectorAll('textarea').forEach(autoGrow));
+        });
+        window.addEventListener('beforeunload', () => { if (saveTimer) persistNow(); });
+        document.addEventListener('visibilitychange', () => { if (document.hidden && saveTimer) persistNow(); });
+    }
+
+    window.WTToolActions = {
+        exportPrimary: () => sendToCourius('new'),
+        handoffPrimary: () => sendToCourius('new')
+    };
+    window.BeatHiveDebug = {
+        getState: () => JSON.parse(JSON.stringify(state)),
+        restoreLatestSnapshot: restoreLatestSnapshot,
+        ingestHandoffs: ingestHandoffs
+    };
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
+})();
+</script>
 </body>
 </html>

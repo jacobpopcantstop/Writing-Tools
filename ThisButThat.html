@@ -15,6 +15,7 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="shared-toast.js"></script>
+    <script src="beathive-core.js"></script>
     <script src="shared-pwa.js"></script>
     <script src="shared-export.js"></script>
     <script src="shared-tool-manifest.js"></script>
@@ -1061,6 +1062,15 @@
             const currentTopic = state.topics[state.selectedIndex];
             const twists = state.twists.map(t => String(t).trim()).filter(Boolean);
             if (!currentTopic && twists.length === 0) return;
+            const topicText = currentTopic && currentTopic.text ? String(currentTopic.text).trim() : '';
+            if (window.WTBeatHive) {
+                window.WTBeatHive.queueHandoff({
+                    topic: topicText,
+                    jots: twists.map(t => topicText ? `${topicText}, but ${t}` : t),
+                    source: 'ThisButThat',
+                    createdAt: new Date().toISOString()
+                });
+            }
             window.open('BeatHive.html', '_blank', 'noopener');
         }
 

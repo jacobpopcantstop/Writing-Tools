@@ -21,6 +21,7 @@
     <!-- Babel for JSX -->
     <script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
     <script src="shared-toast.js"></script>
+    <script src="beathive-core.js"></script>
     <script src="shared-pwa.js"></script>
     <script src="shared-tool-manifest.js"></script>
     <script src="shared-recent-sessions.js"></script>
@@ -356,7 +357,6 @@
         const SYNAX_STATE_KEY = 'writingtools_synax_state_v1';
         const SYNAX_REV_KEY = 'writingtools_synax_revision_v1';
         const SYNAX_SNAPSHOTS_KEY = 'writingtools_synax_snapshots_v1';
-        const BEATHIVE_HANDOFF_KEY = 'writingtools_beathive_handoff_v1';
         const getRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
         // Diverse seed concepts for API-powered serendipity
@@ -1217,14 +1217,14 @@
                     .map((w) => `${w.type}: ${w.word}`)
                     .join(' | ');
                 if (topTopic || constraints) {
-                    try {
-                        localStorage.setItem(BEATHIVE_HANDOFF_KEY, JSON.stringify({
+                    if (window.WTBeatHive) {
+                        window.WTBeatHive.queueHandoff({
                             topic: topTopic,
                             constraints,
                             source: 'Synax',
                             createdAt: new Date().toISOString()
-                        }));
-                    } catch (_) {}
+                        });
+                    }
                 }
                 window.open('BeatHive.html#handoff', '_blank', 'noopener');
             }, [contextInput, words]);

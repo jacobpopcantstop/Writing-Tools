@@ -34,8 +34,8 @@
       label: 'BeatHive',
       path: 'BeatHive.html',
       category: 'Drafting',
-      commandDesc: 'Hex-grid beat mapping',
-      commandKeys: 'structure map beathive',
+      commandDesc: 'Premise inbox + sketch game ladders',
+      commandKeys: 'structure sketch game ladder premise inbox beathive',
       snapshotKey: 'writingtools_beathive_snapshots_v1'
     },
     {
