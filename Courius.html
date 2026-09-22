@@ -52,6 +52,23 @@
             --guide-color: rgba(0, 0, 0, 0.15);
         }
 
+        /* SEPIA: warm paper for long sessions */
+        body.sepia-mode {
+            --bg-color: #d9cdb6;
+            --paper-color: #f4ecd8;
+            --text-color: #3b2f22;
+            --ui-bg: rgba(246, 239, 222, 0.95);
+            --ui-text: #3b2f22;
+            --shadow: 0 12px 40px rgba(88, 62, 24, 0.2);
+            --caret: #9c3f1c;
+            --suggestion: rgba(59, 47, 34, 0.42);
+            --guide-color: rgba(92, 70, 38, 0.18);
+            --accent: #b0336e;
+            --accent-gold: #e3b448;
+        }
+        body.day-mode .floating-controls,
+        body.sepia-mode .floating-controls { border-color: rgba(0, 0, 0, 0.08); }
+
         * { box-sizing: border-box; }
 
         body {
@@ -121,9 +138,68 @@
         }
 
         .side-btn:hover {
-            background: rgba(255,255,255,0.1);
+            background: color-mix(in srgb, var(--ui-text) 10%, transparent);
             color: var(--ui-text);
         }
+        .side-btn .ic { display: block; }
+        #theme-btn .ic { display: none; }
+        body:not(.day-mode):not(.sepia-mode) #theme-btn .ti-dark,
+        body.day-mode #theme-btn .ti-light,
+        body.sepia-mode #theme-btn .ti-sepia { display: block; }
+
+        /* TALK: tap for dialogue, hold for dual dialogue. */
+        .talk-btn { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: manipulation; overflow: hidden; }
+        .talk-btn::before {
+            content: "";
+            position: absolute;
+            left: 8px; right: 8px; bottom: 5px;
+            height: 2px;
+            border-radius: 2px;
+            background: currentColor;
+            opacity: 0.35;
+            transform: scaleX(0);
+            transform-origin: left;
+        }
+        .talk-btn.pressing::before { transform: scaleX(1); transition: transform 0.45s linear; opacity: 0.8; }
+        .talk-btn.dual-on::before { transform: scaleX(1); opacity: 0.8; }
+
+        /* Export / More menus */
+        .menu-pop {
+            position: fixed;
+            z-index: 1700;
+            min-width: 220px;
+            background: var(--ui-bg);
+            color: var(--ui-text);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid color-mix(in srgb, var(--ui-text) 14%, transparent);
+            border-radius: 12px;
+            box-shadow: var(--shadow), 0 8px 24px rgba(0, 0, 0, 0.25);
+            padding: 6px;
+            display: none;
+            flex-direction: column;
+            font-family: var(--courier);
+        }
+        .menu-pop.open { display: flex; }
+        .menu-pop button {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            border: 0;
+            background: transparent;
+            color: inherit;
+            font: 13px var(--courier);
+            text-align: left;
+            padding: 9px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .menu-pop button:hover, .menu-pop button:focus-visible { background: color-mix(in srgb, var(--ui-text) 10%, transparent); outline: none; }
+        .menu-pop button span { opacity: 0.5; font-size: 11px; }
+        .menu-pop button.danger { color: #e35d5d; }
+        .menu-title { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.5; padding: 6px 10px 4px; }
+        .menu-sep { height: 1px; margin: 4px 6px; background: color-mix(in srgb, var(--ui-text) 12%, transparent); }
 
         .side-btn.active {
             background: var(--accent-gold);
@@ -149,6 +225,8 @@
         .element-bar .side-btn::after { bottom: 55px; left: 50%; transform: translateX(-50%); }
         .side-btn:hover::after { opacity: 1; }
         .side-btn:not([data-label])::after { display: none; }
+        /* Touch screens keep :hover after a tap, which would strand tooltips. */
+        @media (hover: none) { .side-btn::after { display: none; } }
 
         /* --- Main Workspace --- */
         main {
@@ -512,6 +590,7 @@
         }
         #notes-toggle:hover { border-color: var(--guide-color); }
         #notes-toggle[hidden] { display: none; }
+        #notes-toggle::before { content: "| "; opacity: 0.6; }
 
         /* --- Title Page Styles --- */
         .title-page-container {
@@ -589,7 +668,7 @@
         @media print {
             html, body { height: auto; overflow: visible; }
             body { background: none; }
-            .floating-controls, #save-bar, .scene-nav, .help-modal, .imports-panel, .autocomplete-dropdown { display: none !important; }
+            .floating-controls, #save-bar, .scene-nav, .help-modal, .imports-panel, .autocomplete-dropdown, .menu-pop { display: none !important; }
             a[href="index.html"] { display: none !important; }
             main { display: none !important; }
             #print-pages {
@@ -957,19 +1036,29 @@
 
 <div class="floating-controls actions-bar">
     <div class="courius-wordmark" style="font-weight: 900; font-size: 0.5rem; text-align: center; margin-bottom: 4px; opacity: 0.5; color: var(--ui-text);">COURIUS</div>
-    <a class="side-btn" data-label="Suite Home" href="index.html" style="text-decoration:none">🏠</a>
-    <button class="side-btn" data-label="Scripts (F)" onclick="toggleFilesPanel()">📁</button>
-    <button class="side-btn" data-label="Scenes (Alt+S)" onclick="toggleSceneNav()">📑</button>
-    <button class="side-btn" data-label="Title Page" onclick="toggleTitlePage()">Title</button>
-    <button class="side-btn" data-label="Sticky Note (Alt+N)" onmousedown="event.preventDefault()" onclick="addNote()">📝</button>
-    <button class="side-btn" data-label="Import FDX" onclick="document.getElementById('file-input').click()">Imp</button>
-    <button class="side-btn" data-label="Theme (Ctrl+D)" onclick="toggleTheme()">🌓</button>
-    <button class="side-btn" data-label="Help (?)" onclick="toggleHelp()">❓</button>
-    <button class="side-btn" data-label="Import History" onclick="toggleImportsPanel()">↺</button>
-    <button class="side-btn" data-label="Export FDX" onclick="downloadFDX()">FDX</button>
-    <button class="side-btn" data-label="Export RTF" onclick="downloadRTF()">RTF</button>
-    <button class="side-btn" data-label="Print/PDF" onclick="window.print()">PDF</button>
-    <button class="side-btn" style="color: #fca5a5;" data-label="Clear Script" onclick="resetScript()">🗑️</button>
+    <a class="side-btn" data-label="Suite Home" aria-label="Suite home" href="index.html" style="text-decoration:none"><svg class="ic " width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></a>
+    <button class="side-btn" data-label="Scripts (F)" aria-label="Scripts" onclick="toggleFilesPanel()"><svg class="ic " width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg></button>
+    <button class="side-btn" data-label="Scenes (Alt+S)" aria-label="Scenes" onclick="toggleSceneNav()"><svg class="ic " width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg></button>
+    <button class="side-btn" data-label="Sticky Note (Alt+N)" aria-label="Sticky note" onmousedown="event.preventDefault()" onclick="addNote()"><svg class="ic " width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.5 3H5a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3Z"/><path d="M15 3v6h6"/></svg></button>
+    <button class="side-btn" id="theme-btn" data-label="Theme (Ctrl+D)" aria-label="Change theme" onclick="toggleTheme()"><svg class="ic ti-dark" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg><svg class="ic ti-light" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg><svg class="ic ti-sepia" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></button>
+    <button class="side-btn" id="export-btn" data-label="Export" aria-label="Export" aria-haspopup="menu" onclick="toggleMenu('menu-export', this)"><svg class="ic " width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg></button>
+    <button class="side-btn" id="more-btn" data-label="More" aria-label="More" aria-haspopup="menu" onclick="toggleMenu('menu-more', this)"><svg class="ic " width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button>
+</div>
+
+<div id="menu-export" class="menu-pop" role="menu" aria-label="Export">
+    <div class="menu-title">Export</div>
+    <button role="menuitem" onclick="runMenu(downloadFDX)">Final Draft <span>.fdx</span></button>
+    <button role="menuitem" onclick="runMenu(downloadRTF)">Word / RTF <span>.rtf</span></button>
+    <button role="menuitem" onclick="runMenu(() => window.print())">Print or save PDF <span>Ctrl+P</span></button>
+</div>
+
+<div id="menu-more" class="menu-pop" role="menu" aria-label="More">
+    <button role="menuitem" onclick="runMenu(toggleTitlePage)">Title page</button>
+    <button role="menuitem" onclick="runMenu(() => document.getElementById('file-input').click())">Import FDX…</button>
+    <button role="menuitem" onclick="runMenu(() => toggleImportsPanel(true))">Imports &amp; recovery snapshots</button>
+    <button role="menuitem" onclick="runMenu(toggleHelp)">Keyboard shortcuts <span>?</span></button>
+    <div class="menu-sep"></div>
+    <button role="menuitem" class="danger" onclick="runMenu(resetScript)">Clear script…</button>
 </div>
 
 <div id="scene-nav" class="scene-nav">
@@ -983,13 +1072,14 @@
 <div id="help-modal" class="help-modal" onclick="if(event.target===this)toggleHelp()">
     <div class="help-content">
         <h3>⌨️ Keyboard Shortcuts</h3>
-        <div class="shortcut-row"><span>Toggle Theme</span><span class="shortcut-key">Ctrl+D</span></div>
+        <div class="shortcut-row"><span>Theme (dark · light · sepia)</span><span class="shortcut-key">Ctrl+D</span></div>
         <div class="shortcut-row"><span>Scripts Panel</span><span class="shortcut-key">F</span></div>
         <div class="shortcut-row"><span>Scene Navigator</span><span class="shortcut-key">Alt+S</span></div>
         <div class="shortcut-row"><span>Cycle Element Type</span><span class="shortcut-key">Tab</span></div>
         <div class="shortcut-row"><span>Reverse Cycle</span><span class="shortcut-key">Shift+Tab</span></div>
         <div class="shortcut-row"><span>Set Element Type</span><span class="shortcut-key">Alt+1..6</span></div>
-        <div class="shortcut-row"><span>Dual Dialogue (in a speech)</span><span class="shortcut-key">Alt+D</span></div>
+        <div class="shortcut-row"><span>Dual Dialogue (or hold TALK)</span><span class="shortcut-key">Alt+D</span></div>
+        <div class="shortcut-row"><span>Auto scene heading / transition</span><span class="shortcut-key">INT. · CUT TO:</span></div>
         <div class="shortcut-row"><span>Sticky Note on this line</span><span class="shortcut-key">Alt+N</span></div>
         <div class="shortcut-row"><span>Save Now</span><span class="shortcut-key">Ctrl+S</span></div>
         <div class="shortcut-row"><span>New Line</span><span class="shortcut-key">Enter</span></div>
@@ -1010,9 +1100,8 @@
     <button class="side-btn" data-type="action" data-label="Action" onclick="changeElementType('action')">ACT</button>
     <button class="side-btn" data-type="character" data-label="Character" onclick="changeElementType('character')">NAME</button>
     <button class="side-btn" data-type="parenthetical" data-label="Parenthetical" onclick="changeElementType('parenthetical')">( )</button>
-    <button class="side-btn" data-type="dialogue" data-label="Dialogue" onclick="changeElementType('dialogue')">TALK</button>
+    <button class="side-btn talk-btn" id="talk-btn" data-type="dialogue" data-label="Dialogue · hold for dual dialogue">TALK</button>
     <button class="side-btn" data-type="transition" data-label="Transition" onclick="changeElementType('transition')">CUT</button>
-    <button class="side-btn dual-btn" data-label="Dual Dialogue (Alt+D)" onmousedown="event.preventDefault()" onclick="toggleDualDialogue()">DUAL</button>
 </div>
 
 <input type="file" id="file-input" accept=".fdx" style="display: none;" onchange="importFDX(this)">
@@ -1026,7 +1115,7 @@
 <div id="save-bar">
     <button id="active-doc-name" type="button" title="Switch scripts" onclick="toggleFilesPanel()">Untitled Script</button>
     | <span id="page-count">Pg 1</span> | <span id="save-status">Ready</span>
- | <button id="notes-toggle" type="button" hidden title="Show or hide sticky notes" onclick="toggleNotesVisible()">✎ 0</button>
+ <button id="notes-toggle" type="button" hidden title="Show or hide sticky notes" onclick="toggleNotesVisible()">✎ 0</button>
     | <button id="writing-timer-btn" type="button" title="Click to start or pause the alarm. Double-click to set minutes."><span id="writing-timer-label">Alarm</span> <span id="writing-timer">25:00</span></button>
 </div>
 
@@ -1690,9 +1779,7 @@
         // Theme Logic: Default is Dark (no class). Check local key first, then suite-wide key.
         const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
         const suiteTheme = localStorage.getItem('writingtools_theme');
-        if (savedTheme === 'light' || (!savedTheme && suiteTheme === 'light')) {
-            document.body.classList.add('day-mode');
-        }
+        applyCouriusTheme(savedTheme || (suiteTheme === 'light' ? 'light' : 'dark'));
         
         updateSelectorUI();
         updatePageCount();
@@ -1744,11 +1831,32 @@
         }
     }
 
+    const THEMES = ['dark', 'light', 'sepia'];
+    const THEME_NAMES = { dark: 'Dark', light: 'Light', sepia: 'Sepia' };
+
+    function currentCouriusTheme() {
+        if (document.body.classList.contains('sepia-mode')) return 'sepia';
+        if (document.body.classList.contains('day-mode')) return 'light';
+        return 'dark';
+    }
+
+    function applyCouriusTheme(theme) {
+        const name = THEMES.includes(theme) ? theme : 'dark';
+        document.body.classList.toggle('day-mode', name === 'light');
+        document.body.classList.toggle('sepia-mode', name === 'sepia');
+        const next = THEMES[(THEMES.indexOf(name) + 1) % THEMES.length];
+        const btn = document.getElementById('theme-btn');
+        if (btn) btn.setAttribute('data-label', 'Theme: ' + THEME_NAMES[name] + ' · next ' + THEME_NAMES[next] + ' (Ctrl+D)');
+    }
+
+    // Dark → light → sepia. The suite-wide key only knows light/dark, so
+    // sepia tells the other tools "light".
     function toggleTheme() {
-        document.body.classList.toggle('day-mode');
-        const isLight = document.body.classList.contains('day-mode');
-        localStorage.setItem(THEME_STORAGE_KEY, isLight ? 'light' : 'dark');
-        localStorage.setItem('writingtools_theme', isLight ? 'light' : 'dark');
+        const current = currentCouriusTheme();
+        const next = THEMES[(THEMES.indexOf(current) + 1) % THEMES.length];
+        applyCouriusTheme(next);
+        localStorage.setItem(THEME_STORAGE_KEY, next);
+        localStorage.setItem('writingtools_theme', next === 'dark' ? 'dark' : 'light');
     }
 
     // --- Title Page Logic ---
@@ -1800,6 +1908,12 @@
         }
 
         const type = block.className;
+
+        if (e.inputType === 'insertParagraph' || e.inputType === 'insertLineBreak') {
+            e.preventDefault();
+            handleEnter(block);
+            return;
+        }
         
         if ((type === 'scene-heading' || type === 'character') && e.inputType === 'insertText' && e.data) {
             e.preventDefault();
@@ -1897,40 +2011,55 @@
 
         if (e.key === 'Enter') {
             e.preventDefault();
-            if (elementMenuOpen) {
-                // Type was already applied live while navigating; just close.
-                hideDropdown();
-                updateSelectorUI();
-                return;
-            }
-            if (DROPDOWN.classList.contains('visible')) {
-                acceptFromDropdown(dropdownBlock, dropdownMatches[dropdownActiveIndex]);
-                createLine(NEXT_ELEMENT[type] || 'action', currentBlock);
-                updateSelectorUI();
-                return;
-            }
-            const sugg = currentBlock.querySelector('.suggestion');
-            if (sugg) acceptSuggestion(currentBlock, sugg);
-            let textNow = getPureText(currentBlock).trim();
-            if (type === 'parenthetical' && (textNow === '()' || textNow === '(' || textNow === ')')) {
-                currentBlock.innerHTML = '<br>';
-                textNow = '';
-            }
-            if (isDualBlock(currentBlock) && handleDualEnter(currentBlock, type, !textNow)) {
-                updateSelectorUI();
-                return;
-            }
-            if (!textNow) {
-                // Enter on an empty line opens the element menu instead of
-                // stacking another guessed line.
-                showElementMenu(currentBlock);
-                updateSelectorUI();
-                return;
-            }
-            createLine(NEXT_ELEMENT[type] || 'action', currentBlock);
-            updateSelectorUI();
+            handleEnter(currentBlock);
         }
     });
+
+    // Phone keyboards (notably Android) often report Enter as an
+    // "Unidentified" key, so the keydown handler never sees it and the
+    // browser would split the line itself, copying the current element
+    // (an "action" typed after a heading became a second scene heading).
+    // Route those paragraph inserts through the same Enter logic.
+    function handleEnter(currentBlock) {
+        const type = currentBlock.className;
+        const elementMenuOpen = DROPDOWN.classList.contains('visible') && dropdownMode === 'elements';
+        if (elementMenuOpen) {
+            // Type was already applied live while navigating; just close.
+            hideDropdown();
+            updateSelectorUI();
+            return;
+        }
+        if (DROPDOWN.classList.contains('visible')) {
+            acceptFromDropdown(dropdownBlock, dropdownMatches[dropdownActiveIndex]);
+            createLine(NEXT_ELEMENT[type] || 'action', currentBlock);
+            updateSelectorUI();
+            return;
+        }
+        const sugg = currentBlock.querySelector('.suggestion');
+        if (sugg) acceptSuggestion(currentBlock, sugg);
+        let textNow = getPureText(currentBlock).trim();
+        if (type === 'parenthetical' && (textNow === '()' || textNow === '(' || textNow === ')')) {
+            currentBlock.innerHTML = '<br>';
+            textNow = '';
+        }
+        if (isDualBlock(currentBlock) && handleDualEnter(currentBlock, type, !textNow)) {
+            updateSelectorUI();
+            return;
+        }
+        if (!textNow) {
+            // Enter on an empty line opens the element menu instead of
+            // stacking another guessed line.
+            showElementMenu(currentBlock);
+            updateSelectorUI();
+            return;
+        }
+        // "CUT TO:", "BLACKOUT." and friends finish as transitions.
+        let lineType = type;
+        if (autoConvertLine(currentBlock, true)) lineType = currentBlock.className;
+        createLine(NEXT_ELEMENT[lineType] || 'action', currentBlock);
+        updateSelectorUI();
+        triggerSave();
+    }
 
     EDITOR.addEventListener('keyup', (e) => {
         // Keep the element menu open across the keyup of the Enter/Tab/Arrow
@@ -1959,10 +2088,159 @@
 
     // Autosave on every edit, including ones with no keyup: right-click
     // paste, drag-and-drop, Edit-menu cut, spellcheck corrections, IME.
-    EDITOR.addEventListener('input', () => {
+    EDITOR.addEventListener('input', (e) => {
+        // Typing "INT." / "EXT." (or "CUT TO:") turns the line into a scene
+        // heading (or transition) as you type. Skipped mid-composition so
+        // phone keyboards are not interrupted; Enter catches those.
+        if (e.inputType === 'insertText') {
+            const sel = window.getSelection();
+            const block = sel.rangeCount ? getBlock(sel.anchorNode) : null;
+            if (block && block !== EDITOR && autoConvertLine(block, false)) {
+                updateSelectorUI();
+                updateSuggestions();
+            }
+        }
         triggerSave();
         updatePageCount();
     });
+
+    // ===== Auto-detected elements =====
+    const SCENE_START_RE = /^(?:INT\.?\/EXT|EXT\.?\/INT|I\/E|INT|EXT|EST)(?:\.|\s)/i;
+    const TRANSITION_LINE_RE = /^(?:(?:CUT|SMASH CUT|MATCH CUT|JUMP CUT|TIME CUT|DISSOLVE|FADE|WIPE|IRIS OUT|INTERCUT)(?: TO)?(?: WITH)?:|(?:CUT|FADE|SMASH CUT) TO BLACK[.:!]?|FADE OUT[.:!]?|BLACK ?OUT[.:!]?)$/i;
+
+    // Uppercases a line's text in place, keeping the caret where it was.
+    function uppercaseInPlace(block) {
+        const sel = window.getSelection();
+        const anchor = sel.rangeCount ? { node: sel.anchorNode, offset: sel.anchorOffset } : null;
+        const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
+        const nodes = [];
+        while (walker.nextNode()) {
+            if (!walker.currentNode.parentElement.closest('.suggestion')) nodes.push(walker.currentNode);
+        }
+        nodes.forEach((node) => {
+            const upper = node.data.toUpperCase();
+            if (upper !== node.data) node.data = upper;
+        });
+        if (anchor && block.contains(anchor.node)) {
+            try {
+                const range = document.createRange();
+                range.setStart(anchor.node, Math.min(anchor.offset, (anchor.node.textContent || '').length));
+                range.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(range);
+            } catch (_) {}
+        }
+    }
+
+    // Converts an action (or character) line that is really a scene heading
+    // or a transition. While typing, only unambiguous forms convert
+    // ("INT. ", "EXT.", "CUT TO:"); on Enter, bare ones like "BLACKOUT" do too.
+    function autoConvertLine(block, onEnter) {
+        if (!block || isDualBlock(block)) return false;
+        const type = block.className;
+        if (type !== 'action' && type !== 'character') return false;
+        const text = getPureText(block).replace(/\u00a0/g, ' ').trim();
+        if (!text) return false;
+        let next = '';
+        if (SCENE_START_RE.test(text + (onEnter ? ' ' : ''))) next = 'scene-heading';
+        else if (TRANSITION_LINE_RE.test(text) && (onEnter || /:$/.test(text))) next = 'transition';
+        if (!next) return false;
+        const sugg = block.querySelector('.suggestion');
+        if (sugg) sugg.remove();
+        setBlockType(block, next);
+        uppercaseInPlace(block);
+        STATUS.innerText = next === 'scene-heading' ? 'Scene heading' : 'Transition';
+        return true;
+    }
+
+    // ===== Export / More menus =====
+    let openMenuId = '';
+    function closeMenus() {
+        document.querySelectorAll('.menu-pop.open').forEach((m) => m.classList.remove('open'));
+        document.querySelectorAll('[aria-haspopup="menu"]').forEach((b) => b.setAttribute('aria-expanded', 'false'));
+        openMenuId = '';
+    }
+    function toggleMenu(id, anchor) {
+        const wasOpen = openMenuId === id;
+        closeMenus();
+        if (wasOpen) return;
+        const menu = document.getElementById(id);
+        if (!menu) return;
+        menu.classList.add('open');
+        anchor.setAttribute('aria-expanded', 'true');
+        openMenuId = id;
+        const r = anchor.getBoundingClientRect();
+        const mw = menu.offsetWidth;
+        const mh = menu.offsetHeight;
+        menu.style.left = menu.style.top = menu.style.right = menu.style.bottom = '';
+        if (window.innerWidth > 1024) {
+            // Vertical bar on the right: open to the left of the button.
+            menu.style.left = Math.max(8, r.left - mw - 10) + 'px';
+            menu.style.top = Math.max(8, Math.min(r.top, window.innerHeight - mh - 8)) + 'px';
+        } else {
+            // Horizontal bar at the bottom: open above the button.
+            menu.style.left = Math.max(8, Math.min(r.left + r.width / 2 - mw / 2, window.innerWidth - mw - 8)) + 'px';
+            menu.style.top = Math.max(8, r.top - mh - 10) + 'px';
+        }
+        const first = menu.querySelector('button');
+        if (first) first.focus({ preventScroll: true });
+    }
+    function runMenu(action) {
+        closeMenus();
+        action();
+    }
+    document.addEventListener('mousedown', (e) => {
+        if (openMenuId && !e.target.closest('.menu-pop') && !e.target.closest('[aria-haspopup="menu"]')) closeMenus();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (!openMenuId) return;
+        const menu = document.getElementById(openMenuId);
+        const items = Array.from(menu.querySelectorAll('button'));
+        const i = items.indexOf(document.activeElement);
+        if (e.key === 'Escape') { e.preventDefault(); closeMenus(); EDITOR.focus(); }
+        else if (e.key === 'ArrowDown') { e.preventDefault(); items[(i + 1) % items.length].focus(); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); items[(i - 1 + items.length) % items.length].focus(); }
+    });
+
+    // ===== TALK: tap for dialogue, hold for dual dialogue =====
+    (function wireTalkButton() {
+        const btn = document.getElementById('talk-btn');
+        if (!btn) return;
+        const HOLD_MS = 450;
+        let timer = null;
+        let held = false;
+        const cancel = () => {
+            clearTimeout(timer);
+            timer = null;
+            btn.classList.remove('pressing');
+        };
+        btn.addEventListener('pointerdown', (e) => {
+            if (e.button !== undefined && e.button !== 0) return;
+            e.preventDefault(); // keep the caret in the script
+            held = false;
+            btn.classList.add('pressing');
+            timer = setTimeout(() => {
+                held = true;
+                cancel();
+                if (navigator.vibrate) navigator.vibrate(12);
+                toggleDualDialogue();
+            }, HOLD_MS);
+        });
+        btn.addEventListener('pointerup', () => {
+            const wasPending = !!timer;
+            cancel();
+            if (wasPending && !held) changeElementType('dialogue');
+        });
+        btn.addEventListener('pointerleave', cancel);
+        btn.addEventListener('pointercancel', cancel);
+        btn.addEventListener('contextmenu', (e) => e.preventDefault());
+        btn.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                changeElementType('dialogue');
+            }
+        });
+    })();
 
     // Paste as plain text. A single line goes into the current element; a
     // multi-line paste is split into screenplay elements instead of landing
@@ -2574,8 +2852,12 @@
         document.querySelectorAll('.element-bar .side-btn[data-type]').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.type === type);
         });
-        const dualBtn = document.querySelector('.element-bar .dual-btn');
-        if (dualBtn) dualBtn.classList.toggle('active', !!block && isDualBlock(block));
+        const talkBtn = document.getElementById('talk-btn');
+        if (talkBtn) {
+            const inDual = !!block && isDualBlock(block);
+            talkBtn.classList.toggle('dual-on', inDual);
+            talkBtn.setAttribute('data-label', inDual ? 'Dual dialogue · hold to split' : 'Dialogue · hold for dual dialogue');
+        }
     }
 
     function getPureText(div) {
