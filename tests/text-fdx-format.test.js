@@ -100,19 +100,48 @@ test('buildCouriusHtml creates editor-compatible blocks and escapes text', () =>
   assert.ok(html.includes('<div class="dialogue">One &lt;two&gt;<br>Three</div>'));
 });
 
-test('saveToCourius writes storage, revision, and timestamp', () => {
-  const values = new Map([['writingtools_courius_revision_v1', '3']]);
-  const storage = {
-    getItem: (key) => values.get(key) || null,
-    setItem: (key, value) => values.set(key, String(value))
+function memoryStorage(entries) {
+  const values = new Map(entries || []);
+  return {
+    values,
+    getItem: (key) => (values.has(key) ? values.get(key) : null),
+    setItem: (key, value) => values.set(key, String(value)),
+    removeItem: (key) => values.delete(key)
   };
+}
+
+test('saveToCourius adds a new script without touching the open one', () => {
+  const Courius = require('../shared-courius.js');
+  const storage = memoryStorage([
+    ['writingtools_courius_storage', '<div class="action">Existing work.</div>'],
+    ['writingtools_courius_docs_v1', JSON.stringify([{ id: 'doc_old', name: 'Old', auto: false, updatedAt: 1 }])],
+    ['writingtools_courius_active_doc_v1', 'doc_old']
+  ]);
   const html = TextFDX.saveToCourius({
+    title: 'Pilot',
     elements: [{ type: 'action', text: 'A clean handoff.' }]
-  }, storage);
+  }, storage, Courius);
+  const values = storage.values;
   assert.ok(html.includes('A clean handoff.'));
-  assert.strictEqual(values.get('writingtools_courius_storage'), html);
-  assert.strictEqual(values.get('writingtools_courius_revision_v1'), '4');
-  assert.ok(Number(values.get('writingtools_courius_updated_at')) > 0);
+  assert.strictEqual(values.get('writingtools_courius_storage'), '<div class="action">Existing work.</div>');
+  const docs = JSON.parse(values.get('writingtools_courius_docs_v1'));
+  assert.strictEqual(docs.length, 2);
+  assert.strictEqual(docs[0].name, 'Pilot');
+  assert.ok(values.get('writingtools_courius_doc_' + docs[0].id).includes('A clean handoff.'));
+  assert.strictEqual(JSON.parse(values.get('writingtools_courius_open_request_v1')).id, docs[0].id);
+});
+
+test('createScript registers the legacy buffer when Courius has no script index yet', () => {
+  const Courius = require('../shared-courius.js');
+  const storage = memoryStorage([['writingtools_courius_storage', '<div class="action">Legacy.</div>']]);
+  const id = Courius.createScript('<div class="action">New.</div>', 'BeatHive', '', storage);
+  const values = storage.values;
+  const docs = JSON.parse(values.get('writingtools_courius_docs_v1'));
+  assert.strictEqual(docs.length, 2);
+  assert.strictEqual(docs[0].id, id);
+  assert.strictEqual(docs[0].name, 'From BeatHive');
+  assert.strictEqual(values.get('writingtools_courius_active_doc_v1'), docs[1].id);
+  assert.strictEqual(values.get('writingtools_courius_storage'), '<div class="action">Legacy.</div>');
 });
 
 test('parseStructuredJson accepts prose-wrapped LLM replies', () => {

@@ -1,19 +1,16 @@
-const WT_CACHE_NAME = 'writingtools-static-v5';
+const WT_CACHE_NAME = 'writingtools-static-v7';
 const WT_CORE_ASSETS = [
   './',
   './index.html',
-  './CharacterForge.html',
   './Synax.html',
   './ThisButThat.html',
   './Joterie.html',
   './BeatHive.html',
-  './Wribbon.html',
-  './WitherNaught.html',
   './Courius.html',
   './TextToFDX.html',
-  './PaperCut.html',
   './shared-toast.js',
   './shared-courius.js',
+  './beathive-core.js',
   './courius-format.js',
   './text-fdx-format.js',
   './shared-export.js',

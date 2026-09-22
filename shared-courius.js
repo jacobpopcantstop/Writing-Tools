@@ -1,26 +1,88 @@
-(function () {
+(function (root) {
   'use strict';
 
   var COURIUS_KEY = 'writingtools_courius_storage';
+  // Multi-script keys (mirrors Courius.html). Inactive scripts are parked
+  // under DOC_PREFIX + id; OPEN_REQUEST_KEY asks Courius to switch to one.
+  var DOCS_INDEX_KEY = 'writingtools_courius_docs_v1';
+  var ACTIVE_DOC_KEY = 'writingtools_courius_active_doc_v1';
+  var DOC_PREFIX = 'writingtools_courius_doc_';
+  var OPEN_REQUEST_KEY = 'writingtools_courius_open_request_v1';
   var COURIUS_REV_KEY = 'writingtools_courius_revision_v1';
   var COURIUS_IMPORTS_KEY = 'writingtools_courius_imports_v1';
   var DEAD_CONTEXT_KEY = 'writingtools_context_v1';
 
   function nowIso() { return new Date().toISOString(); }
 
-  // One-time removal of the retired global context bus key.
-  try { localStorage.removeItem(DEAD_CONTEXT_KEY); } catch (_) {}
+  function defaultStorage() {
+    try { return root && root.localStorage ? root.localStorage : null; } catch (_) { return null; }
+  }
 
-  function getImportHistory() {
+  // One-time removal of the retired global context bus key.
+  try { var ls = defaultStorage(); if (ls) ls.removeItem(DEAD_CONTEXT_KEY); } catch (_) {}
+
+  function getImportHistory(storage) {
     try {
-      var raw = localStorage.getItem(COURIUS_IMPORTS_KEY);
+      var raw = (storage || defaultStorage()).getItem(COURIUS_IMPORTS_KEY);
       var parsed = raw ? JSON.parse(raw) : [];
       return Array.isArray(parsed) ? parsed : [];
     } catch (_) { return []; }
   }
 
-  function writeImportHistory(items) {
-    try { localStorage.setItem(COURIUS_IMPORTS_KEY, JSON.stringify(items.slice(0, 30))); } catch (_) {}
+  function writeImportHistory(items, storage) {
+    try { (storage || defaultStorage()).setItem(COURIUS_IMPORTS_KEY, JSON.stringify(items.slice(0, 30))); } catch (_) {}
+  }
+
+  function recordImport(source, mode, stampIso, payload, storage) {
+    var history = getImportHistory(storage);
+    history.unshift({
+      id: 'imp_' + Date.now() + '_' + Math.floor(Math.random() * 100000),
+      source: source, mode: mode, createdAt: stampIso, payload: payload
+    });
+    writeImportHistory(history, storage);
+  }
+
+  function readDocs(storage) {
+    try {
+      var parsed = JSON.parse(storage.getItem(DOCS_INDEX_KEY) || '[]');
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (_) { return []; }
+  }
+
+  function newDocId() {
+    return 'doc_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+  }
+
+  // Adds a handoff as a brand-new Courius script instead of replacing the one
+  // the writer has open. The script is parked, then Courius is asked to open
+  // it (immediately if a Courius tab is open, otherwise on its next load).
+  // Returns the new script id, or '' on failure.
+  function createScript(html, sourceLabel, name, storage) {
+    var target = storage || defaultStorage();
+    if (!target) return '';
+    var payload = sanitizePayload(html).trim();
+    if (!payload) return '';
+    var source = String(sourceLabel || 'tool').trim() || 'tool';
+    try {
+      var docs = readDocs(target);
+      if (!docs.length) {
+        // Courius has never indexed its scripts: register the existing
+        // buffer first so it is not mistaken for the new script.
+        var legacyId = newDocId() + '_0';
+        docs.push({ id: legacyId, name: 'Untitled Script', auto: true, updatedAt: Date.now() - 1 });
+        target.setItem(ACTIVE_DOC_KEY, legacyId);
+      }
+      var id = newDocId();
+      var cleanName = String(name || '').trim() || ('From ' + source);
+      target.setItem(DOC_PREFIX + id, payload);
+      docs.unshift({ id: id, name: cleanName.slice(0, 80), auto: false, updatedAt: Date.now() });
+      target.setItem(DOCS_INDEX_KEY, JSON.stringify(docs));
+      target.setItem(OPEN_REQUEST_KEY, JSON.stringify({ id: id, at: Date.now() }));
+      recordImport(source, 'new-script', nowIso(), payload, target);
+      return id;
+    } catch (_) {
+      return '';
+    }
   }
 
   function buildImportHeader(source, stampIso) {
@@ -69,40 +131,45 @@
     var payload = sanitizePayload(htmlPayload).trim();
     if (!payload) return false;
     var source = String(sourceLabel || 'tool').trim() || 'tool';
-    var mode = String(modeLabel || 'append').trim().toLowerCase() === 'overwrite' ? 'overwrite' : 'append';
+    // "Replace" used to overwrite whatever script was open. It now lands as a
+    // new script so a handoff can never destroy existing work.
+    if (String(modeLabel || 'append').trim().toLowerCase() === 'overwrite') {
+      return !!createScript(payload, source, '');
+    }
+    var storage = defaultStorage();
+    if (!storage) return false;
     var stampIso = nowIso();
     var header = buildImportHeader(source, stampIso);
 
     for (var i = 0; i < 3; i += 1) {
       var current = '', rev = 0;
       try {
-        current = localStorage.getItem(COURIUS_KEY) || '';
-        rev = parseInt(localStorage.getItem(COURIUS_REV_KEY) || '0', 10) || 0;
+        current = storage.getItem(COURIUS_KEY) || '';
+        rev = parseInt(storage.getItem(COURIUS_REV_KEY) || '0', 10) || 0;
       } catch (_) {}
       var hasCurrent = !!(current && current.trim());
-      var next = (mode === 'overwrite' || !hasCurrent)
+      var next = !hasCurrent
         ? header + payload
         : current + '<div class="action"><br></div>' + header + payload;
       try {
-        localStorage.setItem(COURIUS_KEY, next);
-        localStorage.setItem(COURIUS_REV_KEY, String(rev + 1));
-        var history = getImportHistory();
-        history.unshift({
-          id: 'imp_' + Date.now() + '_' + Math.floor(Math.random() * 100000),
-          source: source, mode: mode, createdAt: stampIso, payload: payload
-        });
-        writeImportHistory(history);
+        storage.setItem(COURIUS_KEY, next);
+        storage.setItem(COURIUS_REV_KEY, String(rev + 1));
+        recordImport(source, 'append', stampIso, payload, storage);
         return true;
       } catch (_) {}
     }
     return false;
   }
 
-  window.WTCourius = {
+  var WTCourius = {
     storageKey: COURIUS_KEY,
+    openRequestKey: OPEN_REQUEST_KEY,
     append: function (html, source) { return transfer(html, source, 'append'); },
     overwrite: function (html, source) { return transfer(html, source, 'overwrite'); },
+    createScript: createScript,
     sanitize: sanitizePayload,
     getImportHistory: getImportHistory
   };
-})();
+  if (typeof module !== 'undefined' && module.exports) module.exports = WTCourius;
+  if (root) root.WTCourius = WTCourius;
+})(typeof window !== 'undefined' ? window : null);

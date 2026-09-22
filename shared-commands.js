@@ -22,14 +22,10 @@
         })
       : [
           { id: 'open-synax', title: 'Open Synax', desc: 'Random word & concept generator', keys: 'idea concept synax', run: function () { openTool('Synax.html'); } },
-          { id: 'open-characterforge', title: 'Open Character Forge', desc: 'Q&A character builder', keys: 'character forge people role goal', run: function () { openTool('CharacterForge.html'); } },
           { id: 'open-thisbutthat', title: 'Open ThisButThat', desc: 'Wikipedia topics + notepad', keys: 'twist premise thisbutthat', run: function () { openTool('ThisButThat.html'); } },
           { id: 'open-joterie', title: 'Open Joterie', desc: 'Timed brainstorm sprints', keys: 'joterie jot cards harvest', run: function () { openTool('Joterie.html'); } },
-          { id: 'open-beathive', title: 'Open BeatHive', desc: 'Hex-grid beat mapping', keys: 'structure map beathive', run: function () { openTool('BeatHive.html'); } },
-          { id: 'open-wribbon', title: 'Open Wribbon', desc: 'Distraction-free writing pad', keys: 'wribbon draft ribbon export', run: function () { openTool('Wribbon.html'); } },
-          { id: 'open-withernaught', title: 'Open WitherNaught', desc: 'Timed flow-writing game', keys: 'draft withernaught flowstate', run: function () { openTool('WitherNaught.html'); } },
-          { id: 'open-courius', title: 'Open Courius', desc: 'Screenplay editor + FDX/RTF export', keys: 'screenplay courius', run: function () { openTool('Courius.html'); } },
-          { id: 'open-papercut', title: 'Open PaperCut', desc: 'PDF editor & converter', keys: 'pdf papercut annotate markup', run: function () { openTool('PaperCut.html'); } }
+          { id: 'open-beathive', title: 'Open BeatHive', desc: 'Premise inbox + sketch game ladders', keys: 'structure sketch game ladder premise inbox beathive', run: function () { openTool('BeatHive.html'); } },
+          { id: 'open-courius', title: 'Open Courius', desc: 'Screenplay editor + FDX/RTF export', keys: 'screenplay courius', run: function () { openTool('Courius.html'); } }
         ];
 
     return [

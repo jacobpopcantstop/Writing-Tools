@@ -5,16 +5,12 @@ A browser-based suite of writing apps that now operates as one connected local s
 ## Apps
 
 - `index.html`: suite hub, recent sessions, export reliability, recovery snapshots
-- `CharacterForge.html`: character creation from core traits, goal remixing, and story-ready variants
 - `Synax.html`: serendipity + concept generation
 - `ThisButThat.html`: twist-premise generation
 - `Joterie.html`: short-burst ideation and harvests
-- `BeatHive.html`: beat mapping and structural diagnostics
-- `WitherNaught.html`: pressure drafting loop
-- `Wribbon.html`: drafting/export workflow
+- `BeatHive.html`: premise inbox + sketch game ladders (base reality, first unusual thing, the game, heightening rungs, button), sent to Courius as a script skeleton
 - `Courius.html`: screenplay editor
 - `TextToFDX.html`: copy-paste LLM workflow for raw text to editable FDX preview/export
-- `PaperCut.html`: PDF reading/markup flow
 
 ## Run Locally
 
@@ -37,7 +33,7 @@ Text to FDX needs no API keys and no server. The whole flow is copy-paste:
 1. Paste (or upload) your rough draft in step 1 and click **Copy LLM Prompt**.
 2. Paste the prompt into ChatGPT, Gemini, Claude, or any other model and run it.
 3. Copy the model's whole reply and paste it into the step 2 box, then click **Format Reply**. Code fences and extra chatter around the JSON are stripped automatically.
-4. Review and edit the formatted blocks, then download `.fdx` or send the script straight to Courius.
+4. Review and edit the formatted blocks, then download `.fdx` or send the script straight to Courius (it opens as a new script; your open script is never replaced).
 
 Your draft text and hints persist locally between visits, so a page reload never loses step 1.
 
@@ -56,14 +52,16 @@ What it checks:
 - Gmail/export handoffs still open valid compose targets
 - revisioned persistence still writes
 - snapshot restore flows still work
-- key regression paths stay intact across Courius, WitherNaught, BeatHive, and PaperCut
+- key regression paths stay intact across Courius and BeatHive
 - malformed local metadata is escaped instead of rendered as executable markup
 
 The script starts its own local static server and exits non-zero on failure.
 
 ## Current Architecture
 
-- `shared-context.js`: shared project context bus
+- `shared-courius.js`: handoffs into Courius (append to the open script, or create a new script)
+- `beathive-core.js`: BeatHive data model, handoff queue, legacy hex-map migration, Courius/outline output
+- `courius-format.js`: screenplay FDX/RTF builders and the plain-text paste parser
 - `shared-commands.js`: shared command definitions
 - `shared-command-palette.js`: shared palette UI injected into tools
 - `shared-export.js`: Gmail/mailto export helper + telemetry

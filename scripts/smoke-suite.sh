@@ -34,15 +34,11 @@ run_pw() {
       -s=wt-*)
         case "${args[$i]#-s=wt-}" in
           index) code=i ;;
-          characterforge) code=c ;;
           synax) code=s ;;
           thisbutthat) code=t ;;
           joterie) code=j ;;
           beathive) code=b ;;
-          wribbon) code=w ;;
-          withernaught) code=n ;;
           courius) code=r ;;
-          papercut) code=p ;;
           *) code=x ;;
         esac
         args[$i]="-s=wt${SMOKE_RUN_ID}${code}"
@@ -195,118 +191,13 @@ trap 'exit 143' TERM
 start_server
 
 open_and_check wt-index index.html
-open_and_check wt-characterforge CharacterForge.html
 open_and_check wt-synax Synax.html
 open_and_check wt-thisbutthat ThisButThat.html
 open_and_check wt-joterie Joterie.html
 open_and_check wt-beathive BeatHive.html
-open_and_check wt-wribbon Wribbon.html
-open_and_check wt-withernaught WitherNaught.html
 open_and_check wt-courius Courius.html
-open_and_check wt-papercut PaperCut.html
 
 echo "==> critical interactions"
-
-run_eval_check wt-characterforge "CharacterForge generates and persists a saved character batch" "$(cat <<'JS'
-(() => {
-  localStorage.removeItem('writingtools_characterforge_state_v1');
-  localStorage.removeItem('writingtools_characterforge_revision_v1');
-  localStorage.removeItem('writingtools_characterforge_snapshots_v1');
-  location.reload();
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const generate = document.getElementById('generate-btn');
-      if (!generate) throw new Error('CharacterForge generate button missing');
-      generate.click();
-      setTimeout(() => {
-        const cards = Array.from(document.querySelectorAll('[data-card-action="favorite"]'));
-        if (cards.length < 1) throw new Error('CharacterForge variants did not render');
-        cards[0].click();
-        const revision = parseInt(localStorage.getItem('writingtools_characterforge_revision_v1') || '0', 10) || 0;
-        const state = JSON.parse(localStorage.getItem('writingtools_characterforge_state_v1') || '{}');
-        if (!(revision > 0)) throw new Error('CharacterForge revision was not persisted');
-        if (!Array.isArray(state.batch) || state.batch.length < 1) throw new Error('CharacterForge batch missing');
-        if (!Array.isArray(state.favorites) || state.favorites.length < 1) throw new Error('CharacterForge favorite not saved');
-        resolve(true);
-      }, 200);
-    }, 200);
-  });
-})()
-JS
-)"
-
-run_eval_check wt-characterforge "CharacterForge snapshot restore advances history and preserves favorite selection" "$(cat <<'JS'
-(() => {
-  const stateCurrent = {
-    draft: { name: 'Arden Cross', role: 'courier', adjective: 'frayed', goal: 'stay invisible', flavor: 'Thriller' },
-    batch: [],
-    favorites: [
-      { id: 'fav-c', name: 'Arden Cross', role: 'courier', adjective: 'frayed', goal: 'stay invisible', hook: 'C', conflict: 'C', contradiction: 'C', voice: 'C', flavor: 'Thriller', sourceInputs: {}, createdAt: new Date().toISOString(), isFavorite: true }
-    ],
-    selectedId: 'fav-c',
-    snapshots: [],
-    updatedAt: '',
-    lastAction: ''
-  };
-  const stateA = {
-    draft: { name: 'Iris Vale', role: 'archivist', adjective: 'restless', goal: 'clear her name', flavor: 'Noir' },
-    batch: [],
-    favorites: [
-      { id: 'fav-a', name: 'Iris Vale', role: 'archivist', adjective: 'restless', goal: 'clear her name', hook: 'A', conflict: 'A', contradiction: 'A', voice: 'A', flavor: 'Noir', sourceInputs: {}, createdAt: new Date().toISOString(), isFavorite: true },
-      { id: 'fav-c', name: 'Nadia Bloom', role: 'ghostwriter', adjective: 'secretive', goal: 'expose the truth', hook: 'C', conflict: 'C', contradiction: 'C', voice: 'C', flavor: 'Fantasy', sourceInputs: {}, createdAt: new Date().toISOString(), isFavorite: true }
-    ],
-    selectedId: 'fav-a',
-    snapshots: [],
-    updatedAt: '',
-    lastAction: ''
-  };
-  const stateB = {
-    draft: { name: 'June Holloway', role: 'mayor', adjective: 'magnetic', goal: 'save town', flavor: 'Comedy' },
-    batch: [],
-    favorites: [{ id: 'fav-b', name: 'June Holloway', role: 'mayor', adjective: 'magnetic', goal: 'save town', hook: 'B', conflict: 'B', contradiction: 'B', voice: 'B', flavor: 'Comedy', sourceInputs: {}, createdAt: new Date().toISOString(), isFavorite: true }],
-    selectedId: 'fav-b',
-    snapshots: [],
-    updatedAt: '',
-    lastAction: ''
-  };
-  localStorage.setItem('writingtools_characterforge_snapshots_v1', JSON.stringify([
-    { id: 'snap-b', label: 'newer', createdAt: new Date().toISOString(), state: stateB },
-    { id: 'snap-a', label: 'older', createdAt: new Date(Date.now() - 60000).toISOString(), state: stateA }
-  ]));
-  localStorage.setItem('writingtools_characterforge_state_v1', JSON.stringify(stateCurrent));
-  localStorage.setItem('writingtools_characterforge_revision_v1', '5');
-  const restore = document.getElementById('restore-snapshot-btn');
-  if (!restore) throw new Error('CharacterForge restore button missing');
-  const originalConfirm = window.confirm;
-  window.confirm = () => true;
-  try {
-    restore.click();
-  } finally {
-    window.confirm = originalConfirm;
-  }
-  let restored = JSON.parse(localStorage.getItem('writingtools_characterforge_state_v1') || '{}');
-  let snapshots = JSON.parse(localStorage.getItem('writingtools_characterforge_snapshots_v1') || '[]');
-  if (restored.selectedId !== 'fav-b') throw new Error('Latest snapshot did not restore');
-  if (!Array.isArray(snapshots) || snapshots.length !== 3) throw new Error('Restore backup snapshot was not recorded');
-  if (snapshots[0].label !== 'manual-restore-backup') throw new Error('Latest CharacterForge snapshot is not the manual restore backup');
-  if (snapshots[0]?.state?.selectedId !== 'fav-c') throw new Error('Restore backup did not preserve the pre-restore selection');
-  if (snapshots[1]?.id !== 'snap-b' || snapshots[2]?.id !== 'snap-a') throw new Error('Existing snapshots were reordered unexpectedly');
-  window.confirm = () => true;
-  try {
-    restore.click();
-  } finally {
-    window.confirm = originalConfirm;
-  }
-  restored = JSON.parse(localStorage.getItem('writingtools_characterforge_state_v1') || '{}');
-  snapshots = JSON.parse(localStorage.getItem('writingtools_characterforge_snapshots_v1') || '[]');
-  if (restored.selectedId !== 'fav-c') throw new Error('Restore backup was not reversible');
-  if (!Array.isArray(snapshots) || snapshots.length < 4) throw new Error('Second restore did not capture a fresh backup snapshot');
-  if (!document.getElementById('selected-name') || !document.getElementById('selected-flavor')) throw new Error('CharacterForge status pills missing');
-  if ((document.getElementById('selected-flavor').textContent || '').trim() !== 'Thriller') throw new Error('Selected flavor pill did not reflect restored favorite');
-  return true;
-})()
-JS
-)"
 
 run_eval_check wt-synax "Synax revisioned persistence stores state updates" "$(cat <<'JS'
 (() => {
@@ -479,139 +370,19 @@ run_eval_check wt-joterie "Joterie snapshot restore applies archived payload" "$
 JS
 )"
 
-run_eval_check wt-wribbon "Wribbon Gmail export opens a compose target" "$(cat <<'JS'
+run_eval_check wt-beathive "BeatHive ingests queued handoffs into the premise inbox" "$(cat <<'JS'
 (() => {
-  const opened = [];
-  const originalOpen = window.open;
-  window.open = (url) => {
-    opened.push(String(url || ''));
-    return { closed: false };
-  };
-  try {
-    if (!window.app || typeof window.app.emailGmail !== 'function') throw new Error('app.emailGmail not available');
-    window.app.emailGmail();
-  } finally {
-    window.open = originalOpen;
-  }
-  if (!opened.some((url) => url.includes('mail.google.com') || url.startsWith('mailto:'))) {
-    throw new Error('No Gmail/mailto URL was attempted');
-  }
-  return true;
-})()
-JS
-)"
-
-run_eval_check wt-wribbon "Wribbon latest snapshot restore applies draft text" "$(cat <<'JS'
-(() => {
-  if (!window.app || typeof window.app.restoreLatestSnapshot !== 'function') {
-    throw new Error('Wribbon snapshot controls unavailable');
-  }
-  const originalConfirm = window.confirm;
-  window.confirm = () => true;
-  try {
-    localStorage.setItem('writingtools_wribbon_snapshots_v1', JSON.stringify([{
-      id: 'wrsmoke',
-      at: new Date().toISOString(),
-      reason: 'smoke-test',
-      payload: 'Recovered Wribbon draft'
-    }]));
-    window.app.restoreLatestSnapshot();
-  } finally {
-    window.confirm = originalConfirm;
-  }
-  const text = String(localStorage.getItem('writingtools_wribbon_text') || '');
-  if (!text.includes('Recovered Wribbon draft')) throw new Error('Wribbon draft not restored');
-  return true;
-})()
-JS
-)"
-
-run_eval_check wt-withernaught "WitherNaught Gmail export opens a compose target" "$(cat <<'JS'
-(() => {
-  const opened = [];
-  const originalOpen = window.open;
-  window.open = (url) => {
-    opened.push(String(url || ''));
-    return { closed: false };
-  };
-  try {
-    if (!window.WitherNaught || typeof window.WitherNaught.exportToGmail !== 'function') throw new Error('WitherNaught.exportToGmail not available');
-    window.WitherNaught.exportToGmail();
-  } finally {
-    window.open = originalOpen;
-  }
-  if (!opened.some((url) => url.includes('mail.google.com') || url.startsWith('mailto:'))) {
-    throw new Error('No Gmail/mailto URL was attempted');
-  }
-  return true;
-})()
-JS
-)"
-
-run_eval_check wt-withernaught "WitherNaught revisioned prefs persist changes" "$(cat <<'JS'
-(() => {
-  localStorage.removeItem('writingtools_withernaught_state_v1');
-  localStorage.removeItem('writingtools_withernaught_revision_v1');
-  if (!window.WitherNaught || typeof window.WitherNaught.setDifficulty !== 'function') {
-    throw new Error('WitherNaught.setDifficulty unavailable');
-  }
-  window.WitherNaught.setDifficulty('Master');
-  const rev = parseInt(localStorage.getItem('writingtools_withernaught_revision_v1') || '0', 10) || 0;
-  const payload = JSON.parse(localStorage.getItem('writingtools_withernaught_state_v1') || '{}');
-  if (!(rev > 0)) throw new Error('WitherNaught revision not persisted');
-  if (!payload || !payload.prefs || payload.prefs.difficulty !== 'Master') {
-    throw new Error('WitherNaught persisted difficulty mismatch');
-  }
-  return true;
-})()
-JS
-)"
-
-run_eval_check wt-withernaught "WitherNaught snapshot restore applies persisted prefs" "$(cat <<'JS'
-(() => {
-  if (!window.WitherNaught || typeof window.WitherNaught.restoreWitherSnapshot !== 'function') {
-    throw new Error('WitherNaught snapshot controls unavailable');
-  }
-  const originalConfirm = window.confirm;
-  window.confirm = () => true;
-  try {
-    const snaps = [{
-      id: 'smoke-snap',
-      at: new Date().toISOString(),
-      reason: 'smoke-test',
-      payload: {
-        history: [],
-        streak: { current: 2, lastDate: new Date().toDateString() },
-        prefs: { theme: 'cool', difficulty: 'Master', couriusMode: 'append' }
-      }
-    }];
-    localStorage.setItem('writingtools_withernaught_snapshots_v1', JSON.stringify(snaps));
-    window.WitherNaught.restoreWitherSnapshot('smoke-snap');
-  } finally {
-    window.confirm = originalConfirm;
-  }
-  const payload = JSON.parse(localStorage.getItem('writingtools_withernaught_state_v1') || '{}');
-  if (!payload || !payload.prefs || payload.prefs.difficulty !== 'Master') {
-    throw new Error('WitherNaught restored payload mismatch');
-  }
-  return true;
-})()
-JS
-)"
-
-run_eval_check wt-beathive "BeatHive revisioned local persistence updates on rename" "$(cat <<'JS'
-(() => {
-  localStorage.removeItem('writingtools_beathive_state_v1');
-  localStorage.removeItem('writingtools_beathive_revision_v1');
-  const input = document.querySelector('header input[aria-label="Project Name"]');
-  if (!input) throw new Error('BeatHive project name input not found');
-  input.value = 'Smoke Hive';
-  input.dispatchEvent(new Event('input', { bubbles: true }));
-  input.dispatchEvent(new Event('change', { bubbles: true }));
+  if (!window.WTBeatHive || !window.BeatHiveDebug) throw new Error('BeatHive APIs unavailable');
+  window.WTBeatHive.queueHandoff({ topic: 'Smoke', jots: ['smoke jot one', 'smoke jot two'], source: 'Joterie' });
+  window.WTBeatHive.queueHandoff({ topic: 'Smoke topic', constraints: 'noun: test', source: 'Synax' });
+  window.BeatHiveDebug.ingestHandoffs();
+  const texts = window.BeatHiveDebug.getState().inbox.map((i) => i.text);
+  ['smoke jot one', 'smoke jot two', 'Smoke topic'].forEach((t) => {
+    if (!texts.includes(t)) throw new Error('Inbox missing ' + t);
+  });
+  if (localStorage.getItem('writingtools_beathive_handoff_v1')) throw new Error('Handoff queue not cleared');
   const rev = parseInt(localStorage.getItem('writingtools_beathive_revision_v1') || '0', 10) || 0;
-  const payload = JSON.parse(localStorage.getItem('writingtools_beathive_state_v1') || '{}');
   if (!(rev > 0)) throw new Error('BeatHive revision not persisted');
-  if (!payload || !Array.isArray(payload.sketches)) throw new Error('BeatHive persisted payload missing sketches');
   return true;
 })()
 JS
@@ -619,9 +390,6 @@ JS
 
 run_eval_check wt-beathive "BeatHive latest snapshot restore applies local state" "$(cat <<'JS'
 (() => {
-  if (!window.BeatHiveDebug || typeof window.BeatHiveDebug.restoreLatestSnapshot !== 'function') {
-    throw new Error('BeatHive snapshot controls unavailable');
-  }
   const originalConfirm = window.confirm;
   window.confirm = () => true;
   try {
@@ -629,18 +397,14 @@ run_eval_check wt-beathive "BeatHive latest snapshot restore applies local state
       id: 'bhsmoke',
       at: new Date().toISOString(),
       reason: 'smoke-test',
-      payload: {
-        sketches: [{ id: 'local-1', name: 'Recovered Hive', cells: [], updatedAt: Date.now() }],
-        couriusMode: 'append',
-        immersiveSeen: true
-      }
+      payload: { version: 2, inbox: [], ladders: [{ id: 'l-smoke', name: 'Recovered Ladder', rungs: ['one'] }], activeId: 'l-smoke' }
     }]));
     window.BeatHiveDebug.restoreLatestSnapshot();
   } finally {
     window.confirm = originalConfirm;
   }
-  const payload = JSON.parse(localStorage.getItem('writingtools_beathive_state_v1') || '{}');
-  if (!payload || !Array.isArray(payload.sketches) || payload.sketches[0]?.name !== 'Recovered Hive') {
+  const payload = JSON.parse(localStorage.getItem('writingtools_beathive_v2') || '{}');
+  if (!payload || !Array.isArray(payload.ladders) || payload.ladders[0]?.name !== 'Recovered Ladder') {
     throw new Error('BeatHive restored payload mismatch');
   }
   return true;
@@ -648,101 +412,32 @@ run_eval_check wt-beathive "BeatHive latest snapshot restore applies local state
 JS
 )"
 
-run_eval_check wt-papercut "PaperCut revisioned recent-session persistence updates" "$(cat <<'JS'
+run_eval_check wt-courius "Courius append adds to the open script; replace creates a new script" "$(cat <<'JS'
 (() => {
-  localStorage.removeItem('writingtools_papercut_state_v1');
-  localStorage.removeItem('writingtools_papercut_revision_v1');
-  if (typeof persistRecentSession !== 'function') throw new Error('persistRecentSession unavailable');
-  persistRecentSession({ fileName: 'smoke.pdf', totalPages: 7, currentPage: 3 });
-  const rev = parseInt(localStorage.getItem('writingtools_papercut_revision_v1') || '0', 10) || 0;
-  const payload = JSON.parse(localStorage.getItem('writingtools_papercut_state_v1') || '{}');
-  if (!(rev > 0)) throw new Error('PaperCut revision not persisted');
-  if (!payload || !payload.recentSession || payload.recentSession.fileName !== 'smoke.pdf') {
-    throw new Error('PaperCut recent session missing from persisted payload');
-  }
-  return true;
-})()
-JS
-)"
-
-run_eval_check wt-papercut "PaperCut latest snapshot restore applies persisted state" "$(cat <<'JS'
-(() => {
-  if (typeof restoreLatestPaperCutSnapshot !== 'function') throw new Error('restoreLatestPaperCutSnapshot unavailable');
-  const originalConfirm = window.confirm;
-  window.confirm = () => true;
-  try {
-    localStorage.setItem('writingtools_papercut_snapshots_v1', JSON.stringify([{
-      id: 'snap-smoke',
-      at: new Date().toISOString(),
-      reason: 'smoke-test',
-      payload: { theme: 'light', recentSession: { fileName: 'restored.pdf', totalPages: 4, currentPage: 2, updatedAt: Date.now() } }
-    }]));
-    restoreLatestPaperCutSnapshot();
-  } finally {
-    window.confirm = originalConfirm;
-  }
-  const payload = JSON.parse(localStorage.getItem('writingtools_papercut_state_v1') || '{}');
-  if (!payload || payload.theme !== 'light') throw new Error('PaperCut theme not restored');
-  if (!payload.recentSession || payload.recentSession.fileName !== 'restored.pdf') throw new Error('PaperCut recent session not restored');
-  return true;
-})()
-JS
-)"
-
-run_eval_check wt-papercut "PaperCut exposes censor bar tool" "$(cat <<'JS'
-(() => {
-  const btn = document.getElementById('censor-tool');
-  if (!btn) throw new Error('PaperCut censor tool button missing');
-  if (typeof setTool !== 'function') throw new Error('setTool unavailable');
-  setTool('censor');
-  if (!btn.classList.contains('active')) throw new Error('PaperCut censor tool did not activate');
-  const layer = document.getElementById('annotation-layer');
-  if (!layer || !layer.classList.contains('active')) throw new Error('PaperCut annotation layer did not enable for censor tool');
-  setTool('select');
-  return true;
-})()
-JS
-)"
-
-run_eval_check wt-papercut "PaperCut can reorder loaded PDFs" "$(cat <<'JS'
-(() => {
-  if (typeof moveDoc !== 'function') throw new Error('moveDoc unavailable');
-  state.documents = [
-    { id: 'doc-a', fileName: 'alpha.pdf', fileSize: 100, totalPages: 1, currentPage: 1, pageMapping: [1], pageRotations: {}, annotations: {} },
-    { id: 'doc-b', fileName: 'beta.pdf', fileSize: 100, totalPages: 1, currentPage: 1, pageMapping: [1], pageRotations: {}, annotations: {} },
-    { id: 'doc-c', fileName: 'gamma.pdf', fileSize: 100, totalPages: 1, currentPage: 1, pageMapping: [1], pageRotations: {}, annotations: {} }
-  ];
-  state.activeDocId = 'doc-b';
-  renderFileList();
-  const moved = moveDoc('doc-c', 'doc-a');
-  if (!moved) throw new Error('moveDoc returned false');
-  const order = state.documents.map((doc) => doc.id).join(',');
-  if (order !== 'doc-c,doc-a,doc-b') throw new Error(`Unexpected PaperCut order: ${order}`);
-  const labels = Array.from(document.querySelectorAll('#file-list .file-name')).map((el) => (el.textContent || '').trim()).join(',');
-  if (labels !== 'gamma.pdf,alpha.pdf,beta.pdf') throw new Error(`Unexpected PaperCut file list render: ${labels}`);
-  return true;
-})()
-JS
-)"
-
-run_eval_check wt-courius "Courius append/overwrite import flows update storage" "$(cat <<'JS'
-(() => {
-  const bus = window.WTContextBus;
-  if (!bus || typeof bus.appendToCourius !== 'function' || typeof bus.overwriteCourius !== 'function') {
-    throw new Error('WTContextBus transfer API unavailable');
+  const api = window.WTCourius;
+  if (!api || typeof api.append !== 'function' || typeof api.overwrite !== 'function') {
+    throw new Error('WTCourius transfer API unavailable');
   }
   localStorage.removeItem('writingtools_courius_storage');
   localStorage.removeItem('writingtools_courius_imports_v1');
   localStorage.removeItem('writingtools_courius_revision_v1');
 
-  const appended = bus.appendToCourius('<div class="action">alpha smoke payload</div>', 'SmokeAppend');
+  const appended = api.append('<div class="action">alpha smoke payload</div>', 'SmokeAppend');
   const appendValue = localStorage.getItem('writingtools_courius_storage') || '';
   if (!appended || !appendValue.includes('alpha smoke payload')) throw new Error('Append transfer failed');
 
-  const overwritten = bus.overwriteCourius('<div class="action">beta smoke payload</div>', 'SmokeOverwrite');
-  const overwriteValue = localStorage.getItem('writingtools_courius_storage') || '';
-  if (!overwritten || !overwriteValue.includes('beta smoke payload')) throw new Error('Overwrite transfer failed');
-  if (overwriteValue.includes('alpha smoke payload')) throw new Error('Overwrite did not replace existing payload');
+  const docsBefore = JSON.parse(localStorage.getItem('writingtools_courius_docs_v1') || '[]').length;
+  const created = api.overwrite('<div class="action">beta smoke payload</div>', 'SmokeOverwrite');
+  if (!created) throw new Error('Replace transfer failed');
+  const docs = JSON.parse(localStorage.getItem('writingtools_courius_docs_v1') || '[]');
+  if (docs.length !== docsBefore + 1) throw new Error('Replace did not create a new script');
+  if (!(localStorage.getItem('writingtools_courius_doc_' + docs[0].id) || '').includes('beta smoke payload')) {
+    throw new Error('New script is missing the handoff payload');
+  }
+  const openValue = localStorage.getItem('writingtools_courius_storage') || '';
+  if (!openValue.includes('alpha smoke payload') && !openValue.includes('beta smoke payload')) {
+    throw new Error('Open script content was lost');
+  }
 
   const imports = JSON.parse(localStorage.getItem('writingtools_courius_imports_v1') || '[]');
   if (!Array.isArray(imports) || imports.length < 2) throw new Error('Import history did not capture both transfers');
@@ -769,132 +464,32 @@ run_eval_check wt-courius "Courius parenthetical wrappers do not carry across ty
 JS
 )"
 
-run_eval_check wt-withernaught "WitherNaught ring starts progressing after input" "$(cat <<'JS'
-(() => {
-  if (!window.WitherNaught || typeof window.WitherNaught.startNextRound !== 'function') {
-    throw new Error('WitherNaught API unavailable');
-  }
-  window.WitherNaught.startNextRound(false);
-  const textarea = document.getElementById('main-textarea');
-  if (!textarea) throw new Error('main-textarea not found');
-  textarea.value = 'alpha beta gamma delta epsilon zeta eta theta iota kappa';
-  textarea.dispatchEvent(new Event('input', { bubbles: true }));
-  return true;
-})()
-JS
-)"
-pause_ms wt-withernaught 1200
-run_eval_check wt-withernaught "WitherNaught ring progress is above zero" "$(cat <<'JS'
-(() => {
-  const ringMeta = (document.getElementById('ring-meta')?.textContent || '').trim();
-  const match = ringMeta.match(/(\d+)%/);
-  if (!match) throw new Error('Ring percent not available');
-  const pct = Number(match[1]);
-  if (!(pct > 0)) throw new Error('Ring did not progress');
-  return true;
-})()
-JS
-)"
-
-run_eval_check wt-papercut "PaperCut nav/rotate/delete controls are safe without a loaded doc" "$(cat <<'JS'
-(() => {
-  window.alert = () => {};
-  window.confirm = () => false;
-  ['prev-page-btn', 'next-page-btn', 'rotate-left-btn', 'rotate-right-btn', 'delete-page-btn']
-    .forEach((id) => {
-      const el = document.getElementById(id);
-      if (!el) throw new Error(`Missing control: ${id}`);
-      el.click();
-    });
-  return true;
-})()
-JS
-)"
-
 echo "==> cross-tool Courius handoff checks"
 
 pause_ms wt-beathive 1200
-run_eval_check wt-beathive "BeatHive UI send-to-Courius writes payload" "$(cat <<'JS'
+run_eval_check wt-beathive "BeatHive UI send-to-Courius creates a new script" "$(cat <<'JS'
 (() => {
-  localStorage.removeItem('writingtools_courius_storage');
   const opened = [];
   const originalOpen = window.open;
   window.open = (url) => {
     opened.push(String(url || ''));
     return { closed: false };
   };
+  const docsBefore = JSON.parse(localStorage.getItem('writingtools_courius_docs_v1') || '[]').length;
   try {
-    const sendBtn = Array.from(document.querySelectorAll('button'))
-      .find((btn) => /send\s+map\s+to\s+courius|send\s+to\s+courius/i.test((btn.textContent || '').trim()));
+    const select = document.querySelector('.mode-select');
+    if (select) { select.value = 'new'; }
+    const sendBtn = document.getElementById('send-courius-btn');
     if (!sendBtn) throw new Error('BeatHive send button not found');
     sendBtn.click();
   } finally {
     window.open = originalOpen;
   }
-  const payload = localStorage.getItem('writingtools_courius_storage') || '';
-  if (!payload.trim()) throw new Error('BeatHive did not write Courius payload');
-  if (!/BEAT\s+\d+/i.test(payload)) throw new Error('BeatHive payload missing beat markers');
+  const docs = JSON.parse(localStorage.getItem('writingtools_courius_docs_v1') || '[]');
+  if (docs.length <= docsBefore) throw new Error('BeatHive did not create a Courius script');
+  const payload = localStorage.getItem('writingtools_courius_doc_' + docs[0].id) || '';
+  if (!/\[GAME\]/.test(payload) || !/\[BUTTON\]/.test(payload)) throw new Error('BeatHive payload missing ladder markers');
   if (!opened.some((url) => /Courius\.html/i.test(url))) throw new Error('BeatHive did not attempt to open Courius');
-  return true;
-})()
-JS
-)"
-
-run_eval_check wt-wribbon "Wribbon UI send-to-Courius writes payload" "$(cat <<'JS'
-(() => {
-  localStorage.removeItem('writingtools_courius_storage');
-  if (!window.app) throw new Error('Wribbon app not available');
-  window.app.state.text = 'Wribbon smoke handoff line';
-  if (window.app.dom && window.app.dom.editor) {
-    window.app.dom.editor.innerText = window.app.state.text;
-  }
-  const opened = [];
-  const originalOpen = window.open;
-  window.open = (url) => {
-    opened.push(String(url || ''));
-    return { closed: false };
-  };
-  try {
-    window.app.toggleExportMenu();
-    const sendBtn = Array.from(document.querySelectorAll('#export-menu button'))
-      .find((btn) => /send\s+to\s+courius/i.test((btn.textContent || '').trim()));
-    if (!sendBtn) throw new Error('Wribbon send button not found');
-    sendBtn.click();
-  } finally {
-    window.open = originalOpen;
-  }
-  const payload = localStorage.getItem('writingtools_courius_storage') || '';
-  if (!payload.includes('Wribbon smoke handoff line')) throw new Error('Wribbon payload missing expected content');
-  if (!opened.some((url) => /Courius\.html/i.test(url))) throw new Error('Wribbon did not attempt to open Courius');
-  return true;
-})()
-JS
-)"
-
-run_eval_check wt-withernaught "WitherNaught handoff path writes payload" "$(cat <<'JS'
-(() => {
-  localStorage.removeItem('writingtools_courius_storage');
-  const textarea = document.getElementById('main-textarea');
-  if (!textarea) throw new Error('main-textarea not found');
-  textarea.value = 'WitherNaught smoke transfer line';
-  textarea.dispatchEvent(new Event('input', { bubbles: true }));
-  const opened = [];
-  const originalOpen = window.open;
-  window.open = (url) => {
-    opened.push(String(url || ''));
-    return { closed: false };
-  };
-  try {
-    if (!window.WTToolActions || typeof window.WTToolActions.handoffPrimary !== 'function') {
-      throw new Error('WitherNaught handoff action unavailable');
-    }
-    window.WTToolActions.handoffPrimary();
-  } finally {
-    window.open = originalOpen;
-  }
-  const payload = localStorage.getItem('writingtools_courius_storage') || '';
-  if (!payload.includes('WitherNaught smoke transfer line')) throw new Error('WitherNaught payload missing expected content');
-  if (!opened.some((url) => /Courius\.html/i.test(url))) throw new Error('WitherNaught did not attempt to open Courius');
   return true;
 })()
 JS
@@ -902,10 +497,7 @@ JS
 
 assert_no_console_errors wt-thisbutthat >/dev/null
 assert_no_console_errors wt-joterie >/dev/null
-assert_no_console_errors wt-wribbon >/dev/null
-assert_no_console_errors wt-withernaught >/dev/null
 assert_no_console_errors wt-courius >/dev/null
-assert_no_console_errors wt-papercut >/dev/null
 
 # `close-all` can hang in some local environments; individual sessions are ephemeral.
 echo "Smoke suite passed."

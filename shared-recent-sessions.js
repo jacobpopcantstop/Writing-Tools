@@ -34,32 +34,14 @@
   }
 
   function categoryForTool(tool) {
-    if (tool === 'Synax' || tool === 'CharacterForge' || tool === 'ThisButThat' || tool === 'Joterie') return 'Ideation';
-    if (tool === 'BeatHive' || tool === 'WitherNaught' || tool === 'Wribbon') return 'Drafting';
-    if (tool === 'Courius' || tool === 'PaperCut') return 'Output';
+    if (tool === 'Synax' || tool === 'ThisButThat' || tool === 'Joterie') return 'Ideation';
+    if (tool === 'BeatHive') return 'Drafting';
+    if (tool === 'Courius' || tool === 'TextToFDX') return 'Output';
     return 'Other';
   }
 
   function list() {
     var out = [];
-
-    try {
-      var wribbonText = localStorage.getItem('writingtools_wribbon_text') || '';
-      var wribbonWords = wordCount(wribbonText);
-      if (wribbonWords > 0) {
-        var wribbonUpdatedAt = readMillis('writingtools_wribbon_updated_at');
-        out.push({
-          id: 'recent-wribbon',
-          tool: 'Wribbon',
-          category: categoryForTool('Wribbon'),
-          title: 'Wribbon Draft',
-          meta: wribbonWords + ' words cached',
-          path: 'Wribbon.html',
-          updatedAt: wribbonUpdatedAt,
-          updatedLabel: ''
-        });
-      }
-    } catch (_) {}
 
     try {
       var couriusHtml = localStorage.getItem('writingtools_courius_storage') || '';
@@ -80,67 +62,27 @@
     } catch (_) {}
 
     try {
-      var rawBeats = localStorage.getItem('writingtools_beathive_sketches');
-      var sketches = rawBeats ? JSON.parse(rawBeats) : [];
-      if (Array.isArray(sketches) && sketches.length) {
-        var recentBeat = sketches
-          .slice()
-          .sort(function (a, b) {
-            return new Date(b && (b.updatedAt || b.createdAt) || 0).getTime() - new Date(a && (a.updatedAt || a.createdAt) || 0).getTime();
-          })[0];
-        var beatCount = Array.isArray(recentBeat && recentBeat.cells)
-          ? recentBeat.cells.filter(function (c) { return c && c.content && String(c.content).trim(); }).length
+      var beatState = JSON.parse(localStorage.getItem('writingtools_beathive_v2') || 'null');
+      var ladders = beatState && Array.isArray(beatState.ladders) ? beatState.ladders : [];
+      var inboxCount = beatState && Array.isArray(beatState.inbox) ? beatState.inbox.length : 0;
+      if (ladders.length || inboxCount) {
+        var recentLadder = ladders.slice().sort(function (a, b) {
+          return (Number(b && b.updatedAt) || 0) - (Number(a && a.updatedAt) || 0);
+        })[0] || null;
+        var rungCount = recentLadder && Array.isArray(recentLadder.rungs)
+          ? recentLadder.rungs.filter(function (r) { return r && String(r.text || '').trim(); }).length
           : 0;
         out.push({
-          signature: recentBeat && recentBeat.id ? String(recentBeat.id) : '',
+          signature: recentLadder && recentLadder.id ? String(recentLadder.id) : 'beathive-inbox',
           id: 'recent-beathive',
           tool: 'BeatHive',
           category: categoryForTool('BeatHive'),
-          title: trimTitle((recentBeat && recentBeat.name) || 'Untitled Hive', 28),
-          meta: beatCount + ' populated beats',
+          title: trimTitle((recentLadder && recentLadder.name) || 'Premise Inbox', 28),
+          meta: recentLadder
+            ? rungCount + ' rung' + (rungCount === 1 ? '' : 's') + ' · ' + inboxCount + ' in inbox'
+            : inboxCount + ' premise' + (inboxCount === 1 ? '' : 's') + ' waiting',
           path: 'BeatHive.html',
-          updatedAt: new Date(recentBeat && (recentBeat.updatedAt || recentBeat.createdAt) || 0).getTime() || 0,
-          updatedLabel: ''
-        });
-      }
-    } catch (_) {}
-
-    try {
-      var rawHistory = localStorage.getItem('flowstate_history_v13');
-      var history = rawHistory ? JSON.parse(rawHistory) : [];
-      if (Array.isArray(history) && history.length) {
-        // WitherNaught writes newest session first.
-        var latest = history[0] || {};
-        var sessionWords = parseInt(latest.words || 0, 10) || 0;
-        out.push({
-          id: 'recent-withernaught',
-          tool: 'WitherNaught',
-          category: categoryForTool('WitherNaught'),
-          title: 'WitherNaught Session',
-          meta: sessionWords > 0 ? ('last session ' + sessionWords + ' words') : 'resume session flow',
-          path: 'WitherNaught.html',
-          updatedAt: new Date(latest.date || 0).getTime() || 0,
-          updatedLabel: ''
-        });
-      }
-    } catch (_) {}
-
-    try {
-      var characterRaw = localStorage.getItem('writingtools_characterforge_state_v1');
-      var characterState = characterRaw ? JSON.parse(characterRaw) : null;
-      var characterBatch = Array.isArray(characterState && characterState.batch) ? characterState.batch : [];
-      var characterFavorites = Array.isArray(characterState && characterState.favorites) ? characterState.favorites : [];
-      if (characterBatch.length || characterFavorites.length) {
-        var lead = characterFavorites[0] || characterBatch[0] || {};
-        var characterUpdatedAt = readMillis('writingtools_characterforge_updated_at');
-        out.push({
-          id: 'recent-characterforge',
-          tool: 'CharacterForge',
-          category: categoryForTool('CharacterForge'),
-          title: trimTitle((lead && lead.name) || 'Character Forge Session', 28),
-          meta: characterBatch.length + ' variants · ' + characterFavorites.length + ' favorites',
-          path: 'CharacterForge.html',
-          updatedAt: characterUpdatedAt,
+          updatedAt: (recentLadder && Number(recentLadder.updatedAt)) || (inboxCount && Number(beatState.inbox[0].createdAt)) || 0,
           updatedLabel: ''
         });
       }
@@ -199,28 +141,6 @@
           meta: twistCount + ' twists cached',
           path: 'ThisButThat.html',
           updatedAt: new Date(latestBatch.timestamp || 0).getTime() || 0,
-          updatedLabel: ''
-        });
-      }
-    } catch (_) {}
-
-    try {
-      var paperRaw = localStorage.getItem('writingtools_papercut_recent_v1');
-      var paper = paperRaw ? JSON.parse(paperRaw) : null;
-      if (paper && (paper.fileName || paper.totalPages || paper.currentPage)) {
-        var totalPages = parseInt(paper.totalPages || 0, 10) || 0;
-        var currentPage = parseInt(paper.currentPage || 0, 10) || 0;
-        var pageMeta = totalPages > 0
-          ? ('page ' + Math.min(Math.max(1, currentPage || 1), totalPages) + ' of ' + totalPages)
-          : 'recent PDF session';
-        out.push({
-          id: 'recent-papercut',
-          tool: 'PaperCut',
-          category: categoryForTool('PaperCut'),
-          title: trimTitle(paper.fileName || 'PaperCut PDF Session', 28),
-          meta: pageMeta,
-          path: 'PaperCut.html',
-          updatedAt: parseInt(paper.updatedAt || 0, 10) || 0,
           updatedLabel: ''
         });
       }
