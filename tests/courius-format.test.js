@@ -101,16 +101,18 @@ test('buildFdx maps element types and escapes XML', () => {
       { type: 'action', text: 'A pause.' }
     ]
   });
-  assert.ok(fdx.startsWith('<?xml version="1.0" encoding="UTF-8"?>'));
-  assert.ok(fdx.includes('<Title>My &lt;Film&gt;</Title>'));
-  assert.ok(fdx.includes('<Author>A &amp; B</Author>'));
+  assert.ok(fdx.startsWith('<?xml version="1.0" encoding="UTF-8" standalone="no" ?>'));
+  assert.ok(fdx.includes('<TitlePage><Content>'));
+  assert.ok(fdx.includes('<Paragraph Alignment="Center"><Text>MY &lt;FILM&gt;</Text></Paragraph>'));
+  assert.ok(fdx.includes('<Paragraph Alignment="Center"><Text>A &amp; B</Text></Paragraph>'));
   assert.ok(fdx.includes('<Paragraph Type="Scene Heading">'));
   assert.ok(fdx.includes('<Paragraph Type="Character">'));
   assert.ok(fdx.includes('<Paragraph Type="Dialogue"><Text>Hi &amp; bye</Text>'));
   assert.ok(fdx.includes('<Paragraph Type="Parenthetical">'));
   assert.ok(fdx.includes('<Paragraph Type="Transition">'));
   assert.ok(fdx.includes('<Paragraph Type="Action">'));
-  assert.ok(fdx.endsWith('</Content></FinalDraft>'));
+  assert.ok(fdx.endsWith('</TitlePage></FinalDraft>'));
+  assert.ok(fdx.indexOf('<Content>') < fdx.indexOf('<TitlePage>'));
 });
 
 test('extractElements drops import markers, snapshots, and title-page container', () => {
@@ -130,4 +132,25 @@ test('extractElements drops import markers, snapshots, and title-page container'
 test('extractElements normalizes class to first known token', () => {
   const out = WT.extractElements([{ className: 'character extra-class', text: 'JANE' }]);
   assert.deepStrictEqual(out, [{ type: 'character', text: 'JANE' }]);
+});
+
+test('buildFdx wraps a dual-dialogue group in a DualDialogue paragraph', () => {
+  const fdx = WT.buildFdx({ elements: [
+    { type: 'action', text: 'They both talk.' },
+    { type: 'character', text: 'BOB', dual: 1 },
+    { type: 'dialogue', text: 'Mine.', dual: 1 },
+    { type: 'character', text: 'SUE', dual: 1 },
+    { type: 'parenthetical', text: '(firmly)', dual: 1 },
+    { type: 'dialogue', text: 'Mine!', dual: 1 },
+    { type: 'action', text: 'Silence.' }
+  ] });
+  assert.ok(fdx.includes('<Paragraph Type="Action"><Text>They both talk.</Text></Paragraph><Paragraph><DualDialogue><Paragraph Type="Character"><Text>BOB</Text></Paragraph>'));
+  assert.ok(fdx.includes('<Paragraph Type="Dialogue"><Text>Mine!</Text></Paragraph></DualDialogue></Paragraph><Paragraph Type="Action"><Text>Silence.</Text>'));
+  assert.strictEqual((fdx.match(/<DualDialogue>/g) || []).length, 1);
+  assert.ok(!fdx.includes('<TitlePage>'));
+});
+
+test('extractElements keeps the dual group id', () => {
+  const els = WT.extractElements([{ className: 'character', text: 'BOB', dual: 2 }, { className: 'action', text: 'x' }]);
+  assert.deepStrictEqual(els, [{ type: 'character', text: 'BOB', dual: 2 }, { type: 'action', text: 'x' }]);
 });

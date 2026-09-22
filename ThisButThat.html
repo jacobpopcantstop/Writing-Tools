@@ -13,7 +13,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/lucide@0.263.0"></script>
     <script src="shared-toast.js"></script>
     <script src="beathive-core.js"></script>
     <script src="shared-pwa.js"></script>
@@ -92,19 +92,18 @@
         </div>
         
         <!-- Compact Medals -->
-        <div class="flex items-center gap-3 px-4 py-1 rounded-full border border-black/5 dark:border-white/10 bg-black/5 dark:bg-white/5">
+        <div class="flex items-center gap-3 px-4 py-1 rounded-full border border-black/5 dark:border-white/10 bg-black/5 dark:bg-white/5" title="Twists for this topic: 3 for bronze, 4 for silver, 5 for gold" aria-label="Twist goal: 3 bronze, 4 silver, 5 gold">
             <div id="medal-bronze" class="transition-all duration-500 opacity-20 scale-75 grayscale"><i data-lucide="medal" class="w-5 h-5 text-[#cd7f32]"></i></div>
             <div id="medal-silver" class="transition-all duration-500 opacity-20 scale-75 grayscale"><i data-lucide="medal" class="w-5 h-5 text-[#c0c0c0]"></i></div>
             <div id="medal-gold" class="transition-all duration-500 opacity-20 scale-75 grayscale"><i data-lucide="medal" class="w-5 h-5 text-neonYellow"></i></div>
         </div>
 
-        <span id="ctx-badge" class="hidden md:block text-[9px] font-bold uppercase tracking-[0.18em] opacity-40">Context · idle</span>
 
         <div class="flex gap-1">
-            <button onclick="toggleHistory(true)" class="p-2 hover:bg-neonPurple/10 hover:text-neonPurple rounded-lg transition-colors">
+            <button onclick="toggleHistory(true)" title="Past twists" aria-label="Past twists" class="p-2 hover:bg-neonPurple/10 hover:text-neonPurple rounded-lg transition-colors">
                 <i data-lucide="history" class="w-5 h-5"></i>
             </button>
-            <button onclick="toggleTheme()" class="p-2 hover:bg-neonPurple/10 hover:text-neonPurple rounded-lg transition-colors">
+            <button onclick="toggleTheme()" title="Toggle theme" aria-label="Toggle theme" class="p-2 hover:bg-neonPurple/10 hover:text-neonPurple rounded-lg transition-colors">
                 <span id="wrapper-moon" class="hidden"><i data-lucide="moon" class="w-5 h-5"></i></span>
                 <span id="wrapper-sun"><i data-lucide="sun" class="w-5 h-5"></i></span>
             </button>
@@ -172,7 +171,7 @@
             
             <!-- Infinite Mode Message -->
             <div id="gold-message" class="hidden mt-2 text-center text-xs font-bold uppercase tracking-widest text-neonYellow animate-pulse">
-                Gold Medal Achieved! Infinite Mode Active.
+                Gold: 5 twists. Keep going if you have more.
             </div>
         </div>
 
@@ -184,7 +183,7 @@
         </div>
 
         <!-- Action Bar -->
-        <div class="grid grid-cols-2 gap-4 sticky bottom-6 z-20">
+        <div class="grid grid-cols-2 gap-4 sm:sticky sm:bottom-6 z-20 pb-6 sm:pb-0">
             <button 
                 onclick="saveAndNext()"
                 id="btn-save"
@@ -216,10 +215,11 @@
                 <button
                     onclick="sendToBeatHive()"
                     id="btn-beathive"
+                    title="Send the twists to the BeatHive premise inbox"
                     disabled
                     class="w-full shadow-lg shadow-black/10 dark:shadow-none font-bold uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed border-2 px-2 py-3 text-sm rounded-lg bg-black text-neonYellow border-black hover:bg-neonYellow hover:text-black hover:border-neonYellow dark:bg-white dark:text-black dark:border-white"
                 >
-                    <i data-lucide="hexagon" class="w-4 h-4"></i> Beat
+                    <i data-lucide="inbox" class="w-4 h-4"></i> BeatHive
                 </button>
             </div>
         </div>
@@ -409,7 +409,7 @@
             loadHistory();
             fetchTopics(null);
             setupInputListener();
-            lucide.createIcons();
+            if (window.lucide) lucide.createIcons();
 
             // Load theme from suite-wide localStorage key
             const savedTheme = localStorage.getItem('writingtools_theme');
@@ -694,7 +694,7 @@
                 `;
                 grid.appendChild(div);
             });
-            lucide.createIcons();
+            if (window.lucide) lucide.createIcons();
             renderActiveContext();
             updatePlaceholder();
         }
@@ -740,7 +740,7 @@
                      linksContainer.appendChild(btn);
                  });
             }
-            lucide.createIcons();
+            if (window.lucide) lucide.createIcons();
         }
         
         // NEW: Toggle context expansion
@@ -796,7 +796,7 @@
             copyBtn.disabled = !hasItems && !hasCachedItems;
             beatBtn.disabled = !hasItems && !(currentTopic && currentTopic.text);
             
-            lucide.createIcons();
+            if (window.lucide) lucide.createIcons();
         }
 
         function updateMedals() {
@@ -890,7 +890,7 @@
                     container.appendChild(div);
                 });
             }
-            lucide.createIcons();
+            if (window.lucide) lucide.createIcons();
         }
 
         // --- Interaction ---

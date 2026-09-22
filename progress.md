@@ -71,3 +71,11 @@ Prompt: get the tools to top quality (priority: Courius, then BeatHive/Synax/Jot
 - Send to Courius creates a new script (or appends) with a placeholder heading and one bracketed action line per beat; Copy outline gives plain text.
 - Old hex maps migrate automatically into ladders (tutorial cells dropped; legacy keys left in place). Old-format recovery snapshots still restore.
 - Logic lives in `beathive-core.js` with unit tests in `tests/beathive-core.test.js`.
+
+## Courius dual dialogue + sticky notes; suite UI pass (September 2026)
+
+- **Dual dialogue** (Alt+D or the DUAL button): pairs the speech under the cursor with the one before it (or after it) side by side. Enter flows through a column, hops from the left column to the right, and steps out below the pair; Alt+D again splits them. Exports as Final Draft `<Paragraph><DualDialogue>` and re-imports; prints side by side.
+- **Sticky notes** (Alt+N or 📝): a note attaches to the current line (`data-note` / `data-note-color`), so it saves, syncs, and switches scripts with the script. Cards sit in the right margin on wide screens and fold into tabs on the page edge on narrow ones; four colours; empty notes are dropped; ✎ count in the status bar hides/shows them. Never exported or printed.
+- FDX export now writes a real Final Draft title page (`<TitlePage><Content>` aligned paragraphs), and import reads Final Draft title pages. Title-page placeholder text ("Contact Info") is no longer exported.
+- Courius status bar moved to the top (top-left on desktop, a strip on phones) so it no longer collides with the Actions button or element bar; toasts float above the element bar; empty scripts show a first-line hint; a Home button joins the actions bar; scene navigator is Alt+S (browsers reserve Ctrl+N).
+- Suite: the Ctrl+K Actions launcher hides on phones (it covered content in every tool); lucide was pinned to a version that doesn't exist (0.263.1 → 0.263.0; ThisButThat's `@latest` pinned too) and icon calls are guarded so a CDN failure can't stop a page; hub merges Structure + Output into one row with sharper tool descriptions; ThisButThat's phone button bar no longer covers the twist input, "Beat" is now "BeatHive", the medal row explains itself; dead "Context · idle" badges removed; Synax footer and word counter fixed.

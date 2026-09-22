@@ -130,7 +130,8 @@
       '.wtp-light .wtp-trigger,.wtp-trigger.wtp-light{background:rgba(255,255,255,.85);color:#1c1c21;border-color:rgba(0,0,0,.14);box-shadow:0 4px 16px rgba(0,0,0,.12);}',
       '.wtp-trigger.wtp-light kbd{border-color:rgba(0,0,0,.18);background:rgba(0,0,0,.05);}',
       '.wtp-trigger.wtp-light:hover{border-color:rgba(201,20,159,.55);box-shadow:0 8px 24px rgba(0,0,0,.16);}',
-      '@media (max-width:600px){.wtp-trigger kbd{display:none;}}',
+      // The launcher is a keyboard (Ctrl+K) feature; on phones it only covers content.
+      '@media (max-width:760px){.wtp-trigger{display:none !important;}}',
       '.wtp-overlay{position:fixed;inset:0;background:rgba(8,8,12,.45);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);z-index:1700;display:none;align-items:flex-start;justify-content:center;padding:10vh 14px 20px;}',
       '.wtp-overlay.open{display:flex;animation:wtpFade 160ms ' + EASE + ';}',
       '.wtp-panel{width:min(640px,100%);background:rgba(19,21,28,.97);color:#f3f5f8;border:1px solid rgba(255,255,255,.12);border-radius:16px;overflow:hidden;box-shadow:0 32px 90px rgba(0,0,0,.5),0 8px 28px rgba(0,0,0,.35);}',

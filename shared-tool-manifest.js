@@ -16,7 +16,7 @@
       label: 'ThisButThat',
       path: 'ThisButThat.html',
       category: 'Ideation',
-      commandDesc: 'Wikipedia topics + notepad',
+      commandDesc: 'Twist trending topics: this, but that',
       commandKeys: 'twist premise thisbutthat',
       snapshotKey: 'writingtools_thisbutthat_snapshots_v1'
     },
@@ -43,7 +43,7 @@
       label: 'Courius',
       path: 'Courius.html',
       category: 'Output',
-      commandDesc: 'Screenplay editor + FDX/RTF export',
+      commandDesc: 'Screenplay editor: dual dialogue, notes, FDX/RTF',
       commandKeys: 'screenplay courius script',
       snapshotKey: 'writingtools_courius_snapshots_v1'
     },

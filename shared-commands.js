@@ -25,7 +25,7 @@
           { id: 'open-thisbutthat', title: 'Open ThisButThat', desc: 'Wikipedia topics + notepad', keys: 'twist premise thisbutthat', run: function () { openTool('ThisButThat.html'); } },
           { id: 'open-joterie', title: 'Open Joterie', desc: 'Timed brainstorm sprints', keys: 'joterie jot cards harvest', run: function () { openTool('Joterie.html'); } },
           { id: 'open-beathive', title: 'Open BeatHive', desc: 'Premise inbox + sketch game ladders', keys: 'structure sketch game ladder premise inbox beathive', run: function () { openTool('BeatHive.html'); } },
-          { id: 'open-courius', title: 'Open Courius', desc: 'Screenplay editor + FDX/RTF export', keys: 'screenplay courius', run: function () { openTool('Courius.html'); } }
+          { id: 'open-courius', title: 'Open Courius', desc: 'Screenplay editor: dual dialogue, notes, FDX/RTF', keys: 'screenplay courius', run: function () { openTool('Courius.html'); } }
         ];
 
     return [
