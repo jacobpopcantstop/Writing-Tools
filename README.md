@@ -9,7 +9,7 @@ A browser-based suite of writing apps that now operates as one connected local s
 - `ThisButThat.html`: twist-premise generation
 - `Joterie.html`: short-burst ideation and harvests
 - `BeatHive.html`: premise inbox + sketch game ladders (base reality, first unusual thing, the game, heightening rungs, button), sent to Courius as a script skeleton
-- `Courius.html`: screenplay editor with dual dialogue (Alt+D), margin sticky notes (Alt+N), and FDX/RTF/PDF export
+- `Courius.html`: screenplay editor with auto scene headings/transitions, dual dialogue (hold TALK or Alt+D), margin sticky notes (Alt+N), dark/light/sepia themes, and FDX/RTF/PDF export
 - `TextToFDX.html`: copy-paste LLM workflow for raw text to editable FDX preview/export
 
 ## Run Locally
