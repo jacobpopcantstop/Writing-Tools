@@ -33,6 +33,8 @@
             
             /* Font Settings */
             --courier: "Courier New", Courier, monospace;
+            /* Toasts float above the element bar instead of covering it. */
+            --wt-toast-offset: 96px;
             --line-height: 1.15;
             --font-size: 12pt;
         }
@@ -151,6 +153,7 @@
         /* --- Main Workspace --- */
         main {
             flex: 1;
+            position: relative;
             overflow-y: auto;
             overflow-x: auto; 
             display: block; 
@@ -181,8 +184,11 @@
 
         #save-bar {
             position: fixed;
-            bottom: 25px;
-            right: 80px;
+            /* Top-left keeps it clear of the element bar and the suite's
+               Actions button at the bottom. */
+            top: 20px;
+            left: 20px;
+            white-space: nowrap;
             font-size: 0.6rem;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -384,6 +390,129 @@
 
         span.suggestion { color: var(--suggestion); opacity: 0.5; pointer-events: none; }
 
+        /* A brand-new script: show what the first line is for. */
+        #page.is-empty > div:first-child::after {
+            content: "INT. LOCATION - DAY  ·  Tab changes the element, Enter starts the next line";
+            position: absolute;
+            left: 0;
+            top: 0;
+            color: var(--text-color);
+            opacity: 0.28;
+            pointer-events: none;
+            white-space: nowrap;
+            font-weight: normal;
+        }
+
+        /* --- Dual dialogue: two speeches side by side --- */
+        #page .dual-dialogue,
+        .print-sheet .dual-dialogue {
+            display: flex;
+            gap: 0.3in;
+            margin-top: 1.15em;
+            margin-bottom: 1.15em;
+            width: 100%;
+        }
+        #page .dual-dialogue {
+            background-image: linear-gradient(var(--guide-color), var(--guide-color));
+            background-size: 1px 100%;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+        #page .dual-col, .print-sheet .dual-col { flex: 1 1 0; min-width: 0; }
+        #page .dual-col .character, .print-sheet .dual-col .character { margin-top: 0; margin-left: 0.9in; width: auto; }
+        #page .dual-col .parenthetical, .print-sheet .dual-col .parenthetical { margin-left: 0.45in; width: auto; }
+        #page .dual-col .dialogue, .print-sheet .dual-col .dialogue { margin-left: 0; width: auto; margin-bottom: 0; }
+
+        /* --- Sticky notes --- */
+        :root {
+            --note-yellow: #fde68a;
+            --note-pink: #fbcfe8;
+            --note-blue: #bfdbfe;
+            --note-green: #bbf7d0;
+        }
+        #page [data-note]::after {
+            content: "";
+            position: absolute;
+            right: -0.32in;
+            top: 0.4em;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--note-yellow);
+            box-shadow: 0 0 0 2px var(--paper-color);
+        }
+        #page [data-note-color="pink"]::after { background: var(--note-pink); }
+        #page [data-note-color="blue"]::after { background: var(--note-blue); }
+        #page [data-note-color="green"]::after { background: var(--note-green); }
+        #page [data-note-active] { background: rgba(253, 230, 138, 0.14); border-radius: 2px; }
+        body.notes-hidden #notes-layer { display: none; }
+        body.notes-hidden #page [data-note]::after { opacity: 0.35; }
+        #notes-layer { position: absolute; top: 0; left: 0; width: 0; height: 0; z-index: 900; }
+        .sticky-note {
+            position: absolute;
+            background: var(--note-yellow);
+            color: #1f1d1a;
+            border-radius: 3px 3px 10px 3px;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.28);
+            padding: 8px 9px 6px;
+            font: 12px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+            transition: top 0.18s ease, box-shadow 0.15s ease;
+        }
+        .sticky-note[data-color="pink"] { background: var(--note-pink); }
+        .sticky-note[data-color="blue"] { background: var(--note-blue); }
+        .sticky-note[data-color="green"] { background: var(--note-green); }
+        .sticky-note:focus-within { box-shadow: 0 10px 24px rgba(0, 0, 0, 0.38), 0 0 0 2px var(--accent); z-index: 2; }
+        .sticky-note textarea {
+            width: 100%;
+            border: 0;
+            background: transparent;
+            color: inherit;
+            font: inherit;
+            resize: none;
+            outline: none;
+            min-height: 36px;
+            overflow: hidden;
+            padding: 0;
+        }
+        .sticky-note textarea::placeholder { color: rgba(31, 29, 26, 0.5); }
+        .note-tools { display: flex; align-items: center; gap: 5px; margin-top: 4px; }
+        .note-swatch {
+            width: 12px; height: 12px; border-radius: 50%;
+            border: 1px solid rgba(0, 0, 0, 0.25);
+            padding: 0; cursor: pointer;
+        }
+        .note-swatch[aria-pressed="true"] { box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.55); }
+        .note-del {
+            margin-left: auto;
+            border: 0; background: transparent; cursor: pointer;
+            color: rgba(31, 29, 26, 0.6); font-size: 13px; padding: 0 2px;
+        }
+        .note-del:hover { color: #7f1d1d; }
+        /* Narrow screens: notes fold into tabs on the page edge. */
+        .sticky-note.compact:not(.open) {
+            width: 22px !important;
+            height: 22px;
+            padding: 0;
+            border-radius: 4px;
+            cursor: pointer;
+            display: grid;
+            place-items: center;
+        }
+        .sticky-note.compact:not(.open)::before { content: "✎"; font-size: 12px; }
+        .sticky-note.compact:not(.open) > * { display: none; }
+        .sticky-note.compact.open { z-index: 3; }
+        #notes-toggle {
+            border: 1px solid transparent;
+            border-radius: 999px;
+            padding: 2px 8px;
+            font: 11px var(--courier);
+            color: var(--ui-text);
+            background: transparent;
+            cursor: pointer;
+        }
+        #notes-toggle:hover { border-color: var(--guide-color); }
+        #notes-toggle[hidden] { display: none; }
+
         /* --- Title Page Styles --- */
         .title-page-container {
             display: flex;
@@ -474,6 +603,7 @@
             .print-sheet { page-break-after: always; height: 10.98in; overflow: hidden; }
             .print-sheet:last-child { page-break-after: auto; }
             .print-sheet div[data-placeholder]::before { content: none !important; display: none !important; }
+            #notes-layer { display: none !important; }
             ::selection { background: transparent !important; }
         }
 
@@ -779,7 +909,23 @@
                 overflow-x: auto;
             }
             .side-btn { min-height: 44px; min-width: 44px; }
-            #save-bar { right: 12px; bottom: calc(62px + env(safe-area-inset-bottom)); }
+            main { padding-top: calc(48px + env(safe-area-inset-top)); }
+            #save-bar {
+                top: calc(8px + env(safe-area-inset-top));
+                left: 10px;
+                right: 10px;
+                justify-content: center;
+                overflow-x: auto;
+            }
+            #active-doc-name { max-width: 34vw; }
+            :root { --wt-toast-offset: 146px; }
+            #writing-timer-label { display: none; }
+            #page { min-height: 55vh; }
+            .actions-bar .courius-wordmark { display: none; }
+            .suite-link { display: none; }
+            #page.is-empty > div:first-child::after { content: "INT. LOCATION - DAY"; }
+            /* The Ctrl+K launcher would sit on top of the element bar here. */
+            .wtp-trigger { display: none !important; }
             .imports-panel {
                 right: 10px;
                 top: calc(56px + env(safe-area-inset-top));
@@ -810,12 +956,14 @@
 </div>
 
 <div class="floating-controls actions-bar">
-    <div style="font-weight: 900; font-size: 0.5rem; text-align: center; margin-bottom: 4px; opacity: 0.5; color: var(--ui-text);">COURIUS</div>
+    <div class="courius-wordmark" style="font-weight: 900; font-size: 0.5rem; text-align: center; margin-bottom: 4px; opacity: 0.5; color: var(--ui-text);">COURIUS</div>
+    <a class="side-btn" data-label="Suite Home" href="index.html" style="text-decoration:none">🏠</a>
     <button class="side-btn" data-label="Scripts (F)" onclick="toggleFilesPanel()">📁</button>
-    <button class="side-btn" data-label="Scenes (N)" onclick="toggleSceneNav()">📑</button>
+    <button class="side-btn" data-label="Scenes (Alt+S)" onclick="toggleSceneNav()">📑</button>
     <button class="side-btn" data-label="Title Page" onclick="toggleTitlePage()">Title</button>
+    <button class="side-btn" data-label="Sticky Note (Alt+N)" onmousedown="event.preventDefault()" onclick="addNote()">📝</button>
     <button class="side-btn" data-label="Import FDX" onclick="document.getElementById('file-input').click()">Imp</button>
-    <button class="side-btn" data-label="Theme (D)" onclick="toggleTheme()">🌓</button>
+    <button class="side-btn" data-label="Theme (Ctrl+D)" onclick="toggleTheme()">🌓</button>
     <button class="side-btn" data-label="Help (?)" onclick="toggleHelp()">❓</button>
     <button class="side-btn" data-label="Import History" onclick="toggleImportsPanel()">↺</button>
     <button class="side-btn" data-label="Export FDX" onclick="downloadFDX()">FDX</button>
@@ -837,10 +985,12 @@
         <h3>⌨️ Keyboard Shortcuts</h3>
         <div class="shortcut-row"><span>Toggle Theme</span><span class="shortcut-key">Ctrl+D</span></div>
         <div class="shortcut-row"><span>Scripts Panel</span><span class="shortcut-key">F</span></div>
-        <div class="shortcut-row"><span>Scene Navigator</span><span class="shortcut-key">Ctrl+N</span></div>
+        <div class="shortcut-row"><span>Scene Navigator</span><span class="shortcut-key">Alt+S</span></div>
         <div class="shortcut-row"><span>Cycle Element Type</span><span class="shortcut-key">Tab</span></div>
         <div class="shortcut-row"><span>Reverse Cycle</span><span class="shortcut-key">Shift+Tab</span></div>
         <div class="shortcut-row"><span>Set Element Type</span><span class="shortcut-key">Alt+1..6</span></div>
+        <div class="shortcut-row"><span>Dual Dialogue (in a speech)</span><span class="shortcut-key">Alt+D</span></div>
+        <div class="shortcut-row"><span>Sticky Note on this line</span><span class="shortcut-key">Alt+N</span></div>
         <div class="shortcut-row"><span>Save Now</span><span class="shortcut-key">Ctrl+S</span></div>
         <div class="shortcut-row"><span>New Line</span><span class="shortcut-key">Enter</span></div>
         <div class="shortcut-row"><span>Element Menu (on empty line)</span><span class="shortcut-key">Enter</span></div>
@@ -862,6 +1012,7 @@
     <button class="side-btn" data-type="parenthetical" data-label="Parenthetical" onclick="changeElementType('parenthetical')">( )</button>
     <button class="side-btn" data-type="dialogue" data-label="Dialogue" onclick="changeElementType('dialogue')">TALK</button>
     <button class="side-btn" data-type="transition" data-label="Transition" onclick="changeElementType('transition')">CUT</button>
+    <button class="side-btn dual-btn" data-label="Dual Dialogue (Alt+D)" onmousedown="event.preventDefault()" onclick="toggleDualDialogue()">DUAL</button>
 </div>
 
 <input type="file" id="file-input" accept=".fdx" style="display: none;" onchange="importFDX(this)">
@@ -869,15 +1020,17 @@
 
 <main id="editor-container" onclick="focusEditor(event)" onscroll="updatePageCount()">
     <div id="page" contenteditable="true" spellcheck="true" autocorrect="on"></div>
+    <div id="notes-layer" aria-label="Sticky notes"></div>
 </main>
 
 <div id="save-bar">
     <button id="active-doc-name" type="button" title="Switch scripts" onclick="toggleFilesPanel()">Untitled Script</button>
     | <span id="page-count">Pg 1</span> | <span id="save-status">Ready</span>
+ | <button id="notes-toggle" type="button" hidden title="Show or hide sticky notes" onclick="toggleNotesVisible()">✎ 0</button>
     | <button id="writing-timer-btn" type="button" title="Click to start or pause the alarm. Double-click to set minutes."><span id="writing-timer-label">Alarm</span> <span id="writing-timer">25:00</span></button>
 </div>
 
-<a href="index.html" style="position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%); z-index: 10; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.15; color: var(--text-color); text-decoration: none; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.5'" onmouseout="this.style.opacity='0.15'">Writing Tools Suite</a>
+<a class="suite-link" href="index.html" style="position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%); z-index: 10; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.15; color: var(--text-color); text-decoration: none; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.5'" onmouseout="this.style.opacity='0.15'">Writing Tools Suite</a>
 
 <script>
     const EDITOR = document.getElementById('page');
@@ -901,6 +1054,7 @@
     const THEME_STORAGE_KEY = 'courius_theme_v2';
     
     const ELEMENT_CYCLE = ['scene-heading', 'action', 'character', 'parenthetical', 'dialogue', 'transition'];
+    const SPEECH_TYPES = ['character', 'parenthetical', 'dialogue'];
     const NEXT_ELEMENT = {
         'scene-heading': 'action',
         'action': 'action',
@@ -1137,6 +1291,7 @@
     function getEditorHtmlForStorage() {
         const clone = EDITOR.cloneNode(true);
         clone.querySelectorAll('.suggestion').forEach((s) => s.remove());
+        clone.querySelectorAll('[data-note-active]').forEach((n) => n.removeAttribute('data-note-active'));
         return clone.innerHTML;
     }
 
@@ -1728,11 +1883,13 @@
                     // when a suggestion or dropdown is showing.
                     if (sugg) sugg.remove();
                     if (e.shiftKey) hideDropdown();
-                    const currentIndex = ELEMENT_CYCLE.indexOf(type);
+                    // Inside dual dialogue only speech elements make sense.
+                    const cycle = isDualBlock(currentBlock) ? SPEECH_TYPES : ELEMENT_CYCLE;
+                    const currentIndex = Math.max(0, cycle.indexOf(type));
                     const nextIndex = e.shiftKey ?
-                        (currentIndex - 1 + ELEMENT_CYCLE.length) % ELEMENT_CYCLE.length :
-                        (currentIndex + 1) % ELEMENT_CYCLE.length;
-                    setBlockType(currentBlock, ELEMENT_CYCLE[nextIndex]);
+                        (currentIndex - 1 + cycle.length) % cycle.length :
+                        (currentIndex + 1) % cycle.length;
+                    setBlockType(currentBlock, cycle[nextIndex]);
                 }
             }
             updateSelectorUI();
@@ -1758,6 +1915,10 @@
             if (type === 'parenthetical' && (textNow === '()' || textNow === '(' || textNow === ')')) {
                 currentBlock.innerHTML = '<br>';
                 textNow = '';
+            }
+            if (isDualBlock(currentBlock) && handleDualEnter(currentBlock, type, !textNow)) {
+                updateSelectorUI();
+                return;
             }
             if (!textNow) {
                 // Enter on an empty line opens the element menu instead of
@@ -1830,9 +1991,11 @@
         hideDropdown();
         const sugg = block.querySelector('.suggestion');
         if (sugg) sugg.remove();
-        // Replace an empty current line; otherwise insert after it.
-        let anchor = block;
-        const replaceCurrent = !getPureText(block).trim();
+        // Replace an empty current line; otherwise insert after it. A paste
+        // inside dual dialogue lands after the whole side-by-side block.
+        const inDual = isDualBlock(block);
+        let anchor = inDual ? block.closest('.dual-dialogue') : block;
+        const replaceCurrent = !inDual && !getPureText(block).trim();
         let last = null;
         elements.forEach((item) => {
             const div = document.createElement('div');
@@ -1871,12 +2034,405 @@
         if (!node) return null;
         if (node.nodeType === 3) node = node.parentNode; // Text node -> Element
         
-        // Walk up until we find a direct child of #page or stop at title page parts
-        while (node && node.parentElement && node.parentElement.id !== 'page' && !node.classList?.contains('title-page-container')) {
+        // Walk up to the element line: a direct child of #page, a line inside
+        // a dual-dialogue column, or the title page container.
+        while (node && node.parentElement && node.parentElement.id !== 'page' &&
+               !node.parentElement.classList.contains('dual-col') &&
+               !node.classList?.contains('title-page-container')) {
              node = node.parentElement;
         }
         return node;
     }
+
+    function say(message) {
+        if (window.WTToast && typeof window.WTToast.notify === 'function') window.WTToast.notify(message, 'info');
+        else STATUS.innerText = message;
+    }
+
+    function placeCaretAtEnd(el) {
+        const range = document.createRange();
+        const sel = window.getSelection();
+        range.selectNodeContents(el);
+        range.collapse(false);
+        sel.removeAllRanges();
+        sel.addRange(range);
+    }
+
+    // ===== Dual dialogue =====
+    // Two speeches side by side, stored as
+    //   <div class="dual-dialogue"><div class="dual-col">…</div><div class="dual-col">…</div></div>
+    // where each column holds ordinary character/parenthetical/dialogue lines.
+
+    function isDualBlock(block) {
+        return !!(block && block.parentElement && block.parentElement.classList.contains('dual-col'));
+    }
+
+    // Every element line in reading order, with dual columns flattened
+    // (left speech, then right).
+    function getFlatBlocks() {
+        const out = [];
+        Array.from(EDITOR.children).forEach((node) => {
+            if (node.classList && node.classList.contains('dual-dialogue')) {
+                node.querySelectorAll(':scope > .dual-col > div').forEach((line) => out.push(line));
+            } else {
+                out.push(node);
+            }
+        });
+        return out;
+    }
+
+    function buildDualWrapper() {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'dual-dialogue';
+        wrapper.appendChild(Object.assign(document.createElement('div'), { className: 'dual-col' }));
+        wrapper.appendChild(Object.assign(document.createElement('div'), { className: 'dual-col' }));
+        return wrapper;
+    }
+
+    function unwrapDual(wrapper) {
+        Array.from(wrapper.childNodes).forEach((child) => {
+            if (child.nodeType === 1 && child.classList.contains('dual-col')) {
+                Array.from(child.childNodes).forEach((line) => {
+                    if (line.nodeType === 1) wrapper.before(line);
+                });
+            } else if (child.nodeType === 1) {
+                wrapper.before(child);
+            }
+        });
+        wrapper.remove();
+    }
+
+    // A wrapper that lost a column or all its lines goes back to plain lines.
+    function normalizeDualBlocks() {
+        EDITOR.querySelectorAll(':scope > .dual-dialogue').forEach((wrapper) => {
+            const cols = Array.from(wrapper.children);
+            const healthy = cols.length === 2 &&
+                cols.every((col) => col.classList.contains('dual-col') && col.querySelector(':scope > div'));
+            if (!healthy) unwrapDual(wrapper);
+        });
+    }
+
+    // The character cue plus its parentheticals and dialogue, for a
+    // top-level line that belongs to a speech.
+    function speechRange(block) {
+        if (!block || block.parentElement !== EDITOR || !SPEECH_TYPES.includes(block.className)) return null;
+        let start = block;
+        while (start.className !== 'character') {
+            const prev = start.previousElementSibling;
+            if (!prev || !SPEECH_TYPES.includes(prev.className)) return null;
+            start = prev;
+        }
+        const lines = [start];
+        let next = start.nextElementSibling;
+        while (next && (next.className === 'parenthetical' || next.className === 'dialogue')) {
+            lines.push(next);
+            next = next.nextElementSibling;
+        }
+        return lines;
+    }
+
+    function toggleDualDialogue() {
+        const sel = window.getSelection();
+        const block = sel.rangeCount ? getBlock(sel.anchorNode) : null;
+        if (!block || block === EDITOR || !EDITOR.contains(block)) {
+            say('Put the cursor in a character’s speech first.');
+            return;
+        }
+        const saved = sel.rangeCount ? { node: sel.anchorNode, offset: sel.anchorOffset } : null;
+        const restoreCaret = () => {
+            if (!saved || !EDITOR.contains(saved.node)) return;
+            try {
+                const range = document.createRange();
+                range.setStart(saved.node, Math.min(saved.offset, (saved.node.textContent || '').length));
+                range.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(range);
+            } catch (_) {}
+        };
+
+        const existing = block.closest('.dual-dialogue');
+        if (existing) {
+            unwrapDual(existing);
+            restoreCaret();
+            say('Dual dialogue off');
+        } else {
+            const speech = speechRange(block);
+            if (!speech) {
+                say('Dual dialogue pairs two speeches. Put the cursor in a character, parenthetical, or dialogue line.');
+                return;
+            }
+            // Pair with the speech right before this one; failing that, the
+            // one right after.
+            let left = null;
+            let right = null;
+            const before = speech[0].previousElementSibling;
+            const prevSpeech = before && (before.className === 'dialogue' || before.className === 'parenthetical') ? speechRange(before) : null;
+            if (prevSpeech) {
+                left = prevSpeech;
+                right = speech;
+            } else {
+                const after = speech[speech.length - 1].nextElementSibling;
+                const nextSpeech = after && after.className === 'character' ? speechRange(after) : null;
+                if (nextSpeech) {
+                    left = speech;
+                    right = nextSpeech;
+                }
+            }
+            if (!left) {
+                say('Dual dialogue needs two speeches back to back.');
+                return;
+            }
+            const wrapper = buildDualWrapper();
+            left[0].before(wrapper);
+            left.forEach((line) => wrapper.children[0].appendChild(line));
+            right.forEach((line) => wrapper.children[1].appendChild(line));
+            restoreCaret();
+            say('Dual dialogue on');
+        }
+        EDITOR.focus();
+        updateSuggestions();
+        updateSelectorUI();
+        triggerSave();
+    }
+
+    // Enter inside a dual column. Character/parenthetical lines flow into
+    // dialogue in the same column; finishing (or an empty line) in the left
+    // column hops to the right one, and in the right column steps out below.
+    function handleDualEnter(block, type, isEmpty) {
+        const col = block.parentElement;
+        const wrapper = col.parentElement;
+        const isLeft = col === wrapper.firstElementChild;
+        const isLast = block === col.lastElementChild;
+        const leaving = isEmpty || (type === 'dialogue' && isLast);
+        if (!leaving) {
+            const next = NEXT_ELEMENT[type];
+            createLine(SPEECH_TYPES.includes(next) ? next : 'dialogue', block);
+            return true;
+        }
+        if (isEmpty && col.children.length > 1) block.remove();
+        if (isLeft) {
+            const target = wrapper.lastElementChild.lastElementChild;
+            if (target) placeCaretAtEnd(target);
+        } else {
+            createLine('action', wrapper);
+        }
+        triggerSave();
+        return true;
+    }
+
+    // ===== Sticky notes =====
+    // A note lives on its script line as data-note / data-note-color, so it
+    // travels with the script through saves, snapshots, and script switches.
+    // Cards sit in the right margin when there is room, and fold into small
+    // tabs on the page edge when there is not.
+    const NOTE_COLORS = ['yellow', 'pink', 'blue', 'green'];
+    const NOTES_HIDDEN_KEY = 'writingtools_courius_notes_hidden';
+    const NOTES_LAYER = document.getElementById('notes-layer');
+    const noteCards = new Map();
+    let notesFrame = 0;
+
+    function scheduleNotesLayout() {
+        if (notesFrame) return;
+        notesFrame = requestAnimationFrame(layoutNotes);
+    }
+
+    function noteTargetBlock() {
+        const sel = window.getSelection();
+        const block = sel.rangeCount ? getBlock(sel.anchorNode) : null;
+        if (!block || block === EDITOR || !EDITOR.contains(block)) return null;
+        if (['title-page-container', 'dual-dialogue', 'dual-col'].some((c) => block.classList.contains(c))) return null;
+        return block;
+    }
+
+    function setNotesHidden(hidden) {
+        document.body.classList.toggle('notes-hidden', hidden);
+        try { localStorage.setItem(NOTES_HIDDEN_KEY, hidden ? '1' : '0'); } catch (_) {}
+    }
+
+    function toggleNotesVisible() {
+        setNotesHidden(!document.body.classList.contains('notes-hidden'));
+        scheduleNotesLayout();
+    }
+
+    function addNote() {
+        const block = noteTargetBlock();
+        if (!block) {
+            say('Click into a line of the script, then add a note.');
+            return;
+        }
+        if (document.body.classList.contains('notes-hidden')) setNotesHidden(false);
+        if (!block.hasAttribute('data-note')) {
+            block.setAttribute('data-note', '');
+            block.setAttribute('data-note-color', 'yellow');
+        }
+        layoutNotes();
+        const card = noteCards.get(block);
+        if (card) {
+            card.classList.add('open');
+            layoutNotes();
+            card.querySelector('textarea').focus();
+        }
+    }
+
+    function removeNote(block) {
+        block.removeAttribute('data-note');
+        block.removeAttribute('data-note-color');
+        block.removeAttribute('data-note-active');
+        const card = noteCards.get(block);
+        if (card) card.remove();
+        noteCards.delete(block);
+        scheduleNotesLayout();
+    }
+
+    function growNote(textarea) {
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
+    }
+
+    function createNoteCard(block) {
+        const card = document.createElement('div');
+        card.className = 'sticky-note';
+        const ta = document.createElement('textarea');
+        ta.rows = 2;
+        ta.placeholder = 'Note or suggestion…';
+        ta.setAttribute('aria-label', 'Sticky note');
+        ta.value = block.getAttribute('data-note') || '';
+        ta.addEventListener('input', () => {
+            block.setAttribute('data-note', ta.value);
+            growNote(ta);
+            scheduleNotesLayout();
+            triggerSave();
+        });
+        ta.addEventListener('focus', () => block.setAttribute('data-note-active', ''));
+        ta.addEventListener('blur', () => {
+            block.removeAttribute('data-note-active');
+            card.classList.remove('open');
+            // An empty note is a note nobody wrote; drop it.
+            if (!ta.value.trim()) {
+                removeNote(block);
+                triggerSave();
+            }
+            scheduleNotesLayout();
+        });
+        ta.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                e.stopPropagation();
+                ta.blur();
+                if (EDITOR.contains(block)) placeCaretAtEnd(block);
+            }
+        });
+
+        const tools = document.createElement('div');
+        tools.className = 'note-tools';
+        NOTE_COLORS.forEach((color) => {
+            const swatch = document.createElement('button');
+            swatch.type = 'button';
+            swatch.className = 'note-swatch';
+            swatch.style.background = 'var(--note-' + color + ')';
+            swatch.setAttribute('aria-label', color + ' note');
+            swatch.setAttribute('aria-pressed', String((block.getAttribute('data-note-color') || 'yellow') === color));
+            swatch.addEventListener('mousedown', (e) => e.preventDefault());
+            swatch.addEventListener('click', () => {
+                block.setAttribute('data-note-color', color);
+                card.dataset.color = color;
+                tools.querySelectorAll('.note-swatch').forEach((sw) => sw.setAttribute('aria-pressed', String(sw === swatch)));
+                triggerSave();
+            });
+            tools.appendChild(swatch);
+        });
+        const del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'note-del';
+        del.textContent = '✕';
+        del.title = 'Delete note';
+        del.setAttribute('aria-label', 'Delete note');
+        del.addEventListener('mousedown', (e) => e.preventDefault());
+        del.addEventListener('click', () => {
+            removeNote(block);
+            triggerSave();
+        });
+        tools.appendChild(del);
+
+        card.appendChild(ta);
+        card.appendChild(tools);
+        card.addEventListener('click', () => {
+            if (card.classList.contains('compact') && !card.classList.contains('open')) {
+                card.classList.add('open');
+                layoutNotes();
+                ta.focus();
+            }
+        });
+        card.addEventListener('mouseenter', () => block.setAttribute('data-note-active', ''));
+        card.addEventListener('mouseleave', () => {
+            if (document.activeElement !== ta) block.removeAttribute('data-note-active');
+        });
+        NOTES_LAYER.appendChild(card);
+        noteCards.set(block, card);
+        requestAnimationFrame(() => growNote(ta));
+        return card;
+    }
+
+    function layoutNotes() {
+        notesFrame = 0;
+        const blocks = Array.from(EDITOR.querySelectorAll('[data-note]'));
+        noteCards.forEach((card, block) => {
+            if (!blocks.includes(block)) {
+                card.remove();
+                noteCards.delete(block);
+            }
+        });
+        const toggle = document.getElementById('notes-toggle');
+        if (toggle) {
+            toggle.hidden = !blocks.length;
+            toggle.textContent = '✎ ' + blocks.length;
+        }
+        if (!blocks.length || document.body.classList.contains('notes-hidden')) return;
+
+        const main = document.getElementById('editor-container');
+        const mainRect = main.getBoundingClientRect();
+        const pageRect = EDITOR.getBoundingClientRect();
+        const pageRight = pageRect.right - mainRect.left + main.scrollLeft;
+        const reserve = window.innerWidth > 1024 ? 84 : 0; // the right-hand actions bar
+        const room = main.clientWidth - pageRight - reserve;
+        const wide = room >= 190;
+        const width = wide ? Math.min(240, room - 28) : Math.min(240, pageRect.width - 40);
+
+        let lastBottom = -Infinity;
+        blocks
+            .map((block) => ({ block, top: block.getBoundingClientRect().top - mainRect.top + main.scrollTop }))
+            .sort((a, b) => a.top - b.top)
+            .forEach(({ block, top }) => {
+                const card = noteCards.get(block) || createNoteCard(block);
+                const open = card.classList.contains('open');
+                card.classList.toggle('compact', !wide);
+                card.dataset.color = block.getAttribute('data-note-color') || 'yellow';
+                const y = Math.max(top - 4, lastBottom + 8);
+                const x = wide ? pageRight + 16 : pageRight - (open ? width + 8 : 30);
+                card.style.top = y + 'px';
+                card.style.left = x + 'px';
+                card.style.width = wide || open ? width + 'px' : '';
+                lastBottom = y + card.offsetHeight;
+            });
+    }
+
+    // A brand-new script shows a hint on its empty first line.
+    function updateEmptyHint() {
+        const first = EDITOR.firstElementChild;
+        const empty = EDITOR.children.length === 1 && first && first.className === 'scene-heading' &&
+            !getPureText(first).trim() && !first.querySelector('.suggestion');
+        EDITOR.classList.toggle('is-empty', !!empty);
+    }
+
+    new MutationObserver(() => {
+        scheduleNotesLayout();
+        updateEmptyHint();
+    }).observe(EDITOR, { childList: true, subtree: true, characterData: true });
+    if (window.ResizeObserver) new ResizeObserver(scheduleNotesLayout).observe(EDITOR);
+    window.addEventListener('resize', scheduleNotesLayout);
+    try {
+        if (localStorage.getItem(NOTES_HIDDEN_KEY) === '1') document.body.classList.add('notes-hidden');
+    } catch (_) {}
 
     function queueSuggestionsRefresh() {
         if (suggestionsRefreshTimer) clearTimeout(suggestionsRefreshTimer);
@@ -2000,6 +2556,10 @@
         const sel = window.getSelection();
         const currentBlock = getBlock(sel.anchorNode);
         if (currentBlock && !currentBlock.classList.contains('title-page-container')) {
+            if (isDualBlock(currentBlock) && !SPEECH_TYPES.includes(type)) {
+                STATUS.innerText = 'Dual dialogue holds only character, parenthetical, dialogue';
+                return;
+            }
             setBlockType(currentBlock, type);
             updateSelectorUI();
             EDITOR.focus();
@@ -2011,9 +2571,11 @@
         const sel = window.getSelection();
         const block = getBlock(sel.anchorNode);
         const type = block ? block.className : null;
-        document.querySelectorAll('.element-bar .side-btn').forEach(btn => {
+        document.querySelectorAll('.element-bar .side-btn[data-type]').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.type === type);
         });
+        const dualBtn = document.querySelector('.element-bar .dual-btn');
+        if (dualBtn) dualBtn.classList.toggle('active', !!block && isDualBlock(block));
     }
 
     function getPureText(div) {
@@ -2296,6 +2858,7 @@
         STATUS.innerText = 'Syncing...';
         clearTimeout(saveTimeout);
         saveTimeout = setTimeout(() => {
+            normalizeDualBlocks();
             const html = getEditorHtmlForStorage();
             const ok = persistCouriusDocument(html, 'autosave');
             if (ok) {
@@ -2433,7 +2996,7 @@
         const sel = window.getSelection();
         const activeBlock = sel && sel.anchorNode ? getBlock(sel.anchorNode) : null;
 
-        const blocks = Array.from(EDITOR.children || []);
+        const blocks = getFlatBlocks();
         let previousCharacter = '';
         blocks.forEach((node) => {
             if (!node || !node.classList || node.classList.contains('title-page-container')) return;
@@ -2553,6 +3116,28 @@
                 contactText = contactEl ? contactEl.textContent : '';
                 creditText = creditEl ? creditEl.textContent : '';
 
+                // Final Draft's own title page: untyped, aligned paragraphs.
+                const untyped = Array.from(titlePage.getElementsByTagName('Paragraph'))
+                    .filter((pg) => !pg.getAttribute('Type'))
+                    .map((pg) => ({
+                        align: String(pg.getAttribute('Alignment') || 'Left'),
+                        text: Array.from(pg.getElementsByTagName('Text')).map((t) => t.textContent || '').join('').trim()
+                    }))
+                    .filter((line) => line.text);
+                if (untyped.length && !titleText) {
+                    const centered = untyped.filter((l) => l.align === 'Center');
+                    const creditIdx = centered.findIndex((l) => /^(written\s+)?by$|^(story|screenplay|teleplay)\s+by$/i.test(l.text));
+                    titleText = centered[0] ? centered[0].text : '';
+                    if (creditIdx > 0) {
+                        creditText = creditText || centered[creditIdx].text;
+                        authorText = authorText || (centered[creditIdx + 1] ? centered[creditIdx + 1].text : '');
+                    } else if (centered[1]) {
+                        authorText = authorText || centered[1].text;
+                    }
+                    const contactLines = untyped.filter((l) => l.align !== 'Center').map((l) => l.text);
+                    if (contactLines.length) contactText = contactText || contactLines.join('\n');
+                }
+
                 Array.from(titlePage.getElementsByTagName('Paragraph')).forEach((paragraph) => {
                     skipParagraphs.add(paragraph);
                     const paraType = String(paragraph.getAttribute('Type') || '').trim();
@@ -2583,8 +3168,40 @@
 
             // Handle Content paragraphs
             const paragraphs = allParagraphs;
+            const fdxToType = (fdxType) => {
+                if (fdxType === 'Scene Heading') return 'scene-heading';
+                if (fdxType === 'Character') return 'character';
+                if (fdxType === 'Dialogue') return 'dialogue';
+                if (fdxType === 'Parenthetical') return 'parenthetical';
+                if (fdxType === 'Transition') return 'transition';
+                return 'action';
+            };
+            const paragraphText = (pg) => Array.from(pg.getElementsByTagName('Text')).map((t) => t.textContent || '').join('');
             for (let i = 0; i < paragraphs.length; i++) {
                 if (skipParagraphs.has(paragraphs[i])) continue;
+                // Speeches inside a DualDialogue are built with their parent.
+                if (paragraphs[i].parentNode && paragraphs[i].parentNode.nodeName === 'DualDialogue') continue;
+                const dualNode = Array.from(paragraphs[i].childNodes).find((n) => n.nodeName === 'DualDialogue');
+                if (dualNode) {
+                    const inner = Array.from(dualNode.childNodes).filter((n) => n.nodeName === 'Paragraph');
+                    const wrapper = buildDualWrapper();
+                    const cols = wrapper.children;
+                    let characters = 0;
+                    inner.forEach((pg) => {
+                        const type = fdxToType((pg.getAttribute('Type') || '').trim());
+                        if (type === 'character') characters += 1;
+                        const line = document.createElement('div');
+                        setBlockType(line, SPEECH_TYPES.includes(type) ? type : 'dialogue');
+                        line.innerText = paragraphText(pg) || '\n';
+                        cols[characters >= 2 ? 1 : 0].appendChild(line);
+                    });
+                    if (cols[0].children.length && cols[1].children.length) {
+                        EDITOR.appendChild(wrapper);
+                    } else {
+                        Array.from(cols[0].children).concat(Array.from(cols[1].children)).forEach((line) => EDITOR.appendChild(line));
+                    }
+                    continue;
+                }
                 const fdxType = (paragraphs[i].getAttribute('Type') || '').trim();
                 if (titlePageTypes.has(fdxType)) continue;
                 let type = 'action';
@@ -2624,17 +3241,34 @@
     }
 
     function collectScriptElements() {
-        return Array.from(EDITOR.children).map(function (div) {
-            return { className: div.className || '', text: getPureText(div).trim() };
+        const out = [];
+        let dualId = 0;
+        Array.from(EDITOR.children).forEach((div) => {
+            if (div.classList.contains('dual-dialogue')) {
+                dualId += 1;
+                div.querySelectorAll(':scope > .dual-col > div').forEach((line) => {
+                    out.push({ className: line.className || '', text: getPureText(line).trim(), dual: dualId });
+                });
+                return;
+            }
+            out.push({ className: div.className || '', text: getPureText(div).trim() });
         });
+        return out;
     }
+    // Title page fields start out holding their placeholder text; that text
+    // is not part of the script.
     function collectTitlePage() {
         var tp = EDITOR.querySelector('.title-page-container');
         if (!tp) return {};
+        var field = function (selector, placeholder) {
+            var node = tp.querySelector(selector);
+            var text = node ? node.innerText.trim() : '';
+            return text === placeholder ? '' : text;
+        };
         return {
-            title: (tp.querySelector('.tp-title') && tp.querySelector('.tp-title').innerText) || '',
-            author: (tp.querySelector('.tp-author') && tp.querySelector('.tp-author').innerText) || '',
-            contact: (tp.querySelector('.tp-contact') && tp.querySelector('.tp-contact').innerText) || ''
+            title: field('.tp-title', 'TITLE'),
+            author: field('.tp-author', 'Author Name'),
+            contact: field('.tp-contact', 'Contact Info')
         };
     }
 
@@ -2785,8 +3419,8 @@
             e.preventDefault();
             toggleTheme();
         }
-        // Ctrl+N for scene navigator
-        if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        // Alt+S for the scene navigator (browsers reserve Ctrl+N).
+        if (e.altKey && !e.ctrlKey && !e.metaKey && e.code === 'KeyS') {
             e.preventDefault();
             toggleSceneNav();
         }
@@ -2799,6 +3433,15 @@
                 STATUS.innerText = 'Saved';
                 touchActiveDoc();
             }
+        }
+        // Alt+D toggles dual dialogue; Alt+N adds a sticky note to the line.
+        if (e.altKey && !e.ctrlKey && !e.metaKey && e.code === 'KeyD') {
+            e.preventDefault();
+            toggleDualDialogue();
+        }
+        if (e.altKey && !e.ctrlKey && !e.metaKey && e.code === 'KeyN') {
+            e.preventDefault();
+            addNote();
         }
         // Alt+1..6 sets the current element type (matches the bottom bar order)
         if (e.altKey && !e.ctrlKey && !e.metaKey && /^Digit[1-6]$/.test(e.code)) {

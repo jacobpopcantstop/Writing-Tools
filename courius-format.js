@@ -103,20 +103,58 @@
     }
   }
 
+  function fdxParagraph(el) {
+    var type = (el && el.type) || 'action';
+    return '<Paragraph Type="' + fdxType(type) + '"><Text>' +
+      escapeXml(String((el && el.text) || '').trim()) + '</Text></Paragraph>';
+  }
+
+  function titleParagraph(text, alignment) {
+    return '<Paragraph Alignment="' + alignment + '"><Text>' + escapeXml(text || '') + '</Text></Paragraph>';
+  }
+
+  // Final Draft keeps the title page as aligned, untyped paragraphs inside
+  // <TitlePage><Content>. Blank paragraphs push the title down the page and
+  // the contact block toward the bottom.
+  function buildTitlePage(d) {
+    var parts = [];
+    var blanks = function (n) { for (var i = 0; i < n; i += 1) parts.push(titleParagraph('', 'Center')); };
+    blanks(16);
+    if (d.title) parts.push(titleParagraph(String(d.title).toUpperCase(), 'Center'));
+    if (d.author) {
+      blanks(1);
+      parts.push(titleParagraph('Written by', 'Center'));
+      blanks(1);
+      parts.push(titleParagraph(d.author, 'Center'));
+    }
+    if (d.contact) {
+      blanks(18);
+      String(d.contact).split(/\r?\n/).forEach(function (line) { parts.push(titleParagraph(line, 'Left')); });
+    }
+    return '<TitlePage><Content>' + parts.join('') + '</Content></TitlePage>';
+  }
+
+  // Elements sharing a `dual` group id become one Final Draft dual-dialogue
+  // paragraph: <Paragraph><DualDialogue>left speech, right speech</DualDialogue></Paragraph>.
   function buildFdx(doc) {
     var d = doc || {};
-    var xml = '<?xml version="1.0" encoding="UTF-8"?><FinalDraft DocumentType="Script" Template="No" Version="1">';
-    if (d.title || d.author) {
-      xml += '<TitlePage><Title>' + escapeXml(d.title || '') + '</Title>' +
-             '<Author>' + escapeXml(d.author || '') + '</Author></TitlePage>';
-    }
+    var xml = '<?xml version="1.0" encoding="UTF-8" standalone="no" ?><FinalDraft DocumentType="Script" Template="No" Version="1">';
     xml += '<Content>';
-    (d.elements || []).forEach(function (el) {
-      var type = (el && el.type) || 'action';
-      xml += '<Paragraph Type="' + fdxType(type) + '"><Text>' +
-             escapeXml(String((el && el.text) || '').trim()) + '</Text></Paragraph>';
-    });
-    xml += '</Content></FinalDraft>';
+    var els = d.elements || [];
+    for (var i = 0; i < els.length; i += 1) {
+      var el = els[i];
+      if (el && el.dual) {
+        var group = [];
+        while (i < els.length && els[i] && els[i].dual === el.dual) { group.push(els[i]); i += 1; }
+        i -= 1;
+        xml += '<Paragraph><DualDialogue>' + group.map(fdxParagraph).join('') + '</DualDialogue></Paragraph>';
+      } else {
+        xml += fdxParagraph(el);
+      }
+    }
+    xml += '</Content>';
+    if (d.title || d.author || d.contact) xml += buildTitlePage(d);
+    xml += '</FinalDraft>';
     return xml;
   }
 
@@ -139,7 +177,9 @@
   function extractElements(rawList) {
     return (rawList || []).reduce(function (acc, item) {
       if (!item || shouldSkip(item.className)) return acc;
-      acc.push({ type: classifyType(item.className), text: String(item.text || '') });
+      var el = { type: classifyType(item.className), text: String(item.text || '') };
+      if (item.dual) el.dual = item.dual;
+      acc.push(el);
       return acc;
     }, []);
   }

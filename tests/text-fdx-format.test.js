@@ -77,8 +77,8 @@ test('buildFdx delegates normalized blocks to Courius FDX writer', () => {
       { type: 'dialogue', text: 'This exports.' }
     ]
   }, Screenplay);
-  assert.ok(fdx.includes('<Title>My &lt;Script&gt;</Title>'));
-  assert.ok(fdx.includes('<Author>A &amp; B</Author>'));
+  assert.ok(fdx.includes('<Text>MY &lt;SCRIPT&gt;</Text>'));
+  assert.ok(fdx.includes('<Paragraph Alignment="Center"><Text>A &amp; B</Text></Paragraph>'));
   assert.ok(fdx.includes('<Paragraph Type="Scene Heading"><Text>INT. ROOM - DAY</Text></Paragraph>'));
   assert.ok(fdx.includes('<Paragraph Type="Character"><Text>DAD</Text></Paragraph>'));
   assert.ok(fdx.includes('<Paragraph Type="Dialogue"><Text>This exports.</Text></Paragraph>'));

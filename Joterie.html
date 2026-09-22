@@ -23,7 +23,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;900&family=Newsreader:ital,opsz,wght@1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@0.263.1"></script>
+    <script src="https://unpkg.com/lucide@0.263.0"></script>
     <style>
 :root {
     /* Change these to Light Mode colors */
@@ -144,17 +144,16 @@
             </div>
             
             <div class="flex items-center gap-6">
-                <span id="ctx-badge" class="hidden md:block text-[9px] font-black tracking-[0.2em] opacity-35 uppercase">Context · idle</span>
                 <div id="sprint-status" class="hidden flex items-center gap-4">
                     <div id="timer-pill" class="px-4 py-1.5 rounded-full border border-theme bg-white/5 backdrop-blur-md flex items-center gap-2 timer-idle">
                         <i id="timer-icon" data-lucide="clock" class="w-3.5 h-3.5"></i>
                         <span id="timer-display" class="font-mono font-bold">1:00</span>
                     </div>
                 </div>
-                <button id="history-btn" class="p-2 opacity-40 hover:opacity-100 transition-opacity">
+                <button id="history-btn" class="p-2 opacity-40 hover:opacity-100 transition-opacity" title="Past sessions" aria-label="Past sessions">
                     <i data-lucide="history" class="w-4 h-4"></i>
                 </button>
-                <button id="theme-toggle" class="p-2 opacity-40 hover:opacity-100 transition-opacity">
+                <button id="theme-toggle" class="p-2 opacity-40 hover:opacity-100 transition-opacity" title="Toggle theme" aria-label="Toggle theme">
                     <i data-lucide="moon" id="theme-icon" class="w-4 h-4"></i>
                 </button>
             </div>
@@ -445,7 +444,7 @@
                 elements.html.classList.remove('dark');
                 elements.themeIcon.setAttribute('data-lucide', 'moon');
             }
-            lucide.createIcons();
+            if (window.lucide) lucide.createIcons();
         }
 
         // Timer Logic
@@ -588,7 +587,7 @@
                 };
                 elements.reviewList.appendChild(cardEl);
             });
-            lucide.createIcons();
+            if (window.lucide) lucide.createIcons();
         }
 
         function renderSummaryList(cards) {
