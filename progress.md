@@ -88,3 +88,9 @@ Prompt: get the tools to top quality (priority: Courius, then BeatHive/Synax/Jot
 - **Dual dialogue** moved off the element bar: tap TALK for dialogue, hold it (~0.45s, with a fill underline) to pair/split dual dialogue; Alt+D still works. TALK shows an underline while the cursor is inside a dual pair.
 - **Sepia theme**: Ctrl+D / the theme button cycles dark → light → sepia; the button shows a moon / sun / book for the current theme. Sepia reports "light" to the rest of the suite.
 - Tooltips no longer stick after a tap on touch screens; the status bar no longer shows a doubled separator.
+
+## Courius: CONT'D names, split lines at the cursor (October 2026)
+
+- Character names are compared without their extensions, so `BOB (CONT'D)` / `BOB (CONT’D)` / `BOB (V.O.)` from an imported FDX are one character (BOB) for autocomplete and speaker-pair ranking. The script text keeps the extension as written.
+- Typing `BOB (` in a character line suggests the standard extensions (CONT'D, V.O., O.S., O.C., PRE-LAP, ON PHONE, FILTERED).
+- Enter or Shift+Enter with text after the cursor splits the line there, keeping the element type (Final Draft behaviour), so a speech can be broken up for a parenthetical or an action beat without retyping. Enter at the end of a line keeps the usual next-element flow.

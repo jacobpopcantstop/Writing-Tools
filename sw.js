@@ -1,4 +1,4 @@
-const WT_CACHE_NAME = 'writingtools-static-v9';
+const WT_CACHE_NAME = 'writingtools-static-v10';
 const WT_CORE_ASSETS = [
   './',
   './index.html',
