@@ -1083,6 +1083,7 @@
         <div class="shortcut-row"><span>Sticky Note on this line</span><span class="shortcut-key">Alt+N</span></div>
         <div class="shortcut-row"><span>Save Now</span><span class="shortcut-key">Ctrl+S</span></div>
         <div class="shortcut-row"><span>New Line</span><span class="shortcut-key">Enter</span></div>
+        <div class="shortcut-row"><span>Split line at cursor</span><span class="shortcut-key">Enter mid-line</span></div>
         <div class="shortcut-row"><span>Element Menu (on empty line)</span><span class="shortcut-key">Enter</span></div>
         <div class="shortcut-row"><span>Show Help (when not typing)</span><span class="shortcut-key">?</span></div>
         <div style="margin-top:12px; padding-top:12px; border-top: 1px solid rgba(0,0,0,0.1); font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; opacity:0.5;">Autocomplete</div>
@@ -2020,6 +2021,54 @@
     // browser would split the line itself, copying the current element
     // (an "action" typed after a heading became a second scene heading).
     // Route those paragraph inserts through the same Enter logic.
+    // Splits `block` at the caret when there is real text after it.
+    // Returns false (and changes nothing) when the caret is at the end.
+    function splitBlockAtCaret(block) {
+        const sel = window.getSelection();
+        if (!sel.rangeCount) return false;
+        const range = sel.getRangeAt(0);
+        if (!block.contains(range.startContainer)) return false;
+        if (!range.collapsed) range.deleteContents();
+
+        const tail = document.createRange();
+        tail.setStart(range.startContainer, range.startOffset);
+        tail.setEnd(block, block.childNodes.length);
+        const preview = tail.cloneContents();
+        preview.querySelectorAll('.suggestion').forEach((n) => n.remove());
+        if (!preview.textContent.replace(/\u00a0/g, ' ').trim()) return false;
+
+        block.querySelectorAll('.suggestion').forEach((n) => n.remove());
+        hideDropdown();
+        tail.setEnd(block, block.childNodes.length);
+        const moved = tail.extractContents();
+        moved.querySelectorAll('br').forEach((n) => n.remove());
+
+        const next = document.createElement('div');
+        next.className = block.className;
+        next.setAttribute('data-placeholder', DISPLAY_NAMES[block.className] || '');
+        next.appendChild(moved);
+        // Drop the space that sat at the split point.
+        const firstText = document.createTreeWalker(next, NodeFilter.SHOW_TEXT).nextNode();
+        if (firstText) firstText.data = firstText.data.replace(/^[\s\u00a0]+/, '');
+        const lastText = (() => {
+            const w = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
+            let n = null;
+            while (w.nextNode()) n = w.currentNode;
+            return n;
+        })();
+        if (lastText) lastText.data = lastText.data.replace(/[\s\u00a0]+$/, '');
+        if (!block.textContent.length) block.innerHTML = '<br>';
+        block.after(next);
+
+        const caret = document.createRange();
+        caret.setStart(next.firstChild || next, 0);
+        caret.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(caret);
+        next.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        return true;
+    }
+
     function handleEnter(currentBlock) {
         const type = currentBlock.className;
         const elementMenuOpen = DROPDOWN.classList.contains('visible') && dropdownMode === 'elements';
@@ -2033,6 +2082,15 @@
             acceptFromDropdown(dropdownBlock, dropdownMatches[dropdownActiveIndex]);
             createLine(NEXT_ELEMENT[type] || 'action', currentBlock);
             updateSelectorUI();
+            return;
+        }
+        // Enter (or Shift+Enter) with text after the cursor splits the line
+        // there, keeping the element type, like Final Draft. Useful for
+        // breaking a speech to drop in a parenthetical or a beat of action.
+        if (splitBlockAtCaret(currentBlock)) {
+            updateSelectorUI();
+            updateSuggestions();
+            triggerSave();
             return;
         }
         const sugg = currentBlock.querySelector('.suggestion');
@@ -2759,11 +2817,23 @@
         return null;
     }
 
+    // "BOB (CONT'D)", "BOB (V.O.)" and "BOB" are one character: extensions
+    // are trailing parentheticals and never part of the name.
+    const CHARACTER_EXTENSIONS = ["CONT'D", 'V.O.', 'O.S.', 'O.C.', 'PRE-LAP', 'ON PHONE', 'FILTERED'];
+    function characterBaseName(text) {
+        return String(text || '')
+            .toUpperCase()
+            .replace(/\u2019/g, "'")
+            .replace(/(\s*\([^)]*\)?)+\s*$/, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
     function previousDifferentCharacterName(fromBlock, currentName) {
         let node = fromBlock ? fromBlock.previousElementSibling : null;
         while (node) {
             if (node.classList && node.classList.contains('character')) {
-                const name = getPureText(node).trim().toUpperCase();
+                const name = characterBaseName(getPureText(node));
                 if (name && name !== currentName) return name;
             }
             node = node.previousElementSibling;
@@ -2789,7 +2859,7 @@
         if (type === 'character') {
             const lastCharBlock = previousBlockOfType(block, 'character');
             if (!lastCharBlock) return;
-            const lastName = getPureText(lastCharBlock).trim().toUpperCase();
+            const lastName = characterBaseName(getPureText(lastCharBlock));
             if (!lastName) return;
             const altName = previousDifferentCharacterName(lastCharBlock, lastName);
             if (altName) {
@@ -2905,7 +2975,7 @@
 
     function getPreviousCharacterName(block) {
         const prev = previousBlockOfType(block, 'character');
-        return prev ? getPureText(prev).trim().toUpperCase() : '';
+        return prev ? characterBaseName(getPureText(prev)) : '';
     }
 
     function rankCharacterMatches(matches, block) {
@@ -2953,6 +3023,16 @@
                 if (entry.startsWith(text)) {
                     results.push(entry);
                 }
+            }
+        }
+        if (type === 'character') {
+            // Typing "BOB (" offers the standard extensions.
+            const ext = text.match(/^(.+?)\s*\(([^)]*)$/);
+            if (ext) {
+                const typed = ext[2].replace(/\u2019/g, "'");
+                CHARACTER_EXTENSIONS.forEach((e) => {
+                    if (e.startsWith(typed)) results.push(characterBaseName(ext[1]) + ' (' + e + ')');
+                });
             }
         }
         if (type === 'scene-heading') {
@@ -3284,7 +3364,7 @@
             if (!node || !node.classList || node.classList.contains('title-page-container')) return;
             if (node === activeBlock) return;
             if (node.classList.contains('character')) {
-                const name = getPureText(node).trim().toUpperCase();
+                const name = characterBaseName(getPureText(node));
                 if (!name) return;
                 characterSet.add(name);
                 if (previousCharacter && previousCharacter !== name) {
